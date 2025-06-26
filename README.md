@@ -21,4 +21,4 @@
 - 若您使用的IDE为MDK，则工程文件保存在Project/MDK文件夹下。
 
 #### 逐飞科技MSPM0G3507核心板
-![逐飞科技MSPM0G3507核心板](https://images.gitee.com/uploads/images/2019/0924/114657_c8e12b59_1699060.jpeg "逐飞科技MSPM0G3507核心板.jpg")
+![逐飞科技MSPM0G3507核心板](https://gitee.com/seekfree/MSPM0G3507_Library/blob/master/assets/DesktopIMG20250606102544.png "逐飞科技MSPM0G3507核心板.jpg")
