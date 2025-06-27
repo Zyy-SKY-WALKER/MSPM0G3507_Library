@@ -23,7 +23,7 @@
 - 若您使用的IDE为MDK，则工程文件保存在Project/MDK文件夹下。
 
 
-#### 扩展功能引脚介绍
+#### 扩展板功能引脚介绍
 
  **扩展板实物图** 
 ![逐飞科技MSPM0G3507扩展板](https://gitee.com/seekfree/MSPM0G3507_Library/raw/master/assets/DSC03369.png "逐飞科技MSPM0G3507扩展板.jpg")
