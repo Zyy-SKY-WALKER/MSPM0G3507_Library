@@ -5,6 +5,7 @@
 
 #### 环境准备
 1.  **MSPM0G3507硬件环境：** 
+![逐飞科技MSPM0G3507核心板](https://gitee.com/seekfree/MSPM0G3507_Library/raw/master/assets/DesktopIMG20250606102544.png "逐飞科技MSPM0G3507核心板.jpg")
 - 推荐使用本公司MSPM0G3507核心板，[点击此处购买](https://item.taobao.com/item.htm?ft=t&id=940659357625)
 2.  **软件开发环境：** 
 （MDK ）
