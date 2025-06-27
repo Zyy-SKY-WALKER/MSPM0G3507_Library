@@ -22,7 +22,12 @@
 2.  **打开工程：** 将下载好的工程文件夹打开（若下载的为ZIP文件，请先解压压缩包）。在打开工程前，请务必确保您的IDE满足环境准备章节的要求。否则可能出现打开工程时报错，提示丢失目录信息等问题。
 - 若您使用的IDE为MDK，则工程文件保存在Project/MDK文件夹下。
 
-#### 核心板介绍
 
+#### 扩展功能引脚介绍
 
-#### 主板扩展功能引脚介绍
+ **扩展板实物图** 
+![逐飞科技MSPM0G3507扩展板](https://gitee.com/seekfree/MSPM0G3507_Library/raw/master/assets/DSC03369.png "逐飞科技MSPM0G3507扩展板.jpg")
+
+ **扩展板引脚功能介绍图** 
+
+ ![逐飞科技MSPM0G3507扩展板引脚功能介绍图](https://gitee.com/seekfree/MSPM0G3507_Library/raw/master/assets/cd2928baf9819e6da13e067cc969d75c.png "逐飞科技MSPM0G3507扩展板引脚功能介绍图.jpg")
