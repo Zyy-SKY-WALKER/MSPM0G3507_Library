@@ -15,8 +15,7 @@
 
 ![逐飞科技DAP](https://gitee.com/seekfree/MSPM0G3507_Library/raw/master/assets/MSPM0G3507核心板拓展板详情页_18.jpg "逐飞科技DAP.jpg")
 
-- DAP仿真器：推荐使用本公司DAP仿真器，双下载模式（有线下载、无线下载），可以在支持的环境下实现更高下载速度。
-- 推荐使用本公司MSPM0G3507核心板，[点击此处购买](https://item.taobao.com/item.htm?ft=t&id=583404964920)
+- DAP仿真器：推荐使用本公司DAP仿真器，双下载模式（有线下载、无线下载），可以在支持的环境下实现更高下载速度，[点击此处购买](https://item.taobao.com/item.htm?ft=t&id=583404964920)。
 #### 使用说明
 
 1.  **下载开源库：** 点击页面右侧的克隆/下载按钮，将工程文件保存到本地。您可以使用git克隆（Clone）或下载ZIP压缩包的方式来下载。推荐使用git将工程目录克隆到本地，这样可以使用git随时与我们的开源库保持同步。关于码云与git的使用教程可以参考以下链接 [https://gitee.com/help](https://gitee.com/help)。
