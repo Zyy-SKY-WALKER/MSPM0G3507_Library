@@ -53,10 +53,10 @@ int main (void)
     debug_init();					// 调试串口信息初始化
 	// 此处编写用户代码 例如外设初始化代码等
 
-  // 初始化GPIO B9 为输出 默认输出低电平
+    // 初始化GPIO A14 为输出 默认输出低电平
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
 
-    // 初始化GPIO D0 D1 为输入引脚
+    // 初始化GPIO A30 为输入引脚
     gpio_init(A30, GPI, 0, GPI_PULL_UP);
 
     // 此处编写用户代码 例如外设初始化代码等
