@@ -103,9 +103,8 @@ void UART1_IRQHandler (void)
         {
             uart_callback_list[1](UART_INTERRUPT_STATE_RX, uart_callback_ptr_list[1]);
 					
-					 //wifi_uart_callback();
 			
-			wireless_module_uart_handler();                 // ??????????
+			wireless_module_uart_handler();                 
 					
         }break;
 

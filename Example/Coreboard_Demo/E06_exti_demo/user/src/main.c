@@ -61,12 +61,12 @@
 // **************************** 代码区域 ****************************
 #define LED1                    (A14 )
 
-#define KEY1                    (A30)                                           // 使用的外部中断输入引脚 如果修改 需要同步对应修改外部中断编号与 isr.c 中的调用
-#define KEY2                    (A31)                                           // 使用的外部中断输入引脚 如果修改 需要同步对应修改外部中断编号与 isr.c 中的调用
-#define KEY3                    (B0)                                            // 使用的外部中断输入引脚 如果修改 需要同步对应修改外部中断编号与 isr.c 中的调用
-#define KEY4                    (B1)                                            // 使用的外部中断输入引脚 如果修改 需要同步对应修改外部中断编号与 isr.c 中的调用
+#define KEY1                    (A30)                                          // 定义外部中断引脚1 
+#define KEY2                    (A31)                                          // 定义外部中断引脚2 
+#define KEY3                    (B0)                                           // 定义外部中断引脚3
+#define KEY4                    (B1)                                           // 定义外部中断引脚4
 
-#define KEY_EXTI               (GPIOB_INT_IRQn)                     // 对应外部中断的中断编号 
+#define KEY_EXTI               (GPIOB_INT_IRQn)                     		   // 对应外部中断的中断编号 
 
 uint8 exti_state[4];
 
