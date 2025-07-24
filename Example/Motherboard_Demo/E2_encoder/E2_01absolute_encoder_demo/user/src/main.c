@@ -65,8 +65,8 @@
 // 1.核心板烧录本例程 插在主板上 绝对值编码器按照上述硬件连接方式接好
 // 
 // 2.电池供电 上电后会从串口输出编码器采集的位置信息 如下
-//      location = 	xxxx,xxxx,xxxx,xxxx
-//      offset =  	xxxx,xxxx,xxxx,xxxx
+//      location =  xxxx,xxxx,xxxx,xxxx
+//      offset =    xxxx,xxxx,xxxx,xxxx
 // 
 // 3.转动编码器数据会有变化
 // 
@@ -74,72 +74,72 @@
 
 // **************************** 代码区域 ****************************
 
+// 学习板上最多支持接入四个绝对值编码器
+#define ENCODER_INEX_MAX                ( 4 )
+
+// 按照实际转速选择合适的采样周期 转速越快那么要求采样周期越短
+// 如果转速较高而采样周期过长 会导致一个采样周期内编码器转动超过一整圈 从而导致数据丢失
+// 因此需要选择合适的采样周期 默认 5ms 周期符合大多数使用场景
+#define ENCODER_SAMPLE_PERIOD_MS        ( 5 )
 
 volatile uint8_t pit_flag    = 0;
 
-uint8 encoder_init_data = 0;
-
-int16 location_data1 = 0 , location_data2 =0 ,location_data3 =0 ,location_data4 =0;
-int16 offset_data1 = 0,offset_data2 = 0,offset_data3 = 0,offset_data4 = 0;
-
+uint8 encoder_index = 0;
+int16 location_data[ENCODER_INEX_MAX] = {0, 0, 0, 0};
+int16 offset_data[ENCODER_INEX_MAX]   = {0, 0, 0, 0};
 
 void absolute_encoder_pit_handler (uint32 event, void *ptr)
 {
-	 *((uint8 *)ptr)  = 1;
-	
-	 location_data1 =  absolute_encoder_get_location(0);		//获取编码器当前大角度信息
-		 offset_data1 =  absolute_encoder_get_offset(0);			//通过两次角度对比得到当前的旋转速度
-	
-	 location_data2 =  absolute_encoder_get_location(1);		//获取编码器当前大角度信息
-		 offset_data2 =  absolute_encoder_get_offset(1);      //通过两次角度对比得到当前的旋转速度
-	
-	 location_data3 =  absolute_encoder_get_location(2);		//获取编码器当前大角度信息
-		 offset_data3 =  absolute_encoder_get_offset(2);      //通过两次角度对比得到当前的旋转速度
-	
-	 location_data4 =  absolute_encoder_get_location(3);		//获取编码器当前大角度信息
-		 offset_data4 =  absolute_encoder_get_offset(3);      //通过两次角度对比得到当前的旋转速度
-	
-}
+    *((uint8 *)ptr)  = 1;
 
+    for(encoder_index = 0; encoder_index < ENCODER_INEX_MAX; encoder_index ++)
+    {
+        // 获取编码器当前大角度信息
+        location_data[encoder_index] = absolute_encoder_get_location(encoder_index);
+        // 通过两次角度对比得到当前的旋转速度
+        offset_data[encoder_index] = absolute_encoder_get_offset(encoder_index);
+    }
+}
 
 int main (void)
 {
-    clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-		// 此处编写用户代码 例如外设初始化代码等
+    clock_init(SYSTEM_CLOCK_80M);                                               // 时钟配置及系统初始化<务必保留>
+    debug_init();                                                               // 调试串口信息初始化
+    // 此处编写用户代码 例如外设初始化代码等
 
-		for(encoder_init_data = 0;encoder_init_data < 4; encoder_init_data ++)
-		{
-			if(absolute_encoder_init(encoder_init_data))					//初始化4个编码器
-			{
+    for(encoder_index = 0; encoder_index < ENCODER_INEX_MAX; encoder_index ++)
+    {
+        if(absolute_encoder_init(encoder_index))                                //初始化4个编码器
+        {
 
-				printf("encoder %d fail\r\n",encoder_init_data+1);	//提示编码器初始化失败
-			}
-			else 
-			{
-				printf("encoder %d successfully\r\n",encoder_init_data+1);		//提示编码器初始化成功
-			}
-			system_delay_ms(500);
-		}
+            printf("encoder %d fail\r\n", encoder_index + 1);                   //提示编码器初始化失败
+        }
+        else
+        {
+            printf("encoder %d successfully\r\n", encoder_index + 1);           //提示编码器初始化成功
+        }
+        system_delay_ms(500);
+    }
 
-    pit_ms_init(PIT_TIM_G12, 20, absolute_encoder_pit_handler, (void *)&pit_flag);
-
+    pit_ms_init(PIT_TIM_G12, ENCODER_SAMPLE_PERIOD_MS, absolute_encoder_pit_handler, (void *)&pit_flag);
 
     while(true)
     {
         // 此处编写需要循环执行的代码
-
-			if(pit_flag)																				//在串口上位机上显示角度和转速信息
+        if(pit_flag)                                                            //在串口上位机上显示角度和转速信息
         {
-						printf("location =  %d,%d,%d,%d\r\n",location_data1,location_data2,location_data3,location_data4);
-						printf("offset =  %d,%d,%d,%d\r\n",offset_data1,offset_data2,offset_data3,offset_data4);
+            printf("location =  %d, %d, %d, %d\r\n",
+                location_data[0], location_data[1], location_data[2], location_data[3]);
+            printf("offset   =  %d, %d, %d, %d\r\n",
+                offset_data[0], offset_data[1], offset_data[2], offset_data[3]);
             pit_flag = 0;
+            system_delay_ms(100);
         }
         // 此处编写需要循环执行的代码
     }
 }
 
-// 关于编码器型号类型的简易说明
+// ------------------------------ 关于编码器型号类型的简易说明 ------------------------------
 // 本开源库中使用的是 SPI 接口的 360°位置传感器 绝对值编码器
 
 // 这是由于 MSPM0 系列 仅有 TIMG8/9/10/11 支持 QEI/HALL Input Mode
@@ -155,3 +155,4 @@ int main (void)
 // 因此我们建议使用 SPI 接口的 360°位置传感器 绝对值编码器
 // 避免上述两个问题 减少中断与开销
 // 当然自身技术能力较强的同学 可以选择自行解决这个问题 使用多个 正交编码器 或 方向编码器
+// ------------------------------ 关于编码器型号类型的简易说明 ------------------------------
