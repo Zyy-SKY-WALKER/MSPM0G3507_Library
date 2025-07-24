@@ -51,8 +51,8 @@
 
 
 // **************************** 代码区域 ****************************
-#define PIT_CH                  (PIT_TIM_A0 )                                      // 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
-#define PIT_PRIORITY            (TIMA0_INT_IRQn)                                      // 对应周期中断的中断编号 
+#define PIT_CH                  (PIT_TIM_A0 )                                   // 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
+#define PIT_PRIORITY            (TIMA0_INT_IRQn)                                // 对应周期中断的中断编号 
 
 #define LED1                    (A14)
 
@@ -62,13 +62,13 @@ void pit_handler (uint32 state, void *ptr);
 
 int main (void)
 {
-    clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-	
-		// 此处编写用户代码 例如外设初始化代码等
+    clock_init(SYSTEM_CLOCK_80M);                                               // 时钟配置及系统初始化<务必保留>
+    debug_init();                                                               // 调试串口信息初始化
+    
+    // 此处编写用户代码 例如外设初始化代码等
     gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);                              // 初始化 LED1 输出 默认低电平 推挽输出模式
 
-    pit_ms_init(PIT_TIM_A0, 500,pit_handler,NULL);                                                  // 初始化 PIT_CH0 为周期中断 1000ms 周期
+    pit_ms_init(PIT_TIM_A0, 500, pit_handler, NULL);                            // 初始化 PIT_CH0 为周期中断 500 ms 周期
 
     interrupt_set_priority(PIT_PRIORITY, 0);                                    // 设置 PIT1 对周期中断的中断优先级为 0
     // 此处编写用户代码 例如外设初始化代码等
@@ -92,10 +92,9 @@ int main (void)
 //-------------------------------------------------------------------------------------------------------------------
 void pit_handler (uint32 state, void *ptr)
 {
-	    pit_state = 1;                                                              // 周期中断触发 标志位置位
+        pit_state = 1;                                                          // 周期中断触发 标志位置位
 }
 // **************************** 代码区域 ****************************
-
 
 // *************************** 例程常见问题说明 ***************************
 // 遇到问题时请按照以下问题检查列表检查

@@ -327,7 +327,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_clock.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_clock.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_clock.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -339,7 +339,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_clock.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_clock.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_clock.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -351,7 +351,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_debug.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_debug.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_debug.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -363,7 +363,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_debug.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_debug.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_debug.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -375,7 +375,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_fifo.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_fifo.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_fifo.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -387,7 +387,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_fifo.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_fifo.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_fifo.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -399,7 +399,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_font.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_font.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_font.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -411,7 +411,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_font.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_font.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_font.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -423,7 +423,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_function.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_function.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_function.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -435,7 +435,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_function.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_function.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_function.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -447,7 +447,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_headfile.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_headfile.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_headfile.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -459,7 +459,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_interrupt.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_interrupt.c</PathWithFileName>
       <FilenameWithoutPath>zf_common_interrupt.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -471,7 +471,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_interrupt.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_interrupt.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_interrupt.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -483,7 +483,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_common\zf_common_typedef.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_common\zf_common_typedef.h</PathWithFileName>
       <FilenameWithoutPath>zf_common_typedef.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -503,7 +503,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_components\seekfree_assistant.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_components\seekfree_assistant.c</PathWithFileName>
       <FilenameWithoutPath>seekfree_assistant.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -515,7 +515,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_components\seekfree_assistant.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_components\seekfree_assistant.h</PathWithFileName>
       <FilenameWithoutPath>seekfree_assistant.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -527,7 +527,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_components\seekfree_assistant_interface.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_components\seekfree_assistant_interface.c</PathWithFileName>
       <FilenameWithoutPath>seekfree_assistant_interface.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -539,7 +539,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_components\seekfree_assistant_interface.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_components\seekfree_assistant_interface.h</PathWithFileName>
       <FilenameWithoutPath>seekfree_assistant_interface.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -559,7 +559,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_adc.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_adc.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_adc.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -571,7 +571,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_adc.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_adc.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_adc.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -583,7 +583,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_delay.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_delay.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_delay.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -595,7 +595,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_delay.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_delay.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_delay.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -607,7 +607,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_exti.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_exti.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_exti.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -619,7 +619,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_exti.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_exti.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_exti.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -631,7 +631,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_gpio.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_gpio.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_gpio.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -643,7 +643,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_gpio.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_gpio.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_gpio.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -655,7 +655,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_pit.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_pit.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_pit.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -667,7 +667,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_pit.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_pit.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_pit.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -679,7 +679,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_pwm.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_pwm.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_pwm.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -691,7 +691,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_pwm.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_pwm.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_pwm.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -703,7 +703,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_soft_iic.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_soft_iic.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_soft_iic.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -715,7 +715,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_soft_iic.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_soft_iic.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_soft_iic.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -727,7 +727,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_spi.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_spi.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_spi.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -739,7 +739,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_spi.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_spi.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_spi.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -751,7 +751,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_timer.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_timer.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_timer.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -763,7 +763,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_timer.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_timer.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_timer.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -775,7 +775,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_uart.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_uart.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_uart.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -787,7 +787,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_uart.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_uart.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_uart.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -799,7 +799,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_flash.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_flash.c</PathWithFileName>
       <FilenameWithoutPath>zf_driver_flash.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -811,7 +811,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_driver\zf_driver_flash.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_driver\zf_driver_flash.h</PathWithFileName>
       <FilenameWithoutPath>zf_driver_flash.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -831,7 +831,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_absolute_encoder.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_absolute_encoder.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_absolute_encoder.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -843,7 +843,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_absolute_encoder.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_absolute_encoder.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_absolute_encoder.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -855,7 +855,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_config.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_config.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_config.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -867,7 +867,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_config.lib</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_config.lib</PathWithFileName>
       <FilenameWithoutPath>zf_device_config.lib</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -879,7 +879,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_dl1a.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_dl1a.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_dl1a.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -891,7 +891,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_dl1a.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_dl1a.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_dl1a.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -903,7 +903,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_dl1b.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_dl1b.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_dl1b.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -915,7 +915,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_dl1b.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_dl1b.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_dl1b.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -927,7 +927,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu660ra.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu660ra.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu660ra.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -939,7 +939,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu660ra.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu660ra.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu660ra.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -951,7 +951,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu660rb.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu660rb.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu660rb.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -963,7 +963,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu660rb.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu660rb.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu660rb.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -975,7 +975,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu963ra.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu963ra.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu963ra.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -987,7 +987,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_imu963ra.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_imu963ra.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_imu963ra.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -999,7 +999,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips114.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips114.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips114.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1011,7 +1011,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips114.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips114.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips114.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1023,7 +1023,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips200.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips200.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips200.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1035,7 +1035,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips200.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips200.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips200.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1047,7 +1047,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips200pro.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips200pro.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips200pro.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1059,7 +1059,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_ips200pro.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_ips200pro.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_ips200pro.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1071,7 +1071,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_tft180.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_tft180.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_tft180.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1083,7 +1083,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_tft180.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_tft180.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_tft180.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1095,7 +1095,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_tsl1401.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_tsl1401.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_tsl1401.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1107,7 +1107,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_tsl1401.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_tsl1401.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_tsl1401.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1119,7 +1119,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_type.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_type.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_type.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1131,7 +1131,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_type.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_type.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_type.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1143,7 +1143,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wifi_spi.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wifi_spi.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_wifi_spi.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1155,7 +1155,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wifi_spi.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wifi_spi.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_wifi_spi.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1167,7 +1167,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wifi_uart.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wifi_uart.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_wifi_uart.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1179,7 +1179,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wifi_uart.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wifi_uart.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_wifi_uart.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1191,7 +1191,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wireless_uart.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wireless_uart.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_wireless_uart.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1203,7 +1203,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_wireless_uart.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_wireless_uart.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_wireless_uart.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1215,7 +1215,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_oled.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_oled.c</PathWithFileName>
       <FilenameWithoutPath>zf_device_oled.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1227,7 +1227,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\zf_device\zf_device_oled.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\zf_device\zf_device_oled.h</PathWithFileName>
       <FilenameWithoutPath>zf_device_oled.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1247,7 +1247,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti_config\startup_mspm0g350x_uvision.s</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti_config\startup_mspm0g350x_uvision.s</PathWithFileName>
       <FilenameWithoutPath>startup_mspm0g350x_uvision.s</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1259,7 +1259,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti_config\ti_msp_dl_config.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti_config\ti_msp_dl_config.c</PathWithFileName>
       <FilenameWithoutPath>ti_msp_dl_config.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1271,7 +1271,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti_config\ti_msp_dl_config.h</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti_config\ti_msp_dl_config.h</PathWithFileName>
       <FilenameWithoutPath>ti_msp_dl_config.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1291,7 +1291,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_adc12.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_adc12.c</PathWithFileName>
       <FilenameWithoutPath>dl_adc12.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1303,7 +1303,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_aes.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_aes.c</PathWithFileName>
       <FilenameWithoutPath>dl_aes.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1315,7 +1315,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_aesadv.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_aesadv.c</PathWithFileName>
       <FilenameWithoutPath>dl_aesadv.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1327,7 +1327,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_common.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_common.c</PathWithFileName>
       <FilenameWithoutPath>dl_common.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1339,7 +1339,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_comp.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_comp.c</PathWithFileName>
       <FilenameWithoutPath>dl_comp.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1351,7 +1351,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_crc.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_crc.c</PathWithFileName>
       <FilenameWithoutPath>dl_crc.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1363,7 +1363,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_crcp.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_crcp.c</PathWithFileName>
       <FilenameWithoutPath>dl_crcp.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1375,7 +1375,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_dac12.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_dac12.c</PathWithFileName>
       <FilenameWithoutPath>dl_dac12.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1387,7 +1387,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_dma.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_dma.c</PathWithFileName>
       <FilenameWithoutPath>dl_dma.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1399,7 +1399,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_flashctl.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_flashctl.c</PathWithFileName>
       <FilenameWithoutPath>dl_flashctl.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1411,7 +1411,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_gpamp.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_gpamp.c</PathWithFileName>
       <FilenameWithoutPath>dl_gpamp.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1423,7 +1423,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_gpio.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_gpio.c</PathWithFileName>
       <FilenameWithoutPath>dl_gpio.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1435,7 +1435,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_i2c.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_i2c.c</PathWithFileName>
       <FilenameWithoutPath>dl_i2c.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1447,7 +1447,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_iwdt.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_iwdt.c</PathWithFileName>
       <FilenameWithoutPath>dl_iwdt.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1459,7 +1459,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_keystorectl.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_keystorectl.c</PathWithFileName>
       <FilenameWithoutPath>dl_keystorectl.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1471,7 +1471,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_lcd.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_lcd.c</PathWithFileName>
       <FilenameWithoutPath>dl_lcd.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1483,7 +1483,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_lfss.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_lfss.c</PathWithFileName>
       <FilenameWithoutPath>dl_lfss.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1495,7 +1495,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_mathacl.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_mathacl.c</PathWithFileName>
       <FilenameWithoutPath>dl_mathacl.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1507,7 +1507,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_mcan.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_mcan.c</PathWithFileName>
       <FilenameWithoutPath>dl_mcan.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1519,7 +1519,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_opa.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_opa.c</PathWithFileName>
       <FilenameWithoutPath>dl_opa.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1531,7 +1531,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_rtc.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_rtc.c</PathWithFileName>
       <FilenameWithoutPath>dl_rtc.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1543,7 +1543,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_rtc_a.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_rtc_a.c</PathWithFileName>
       <FilenameWithoutPath>dl_rtc_a.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1555,7 +1555,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_rtc_b.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_rtc_b.c</PathWithFileName>
       <FilenameWithoutPath>dl_rtc_b.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1567,7 +1567,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_rtc_common.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_rtc_common.c</PathWithFileName>
       <FilenameWithoutPath>dl_rtc_common.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1579,7 +1579,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_scratchpad.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_scratchpad.c</PathWithFileName>
       <FilenameWithoutPath>dl_scratchpad.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1591,7 +1591,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_spi.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_spi.c</PathWithFileName>
       <FilenameWithoutPath>dl_spi.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1603,7 +1603,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_tamperio.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_tamperio.c</PathWithFileName>
       <FilenameWithoutPath>dl_tamperio.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1615,7 +1615,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_timer.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_timer.c</PathWithFileName>
       <FilenameWithoutPath>dl_timer.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1627,7 +1627,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_timera.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_timera.c</PathWithFileName>
       <FilenameWithoutPath>dl_timera.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1639,7 +1639,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_timerg.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_timerg.c</PathWithFileName>
       <FilenameWithoutPath>dl_timerg.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1651,7 +1651,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_trng.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_trng.c</PathWithFileName>
       <FilenameWithoutPath>dl_trng.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1663,7 +1663,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_uart.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_uart.c</PathWithFileName>
       <FilenameWithoutPath>dl_uart.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1675,7 +1675,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_vref.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_vref.c</PathWithFileName>
       <FilenameWithoutPath>dl_vref.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -1687,7 +1687,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Coreboard_Demo\libraries\sdk\ti\driverlib\dl_wwdt.c</PathWithFileName>
+      <PathWithFileName>..\..\libraries\sdk\ti\driverlib\dl_wwdt.c</PathWithFileName>
       <FilenameWithoutPath>dl_wwdt.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
