@@ -295,9 +295,10 @@ void uart_init (uart_index_enum uart_index, uint32 baud, uart_tx_pin_enum tx_pin
     DL_UART_Main_init(uart_list[uart_index], (DL_UART_Main_Config *) &uart_default_config);
     DL_UART_Main_setOversampling(uart_list[uart_index], DL_UART_OVERSAMPLING_RATE_8X);
 
-    double buadrate_double = 40000000.0 / (double)baud / 8.0;
+    double buadrate_double = ((UART_3 == uart_index) ? (80000000.0) : (40000000.0)) / (double)baud / 8.0;
     uint16 buadrate_integer = (uint16)buadrate_double;
     uint16 buadrate_fractional = (uint16)((buadrate_double - buadrate_integer) * 64.0 + 0.5);
+
     DL_UART_Main_setBaudRateDivisor(uart_list[uart_index], buadrate_integer, buadrate_fractional);
 
     DL_UART_Main_enable(uart_list[uart_index]);

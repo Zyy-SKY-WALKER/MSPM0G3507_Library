@@ -74,9 +74,11 @@ static void clock_reset (void)
     DL_UART_Main_reset(UART0);
     DL_UART_Main_reset(UART1);
     DL_UART_Main_reset(UART2);
+    DL_UART_Main_reset(UART3);
     DL_UART_Main_enablePower(UART0);
     DL_UART_Main_enablePower(UART1);
     DL_UART_Main_enablePower(UART2);
+    DL_UART_Main_enablePower(UART3);
 
     DL_SPI_reset(SPI0);
     DL_SPI_reset(SPI1);
