@@ -82,9 +82,9 @@ uint16  assert_count = 0;
 
 int main (void)
 {
-    clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-	
+    clock_init(SYSTEM_CLOCK_80M);                                              // 初始化芯片时钟 工作频率为 60MHz
+    debug_init();                                                               // 初始化默认 debug uart
+
     // 此处编写用户代码 例如外设初始化代码等
     zf_log(1, "01_printf_debug_log_demo zf_log with true.");                    // zf_log 宏定义函数使用方法 第一个参数为真则无输出
     zf_log(0, "01_printf_debug_log_demo zf_log with false.");                   // zf_log 宏定义函数使用方法 第一个参数为假则输出 log
@@ -92,10 +92,9 @@ int main (void)
     debug_assert_disable();                                                     // 禁止断言功能
     zf_assert(0);                                                               // 断言 但由于断言功能已禁止 所以不会生效
     debug_assert_enable();                                                      // 使能断言功能
-	  //zf_assert(0);                                                               // 断言 但由于断言功能已禁止 所以不会生效
     // 此处编写用户代码 例如外设初始化代码等
-	
-    while(true)
+
+    while(1)
     {
         // 此处编写需要循环执行的代码
         zf_assert(20000 > assert_count ++);                                     // 等待 20 秒钟后进入断言
@@ -106,7 +105,7 @@ int main (void)
             printf("Time: %d s.\r\n", assert_count / 1000);                     // printf 使用方法不作介绍
         }
 #if DEBUG_UART_USE_INTERRUPT                                                    // 如果开启了 debug uart 接收中断
-        debug_uart_data_len = debug_read_ring_buffer(debug_uart_data_buffer);   // 获取数据
+        debug_uart_data_len = debug_read_ring_buffer(debug_uart_data_buffer, 64);   // 获取数据
         if(debug_uart_data_len != 0)                                            // 判断是否收到 debug uart 数据
         {
             printf("\r\n");                                                     // 输出换行
@@ -117,7 +116,6 @@ int main (void)
         // 此处编写需要循环执行的代码
     }
 }
-
 // **************************** 代码区域 ****************************
 
 // *************************** 例程常见问题说明 ***************************
@@ -130,4 +128,3 @@ int main (void)
 // 
 // 问题2：串口数据乱码
 //      查看串口助手设置的波特率是否与程序设置一致，程序中 zf_common_debug.h 文件中 DEBUG_UART_BAUDRATE 宏定义为 debug uart 使用的串口波特率
-

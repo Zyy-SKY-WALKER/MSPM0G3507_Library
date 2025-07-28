@@ -133,12 +133,10 @@ void DL_SYSCTL_setHFCLKSourceHFXTParams (DL_SYSCTL_HFXT_RANGE range, uint32_t st
 
     SYSCTL->SOCLOCK.HFCLKCLKCFG = register_temp;
 
-	SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_HFXTEN_ENABLE;								// 必须启动 否则频率不准
+	SYSCTL->SOCLOCK.HSCLKEN |= SYSCTL_HSCLKEN_HFXTEN_ENABLE;								// 必须启动 否则频率不准  
 		
     SYSCTL->SOCLOCK.HSCLKEN =   SYSCTL_HSCLKEN_SYSPLLEN_ENABLE | SYSCTL_HSCLKEN_USEEXTHFCLK_ENABLE;
     SYSCTL->SOCLOCK.HSCLKEN |=  SYSCTL_HSCLKCFG_HSCLKSEL_HFCLKCLK;
-
-
 
 
 
@@ -186,7 +184,6 @@ void DL_SYSCTL_configSYSPLL (const DL_SYSCTL_SYSPLLConfig *config)
     }
 		
 				{
-
     SYSCTL->SOCLOCK.SYSPLLPARAM0 =
         *(volatile uint32_t *) ((uint32_t) config->inputFreq);
     SYSCTL->SOCLOCK.SYSPLLPARAM1 =
@@ -202,7 +199,6 @@ void DL_SYSCTL_configSYSPLL (const DL_SYSCTL_SYSPLLConfig *config)
 						 }
 						 
 						 
-
 
 
 }
@@ -221,7 +217,6 @@ void DL_SYSCTL_setLFCLKSourceLFXT (const DL_SYSCTL_LFCLKConfig *config)
 
 
 
-
 }
 
 
@@ -232,7 +227,6 @@ void DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK (DL_SYSCTL_HSCLK_SOURCE source)
 
     SYSCTL->SOCLOCK.HSCLKCFG = (uint32_t) source;
     SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_USEHSCLK_ENABLE;
-
 
 }
 

@@ -40,61 +40,104 @@
 // 第二步 project->clean  等待下方进度条走完
 
 // *************************** 例程硬件连接说明 ***************************
-// 使用主板测试 主板必须要用电池供电
+//      将核心板插在主板上 确保插到底核心板与主板插座间没有缝隙即可
+//      将核心板插在主板上 确保插到底核心板与主板插座间没有缝隙即可
+//      将核心板插在主板上 确保插到底核心板与主板插座间没有缝隙即可
+// 
+//      主板按键            单片机管脚
+//      S1                  查看 zf_device_key.h 文件中 KEY1_PIN 宏定义的引脚 
+//      S2                  查看 zf_device_key.h 文件中 KEY2_PIN 宏定义的引脚 
+//      S3                  查看 zf_device_key.h 文件中 KEY3_PIN 宏定义的引脚 
+//      S4                  查看 zf_device_key.h 文件中 KEY4_PIN 宏定义的引脚 
+// 
+// 
+//      主板蜂鸣器          单片机管脚
+//      BEEP                A14
+
 
 // *************************** 例程测试说明 ***************************
-// 1.核心板烧录完成本例程，完成上电
-// 2.可以看到核心板上LED 闪烁以及嗡鸣器鸣叫
-// 3.将 KEY1 / KEY2 / KEY3 / KEY4 任意按键按下并保持，led闪烁加快
+// 1.核心板插在主板上 主板使用电池供电 下载本例程
+// 
+// 2.复位核心板 LED会先闪烁两次 蜂鸣器也会响两次
+// 
+// 3.短按一下 S1-S4 中任意按键 BEEP 会响一下
+// 
+// 4.长按 S1-S4 中任意按键 BEEP 会一直响
+// 
 // 如果发现现象与说明严重不符 请参照本文件最下方 例程常见问题说明 进行排查
 
 // **************************** 代码区域 ****************************
-#define LED1                    (A14)		// 和嗡鸣器为同一个引脚
-
-#define KEY1                    (A30)
-#define KEY2                    (A31)
-#define KEY3                    (B0)
-#define KEY4                    (B1)
 
 
-uint16 delay_time = 0;
-uint8 led_state = 0;
+#define BEEP                (A14)
 
-
-int main (void)
+int main(void)
 {
-    clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();					// 调试串口信息初始化
-
-    // 此处编写用户代码 例如外设初始化代码等
-
-    gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);              // 初始化 LED1 输出 默认高电平 推挽输出模式
-
-    gpio_init(KEY1, GPI, GPIO_HIGH, GPI_PULL_UP);               // 初始化 KEY1 输入 默认高电平 上拉输入
-    gpio_init(KEY2, GPI, GPIO_HIGH, GPI_PULL_UP);               // 初始化 KEY2 输入 默认高电平 上拉输入
-    gpio_init(KEY3, GPI, GPIO_HIGH, GPI_PULL_UP);               // 初始化 KEY3 输入 默认高电平 上拉输入
-    gpio_init(KEY4, GPI, GPIO_HIGH, GPI_PULL_UP);               // 初始化 KEY4 输入 默认高电平 上拉输入
+    clock_init(SYSTEM_CLOCK_80M);  // 不可删除
+    debug_init();                   // 调试端口初始化
     
+    system_delay_ms(300);           //等待主板其他外设上电完成
     
-    // 此处编写用户代码 例如外设初始化代码等
+    uint8 count_beep = 0;
 
-    while(true)
+    // key_index_enum key_index_array[KEY_NUMBER] = {KEY_1,KEY_2,KEY_3,KEY_4};
+
+    key_init(5);
+
+    gpio_init(BEEP, GPO, GPIO_LOW, GPO_PUSH_PULL);
+
+    gpio_set_level(BEEP, GPIO_HIGH);                                            // BEEP 响
+    system_delay_ms(100);
+    gpio_set_level(BEEP, GPIO_LOW);                                             // BEEP 停
+    system_delay_ms(100);
+    gpio_set_level(BEEP, GPIO_HIGH);                                            // BEEP 响
+    system_delay_ms(100);
+    gpio_set_level(BEEP, GPIO_LOW);                                             // BEEP 停
+    system_delay_ms(100);
+    interrupt_global_enable(0);
+    
+    while(1)
     {
-		// 此处编写需要循环执行的代码
 
-        if( !gpio_get_level(KEY1) || !gpio_get_level(KEY2) || !gpio_get_level(KEY3) || !gpio_get_level(KEY4) )         // 获取 KEYx 电平为低
+        
+        key_scanner();
+
+        if( KEY_SHORT_PRESS == key_get_state(KEY_1) ||
+            KEY_SHORT_PRESS == key_get_state(KEY_2) ||
+            KEY_SHORT_PRESS == key_get_state(KEY_3) ||
+            KEY_SHORT_PRESS == key_get_state(KEY_4))                            // 任意按键短按
         {
-            delay_time = 300;
+            // 短按的按键在松开时 状态才会被 key_scanner 置位为 KEY_SHORT_PRESS
+            count_beep = 40;
+            // 可以单独清除按键状态
+            key_clear_state(KEY_1);
+            key_clear_state(KEY_2);
+            key_clear_state(KEY_3);
+            key_clear_state(KEY_4);
+        }
+        else if(KEY_LONG_PRESS == key_get_state(KEY_1) ||
+                KEY_LONG_PRESS == key_get_state(KEY_2) ||
+                KEY_LONG_PRESS == key_get_state(KEY_3) ||
+                KEY_LONG_PRESS == key_get_state(KEY_4))                         // 任意按键长按
+        {
+            // 长按的按键在按下期间会被 key_scanner 不断置位为 KEY_LONG_PRESS
+            // 所以即使清除了本次的状态 在下次扫描时依旧会判定为 KEY_LONG_PRESS
+            count_beep = 40;
+            // 也可以清除所有按键状态
+            key_clear_all_state();
+        }
+
+        if(count_beep)
+        {
+            gpio_set_level(BEEP, GPIO_HIGH);
+            count_beep --;
         }
         else
         {
-            delay_time = 1000;
+            gpio_set_level(BEEP, GPIO_LOW);
         }
-        led_state = !led_state;
-        system_delay_ms(delay_time);
-        gpio_set_level(LED1, led_state);
         
-        // 此处编写需要循环执行的代码
+        system_delay_ms(5);
     }
 }
 
@@ -102,13 +145,13 @@ int main (void)
 
 // *************************** 例程常见问题说明 ***************************
 // 遇到问题时请按照以下问题检查列表检查
-// 问题1：LED 不闪烁
+// 
+// 问题1：S1-S4 按下 BEEP 不响
 //      如果使用主板测试，主板必须要用电池供电
 //      查看程序是否正常烧录，是否下载报错，确认正常按下复位按键
-//      万用表测量对应 LED 引脚电压是否变化，如果不变化证明程序未运行，如果变化证明 LED 灯珠损坏
-// 问题2：KEY1 / KEY2 / KEY3 / KEY4 接GND或者按键按下无变化
-//      如果使用主板测试，主板必须要用电池供电
-//      查看程序是否正常烧录，是否下载报错，确认正常按下复位按键
-//      万用表测量对应 LED 引脚电压是否变化，如果不变化证明程序未运行，如果变化证明 LED 灯珠损坏
-//      万用表检查对应 KEY1 / KEY2 / KEY3 / KEY4 引脚电压是否正常变化，是否跟接入信号不符，引脚是否接错
+//      万用表测量对应 BEEP 引脚电压是否变化，如果不变化证明程序未运行，如果变化证明 BEEP 电路或者器件损坏
+//      万用表检查对应 S1-S4 引脚电压是否正常变化，是否跟接入信号不符，引脚是否接错，是否断路短路
+
+
+
 

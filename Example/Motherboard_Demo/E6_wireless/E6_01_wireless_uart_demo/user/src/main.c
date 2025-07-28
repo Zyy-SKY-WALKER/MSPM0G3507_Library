@@ -65,7 +65,7 @@ int main(void)
     {
         while(1)                                                                // 初始化失败就在这进入死循环
         {
-						printf("wireless_uart_init Fail !!!\r\n");
+			printf("wireless_uart_init Fail !!!\r\n");
             system_delay_ms(100);                                               // 初始化异常
         }
     }

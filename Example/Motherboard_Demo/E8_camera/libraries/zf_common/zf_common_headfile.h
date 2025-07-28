@@ -85,6 +85,7 @@
 #include "zf_device_dl1b.h"
 #include "zf_device_dl1a.h"
 #include "zf_device_wireless_uart.h"
+#include "zf_device_key.h"
 
 //===================================================外接设备驱动层===================================================
 

@@ -48,7 +48,7 @@
 
 #if DEBUG_UART_USE_INTERRUPT                                                    // 条件编译 只有在启用串口中断才编译
 		#define DEBUG_UART_PRIORITY         (UART0_INT_IRQn)                        // 对应串口中断的中断编号 mspm0g350x  IRQn_Type 枚举体
-		#define DEBUG_UART_PRIORITY0_7      (1)                            					// 中断优先级
+		#define DEBUG_UART_PRIORITY0_7      (1)                            	// 中断优先级
 	
 #endif
 

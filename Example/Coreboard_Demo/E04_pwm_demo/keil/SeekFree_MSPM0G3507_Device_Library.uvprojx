@@ -779,6 +779,16 @@
               <FileType>5</FileType>
               <FilePath>..\..\libraries\zf_device\zf_device_wireless_uart.h</FilePath>
             </File>
+            <File>
+              <FileName>zf_device_key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\libraries\zf_device\zf_device_key.c</FilePath>
+            </File>
+            <File>
+              <FileName>zf_device_key.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\libraries\zf_device\zf_device_key.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

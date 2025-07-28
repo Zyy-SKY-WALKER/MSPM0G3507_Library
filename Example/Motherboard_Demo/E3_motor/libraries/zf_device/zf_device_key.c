@@ -1,10 +1,10 @@
 /*********************************************************************************************************************
-* MM32F527X-E9P Opensource Library 即（MM32F527X-E9P 开源库）是一个基于官方 SDK 接口的第三方开源库
+* MSPM0G3507 Opensource Library 即（MSPM0G3507 开源库）是一个基于官方 SDK 接口的第三方开源库
 * Copyright (c) 2022 SEEKFREE 逐飞科技
 * 
-* 本文件是 MM32F527X-E9P 开源库的一部分
+* 本文件是 MSPM0G3507 开源库的一部分
 * 
-* MM32F527X-E9P 开源库 是免费软件
+* MSPM0G3507 开源库 是免费软件
 * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
 * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
 * 
@@ -23,14 +23,14 @@
 * 
 * 文件名称          zf_device_key
 * 公司名称          成都逐飞科技有限公司
-* 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
+* 版本信息          查看 libraries/doc 文件夹内 version 文件版本说明
 * 开发环境          MDK 5.37
-* 适用平台          MM32F527X_E9P
+* 适用平台          MSPM0G3507
 * 店铺链接          https://seekfree.taobao.com/
 * 
 * 修改记录
 * 日期              作者                备注
-* 2022-08-10        Teternal            first version
+* 2025-06-1        SeekFree            first version
 ********************************************************************************************************************/
 /*********************************************************************************************************************
 * 接线定义：
@@ -68,22 +68,23 @@ void key_scanner (void)
     {
         if(KEY_RELEASE_LEVEL != gpio_get_level(key_index[i]))                   // 按键按下
         {
-            key_press_time[i] ++;
-            if(KEY_LONG_PRESS_PERIOD / scanner_period <= key_press_time[i])
+            key_press_time[i] += scanner_period;
+            if(KEY_LONG_PRESS_PERIOD <= key_press_time[i])
             {
                 key_state[i] = KEY_LONG_PRESS;
             }
         }
         else                                                                    // 按键释放
         {
-            if((KEY_LONG_PRESS != key_state[i]) && (KEY_MAX_SHOCK_PERIOD / scanner_period <= key_press_time[i]))
+            if((KEY_LONG_PRESS != key_state[i]) && (KEY_MAX_SHOCK_PERIOD <= key_press_time[i]) && (KEY_LONG_PRESS_PERIOD > key_press_time[i]))
             {
                 key_state[i] = KEY_SHORT_PRESS;
             }
-            else if(KEY_MAX_SHOCK_PERIOD / scanner_period > key_press_time[i])
+            else
             {
                 key_state[i] = KEY_RELEASE;
             }
+            key_press_time[i] = 0;
         }
     }
 }
@@ -110,10 +111,6 @@ key_state_enum key_get_state (key_index_enum key_n)
 void key_clear_state (key_index_enum key_n)
 {
     key_state[key_n] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[key_n]))
-    {
-        key_press_time[key_n] = 0;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -126,25 +123,9 @@ void key_clear_state (key_index_enum key_n)
 void key_clear_all_state (void)
 {
     key_state[0] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[0]))
-    {
-        key_press_time[0] = 0;
-    }
     key_state[1] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[1]))
-    {
-        key_press_time[1] = 0;
-    }
     key_state[2] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[2]))
-    {
-        key_press_time[2] = 0;
-    }
     key_state[3] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[3]))
-    {
-        key_press_time[3] = 0;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
