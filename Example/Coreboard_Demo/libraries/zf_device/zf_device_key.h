@@ -56,9 +56,9 @@
 // 如果用户可以新增按键 那么需要同步在下方 key_index_enum 枚举体中新增按键
 #define KEY_LIST                    { A30 , A31 , B0 , B1 }
 
-#define KEY_RELEASE_LEVEL           ( GPIO_HIGH )                               // 按键的默认状态 也就是按键释放状态的电平
-#define KEY_MAX_SHOCK_PERIOD        ( 100      )                                // 按键消抖检测时长 单位毫秒 低于这个时长的信号会被认为是杂波抖动
-#define KEY_LONG_PRESS_PERIOD       ( 300      )                                // 最小长按时长 单位毫秒 高于这个时长的信号会被认为是长按动作
+#define KEY_RELEASE_LEVEL           (GPIO_HIGH)                                 // 按键的默认状态 也就是按键释放状态的电平
+#define KEY_MAX_SHOCK_PERIOD        (10       )                                 // 按键消抖检测时长 单位毫秒 低于这个时长的信号会被认为是杂波抖动
+#define KEY_LONG_PRESS_PERIOD       (1000     )                                 // 最小长按时长 单位毫秒 高于这个时长的信号会被认为是长按动作
 
 typedef enum
 {

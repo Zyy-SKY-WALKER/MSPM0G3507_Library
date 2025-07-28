@@ -68,22 +68,23 @@ void key_scanner (void)
     {
         if(KEY_RELEASE_LEVEL != gpio_get_level(key_index[i]))                   // 按键按下
         {
-            key_press_time[i] ++;
-            if(KEY_LONG_PRESS_PERIOD / scanner_period <= key_press_time[i])
+            key_press_time[i] += scanner_period;
+            if(KEY_LONG_PRESS_PERIOD <= key_press_time[i])
             {
                 key_state[i] = KEY_LONG_PRESS;
             }
         }
         else                                                                    // 按键释放
         {
-            if((KEY_LONG_PRESS != key_state[i]) && (KEY_MAX_SHOCK_PERIOD / scanner_period <= key_press_time[i]))
+            if((KEY_LONG_PRESS != key_state[i]) && (KEY_MAX_SHOCK_PERIOD <= key_press_time[i]) && (KEY_LONG_PRESS_PERIOD > key_press_time[i]))
             {
                 key_state[i] = KEY_SHORT_PRESS;
             }
-            else if(KEY_MAX_SHOCK_PERIOD / scanner_period > key_press_time[i])
+            else
             {
                 key_state[i] = KEY_RELEASE;
             }
+            key_press_time[i] = 0;
         }
     }
 }
@@ -110,10 +111,6 @@ key_state_enum key_get_state (key_index_enum key_n)
 void key_clear_state (key_index_enum key_n)
 {
     key_state[key_n] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[key_n]))
-    {
-        key_press_time[key_n] = 0;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -126,25 +123,9 @@ void key_clear_state (key_index_enum key_n)
 void key_clear_all_state (void)
 {
     key_state[0] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[0]))
-    {
-        key_press_time[0] = 0;
-    }
     key_state[1] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[1]))
-    {
-        key_press_time[1] = 0;
-    }
     key_state[2] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[2]))
-    {
-        key_press_time[2] = 0;
-    }
     key_state[3] = KEY_RELEASE;
-    if(KEY_RELEASE_LEVEL == gpio_get_level(key_index[3]))
-    {
-        key_press_time[3] = 0;
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
