@@ -41,17 +41,17 @@
 // *************************** 例程硬件连接说明 ***************************
 // 使用 RT1064 核心板直接接线进行测试
 //      模块管脚            单片机管脚
-//      MOTOR1_PWM1                 C9
-//      MOTOR1_PWM2                 C8
+//      MOTOR1_PWM1                 B13
+//      MOTOR1_PWM2                 B12
 //      GND                 GND
-//      MOTOR2_PWM1                 C7
-//      MOTOR2_PWM2                 C6
+//      MOTOR2_PWM1                 B9
+//      MOTOR2_PWM2                 B8
 //      GND                 GND
-//      MOTOR3_PWM1                 D3
-//      MOTOR3_PWM2                 D2
+//      MOTOR3_PWM1                 A27
+//      MOTOR3_PWM2                 A26
 //      GND                 GND
-//      MOTOR4_PWM1                 C11
-//      MOTOR4_PWM2                 C10
+//      MOTOR4_PWM1                 B11
+//      MOTOR4_PWM2                 B10
 //      GND                 GND
 //      接线端子 +          电池正极
 //      接线端子 -          电池负极
@@ -80,8 +80,8 @@
 #define MOTOR2_PWM1                 (PWM_TIM_A0_CH1_B9)
 #define MOTOR2_PWM2                 (PWM_TIM_A0_CH0_B8)
 
-#define MOTOR3_PWM1                 (PWM_TIM_A1_CH1_B27)
-#define MOTOR3_PWM2                 (PWM_TIM_A1_CH0_B26)
+#define MOTOR3_PWM1                 (PWM_TIM_G7_CH1_A27)
+#define MOTOR3_PWM2                 (PWM_TIM_G7_CH0_A26)
 
 #define MOTOR4_PWM1                 (PWM_TIM_G0_CH1_B11)
 #define MOTOR4_PWM2                 (PWM_TIM_G0_CH0_B10)
