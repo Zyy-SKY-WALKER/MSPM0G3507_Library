@@ -101,7 +101,7 @@ int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
   //debug_init();                   // 调试端口初始化
-    
+    system_delay_ms(200);			//延时启动防止乱码
     // 此处编写用户代码 例如外设初始化代码等
     fifo_init(&uart_data_fifo, FIFO_DATA_8BIT, uart_get_data, 64);              // 初始化 fifo 挂载缓冲区
 
