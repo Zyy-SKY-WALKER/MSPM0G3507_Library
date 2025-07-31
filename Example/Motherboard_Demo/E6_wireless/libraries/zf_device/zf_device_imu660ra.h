@@ -60,7 +60,7 @@
 #include "zf_common_typedef.h"
 
 // IMU660RA_USE_IIC 定义为 0 表示使用硬件 SPI 驱动 定义为 1 表示使用 IIC 驱动
-#define IMU660RA_USE_IIC            ( 1 )
+#define IMU660RA_USE_IIC            ( 0 )
 #if IMU660RA_USE_IIC
 // 当 IMU660RA_USE_IIC 定义为 1 后 需要先编译并下载程序 然后单片机与模块需要断电重启才能正常通讯
 // IMU660RA_USE_IIC 定义为 0 表示使用硬件 IIC 驱动 定义为 1 表示使用软件 IIC 驱动
