@@ -41,11 +41,6 @@
 static  void exti_callbakc_defalut (uint32 event, void *ptr);
         void_callback_uint32_ptr exti_callback_list[GPIO_GROUP_PIN_NUMBER_MAX] = 
 {
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-};
-        void *exti_callback_ptr_list[GPIO_GROUP_PIN_NUMBER_MAX] = 
-{
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut,
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut,
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut,
@@ -54,6 +49,11 @@ static  void exti_callbakc_defalut (uint32 event, void *ptr);
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut,
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut,
     exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut, exti_callbakc_defalut
+};
+        void *exti_callback_ptr_list[GPIO_GROUP_PIN_NUMBER_MAX] = 
+{
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 
 //-------------------------------------------------------------------------------------------------------------------

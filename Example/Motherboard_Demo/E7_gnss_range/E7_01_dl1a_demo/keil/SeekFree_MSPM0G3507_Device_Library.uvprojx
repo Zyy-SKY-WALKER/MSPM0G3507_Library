@@ -10,7 +10,7 @@
       <TargetName>SeekFree_MSPM0G3507_Device_Library</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6180000::V6.18::ARMCLANG</pCCUsed>
+      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>__MSPM0G3507__</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\..\libraries\zf_components;..\user\inc;..\code</IncludePath>
+              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -381,9 +381,6 @@
         </TargetArmAds>
       </TargetOption>
       <Groups>
-        <Group>
-          <GroupName>code</GroupName>
-        </Group>
         <Group>
           <GroupName>user</GroupName>
           <Files>
@@ -783,16 +780,6 @@
               <FilePath>..\..\libraries\zf_device\zf_device_wireless_uart.h</FilePath>
             </File>
             <File>
-              <FileName>zf_device_oled.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_oled.c</FilePath>
-            </File>
-            <File>
-              <FileName>zf_device_oled.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\libraries\zf_device\zf_device_oled.h</FilePath>
-            </File>
-            <File>
               <FileName>zf_device_key.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\libraries\zf_device\zf_device_key.c</FilePath>
@@ -803,6 +790,9 @@
               <FilePath>..\..\libraries\zf_device\zf_device_key.h</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>code</GroupName>
         </Group>
         <Group>
           <GroupName>ti_config</GroupName>
