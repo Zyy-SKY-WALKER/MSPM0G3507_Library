@@ -267,7 +267,6 @@ void pit_ms_init(pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr c
     timer_obj->COUNTERREGS.CTRCTL = GPTIMER_CTRCTL_CM_UP | GPTIMER_CTRCTL_REPEAT_REPEAT_1;
     timer_obj->CLKSEL = GPTIMER_CLKSEL_MFCLK_SEL_ENABLE;
     timer_obj->CLKDIV = 7;
-
 	if(period <= 20)
 	{
 		switch(period)
@@ -299,7 +298,7 @@ void pit_ms_init(pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr c
 	{
 		timer_obj->COMMONREGS.CPS = 250 ;
 	}
-
+	
     if(PIT_TIM_G12 == pit_n)
     {
         timer_obj->COUNTERREGS.LOAD = period * 2 * 250;

@@ -223,9 +223,10 @@ uint8 imu660ra_init (void)
     system_delay_ms(20);                                                        // 等待设备上电成功
 #if IMU660RA_USE_IIC
 #if IMU660RA_USE_SOFT_IIC
+    gpio_init(IMU660RA_CS_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
     soft_iic_init(&imu660ra_iic_struct, IMU660RA_DEV_ADDR, IMU660RA_SOFT_IIC_DELAY, IMU660RA_SCL_PIN, IMU660RA_SDA_PIN);        // 配置 IMU660RA 的 IIC 端口
 #else
-    iic_init(IMU660RA_IIC_INDEX, IMU660RA_DEV_ADDR, IMU660RA_IIC_SPEED, IMU660RA_SCL_PIN, IMU660RA_SDA_PIN);        // 配置 IMU660RA 的 IIC 端口
+    iic_init(IMU660RA_IIC_INDEX, IMU660RA_DEV_ADDR, IMU660RA_IIC_SPEED, IMU660RA_SCL_PIN, IMU660RA_SDA_PIN);        			// 配置 IMU660RA 的 IIC 端口
 #endif
 #else
     spi_init(IMU660RA_SPI, SPI_MODE0, IMU660RA_SPI_SPEED, IMU660RA_SPC_PIN, IMU660RA_SDI_PIN, IMU660RA_SDO_PIN, SPI_CS_NULL);   // 配置 IMU660RA 的 SPI 端口

@@ -60,14 +60,17 @@
 #include "zf_common_typedef.h"
 
 // IMU660RA_USE_IIC 定义为 0 表示使用硬件 SPI 驱动 定义为 1 表示使用 IIC 驱动
-#define IMU660RA_USE_IIC            ( 0 )
+#define IMU660RA_USE_IIC            ( 1 )
 #if IMU660RA_USE_IIC
 // 当 IMU660RA_USE_IIC 定义为 1 后 需要先编译并下载程序 然后单片机与模块需要断电重启才能正常通讯
 // IMU660RA_USE_IIC 定义为 0 表示使用硬件 IIC 驱动 定义为 1 表示使用软件 IIC 驱动
 #define IMU660RA_USE_SOFT_IIC       ( 1 )                                       // 默认使用硬件 SPI 方式驱动
 #if IMU660RA_USE_SOFT_IIC                                                       // 这两段 颜色正常的才是正确的 颜色灰的就是没有用的
 //====================================================软件 IIC 驱动====================================================
-#define IMU660RA_SOFT_IIC_DELAY     ( 10  )                                      // 软件 IIC 的时钟延时周期 数值越小 IIC 通信速率越快
+//====================================================注意 注意 注意   使用IIC模式下不要接CS
+//====================================================注意 注意 注意   使用IIC模式下不要接CS
+//====================================================注意 注意 注意   使用IIC模式下不要接CS
+#define IMU660RA_SOFT_IIC_DELAY     ( 50  )                                      // 软件 IIC 的时钟延时周期 数值越小 IIC 通信速率越快
 #define IMU660RA_SCL_PIN            ( B23 )                                      // 软件 IIC SCL 引脚 连接 IMU660RA 的 SCL 引脚
 #define IMU660RA_SDA_PIN            ( B22 )                                      // 软件 IIC SDA 引脚 连接 IMU660RA 的 SDA 引脚
 //====================================================软件 IIC 驱动====================================================
@@ -114,7 +117,7 @@ typedef enum
 #define IMU660RA_TIMEOUT_COUNT      ( 0x00FF )                                  // IMU660RA 超时计数
 
 //================================================定义 IMU660RA 内部地址================================================
-#define IMU660RA_DEV_ADDR           ( 0x6B )                                    // SA0接地：0x68 SA0上拉：0x69 模块默认上拉
+#define IMU660RA_DEV_ADDR           ( 0x69 )                                    // SA0接地：0x68 SA0上拉：0x69 模块默认上拉
 #define IMU660RA_SPI_W              ( 0x00 )
 #define IMU660RA_SPI_R              ( 0x80 )
 
