@@ -65,7 +65,7 @@ const uint8 gpio_iomux_index[60] =
 // 参数说明     pin         选择的引脚 (可选择范围由 zf_driver_gpio.h 内 gpio_pin_enum 枚举值确定)
 // 参数说明     dat         0：低电平 1：高电平
 // 返回参数     void
-// 使用示例     gpio_set_level(D5, 1);                                          // D5 输出高电平
+// 使用示例     gpio_set_level(A14, 1);                                          // A14 输出高电平
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void gpio_set_level (gpio_pin_enum pin, const uint8 dat)
@@ -82,7 +82,7 @@ void gpio_set_level (gpio_pin_enum pin, const uint8 dat)
 // 函数简介     gpio 电平获取
 // 参数说明     pin         选择的引脚 (可选择范围由 zf_driver_gpio.h 内 gpio_pin_enum 枚举值确定)
 // 返回参数     uint8       引脚当前电平
-// 使用示例     uint8 status = gpio_get_level(D5);                              // 获取 D5 引脚电平
+// 使用示例     uint8 status = gpio_get_level(A14);                              // 获取 A14 引脚电平
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 uint8 gpio_get_level (gpio_pin_enum pin)
@@ -97,7 +97,7 @@ uint8 gpio_get_level (gpio_pin_enum pin)
 // 函数简介     gpio 翻转电平
 // 参数说明     pin         选择的引脚 (可选择范围由 zf_driver_gpio.h 内 gpio_pin_enum 枚举值确定)
 // 返回参数     void
-// 使用示例     gpio_toggle_level(D5);                                          // 翻转 D5 电平
+// 使用示例     gpio_toggle_level(A14);                                          // 翻转 A14 电平
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void gpio_toggle_level (gpio_pin_enum pin)
@@ -121,7 +121,7 @@ void gpio_toggle_level (gpio_pin_enum pin)
 // 参数说明     dir         引脚的方向   输出：GPO   输入：GPI
 // 参数说明     mode        引脚的模式 (可选择范围由 zf_driver_gpio.h 内 gpio_mode_enum 枚举值确定)
 // 返回参数     void
-// 使用示例     gpio_set_dir(D5, GPI, GPI_PULL_UP);                             // 设置 D5 为上拉输入
+// 使用示例     gpio_set_dir(A14, GPI, GPI_PULL_UP);                             // 设置 A14 为上拉输入
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void gpio_set_dir (gpio_pin_enum pin, gpio_dir_enum dir, gpio_mode_enum mode)
@@ -158,7 +158,7 @@ void gpio_set_dir (gpio_pin_enum pin, gpio_dir_enum dir, gpio_mode_enum mode)
 // 参数说明     dat         引脚初始化时设置的电平状态，输出时有效 0：低电平 1：高电平 仅在设置为输出模式时有效
 // 参数说明     mode        引脚的模式 (可选择范围由 zf_driver_gpio.h 内 gpio_mode_enum 枚举值确定)
 // 返回参数     void
-// 使用示例     gpio_init(D1, GPI, GPIO_HIGH, GPI_PULL_UP);
+// 使用示例     gpio_init(A14, GPI, GPIO_HIGH, GPI_PULL_UP);
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void gpio_init (gpio_pin_enum pin, gpio_dir_enum dir, const uint8 dat, gpio_mode_enum mode)
@@ -208,7 +208,7 @@ void gpio_init (gpio_pin_enum pin, gpio_dir_enum dir, const uint8 dat, gpio_mode
 // 参数说明     af          引脚的功能选择 (可选择范围由 zf_driver_gpio.h 内 gpio_af_enum 枚举值确定)
 // 参数说明     mode        引脚的模式 (可选择范围由 zf_driver_gpio.h 内 gpio_mode_enum 枚举值确定)
 // 返回参数     void
-// 使用示例     afio_init(D5, GPO, GPIO_AF0, GPO_AF_PUSH_PULL);
+// 使用示例     afio_init(A14, GPO, GPIO_AF0, GPO_AF_PUSH_PULL);
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void afio_init (gpio_pin_enum pin, gpio_dir_enum dir, gpio_af_enum af, gpio_mode_enum mode)
