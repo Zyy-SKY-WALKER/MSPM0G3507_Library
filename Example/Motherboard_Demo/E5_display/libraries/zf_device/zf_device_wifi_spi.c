@@ -36,11 +36,11 @@
 * 接线定义：
 *                   ------------------------------------
 *                   模块管脚            单片机管脚
-*                   RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN 宏定义
-*                   INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN 宏定义
-*                   CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN 宏定义
+*                   RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN  宏定义
+*                   INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN  宏定义
+*                   CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN   宏定义
 *                   MISO                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MISO_PIN 宏定义
-*                   SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN 宏定义
+*                   SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN  宏定义
 *                   MOSI                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MOSI_PIN 宏定义
 *                   5V                  5V 电源
 *                   GND                 电源地
@@ -221,7 +221,7 @@ static uint8 wifi_spi_set_parameter (wifi_spi_packets_command_enum command, uint
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     WIFI SPI 模块信息获取
 // 参数说明     command         命令类型
-// 参数说明     *buffer         保存接收到的参数地址
+// 参数说明     *read_data         保存接收到的参数地址
 // 参数说明     wait_time       最大等待时间 单位100微妙
 // 返回参数     uint8           状态 0-成功 1-错误
 // 使用示例     内部使用，用户无需关心
@@ -486,7 +486,7 @@ uint8 wifi_spi_udp_send_now (void)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     WIFI SPI 数据块发送函数并同步接收数据
-// 参数说明     *buff           需要发送的数据地址
+// 参数说明     *buffer           需要发送的数据地址
 // 参数说明     length          发送长度
 // 返回参数     uint32          剩余未发送的长度
 // 使用示例     wifi_spi_send_buffer(buffer, 100);
@@ -557,7 +557,7 @@ uint32 wifi_spi_send_buffer (const uint8 *buffer, uint32 length)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     WIFI SPI 读取缓冲区
-// 参数说明     *buff           接收缓冲区
+// 参数说明     *buffer           接收缓冲区
 // 参数说明     length          读取数据长度
 // 返回参数     uint32          实际读取数据长度
 // 使用示例     wifi_spi_read_buffer(buffer, 100);

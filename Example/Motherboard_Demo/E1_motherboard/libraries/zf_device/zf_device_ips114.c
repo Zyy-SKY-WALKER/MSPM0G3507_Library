@@ -35,12 +35,12 @@
 /********************************************************************************************************************
 * 接线定义：
 *                  ------------------------------------
-*                  模块管脚              单片机管脚
+*                  模块管脚            单片机管脚
 *                  SCL                 查看 zf_device_ips114.h 中 IPS114_SCL_PIN 宏定义
 *                  SDA                 查看 zf_device_ips114.h 中 IPS114_SDA_PIN 宏定义
 *                  RST                 查看 zf_device_ips114.h 中 IPS114_RST_PIN 宏定义
-*                  DC                  查看 zf_device_ips114.h 中 IPS114_DC_PIN 宏定义
-*                  CS                  查看 zf_device_ips114.h 中 IPS114_CS_PIN 宏定义
+*                  DC                  查看 zf_device_ips114.h 中 IPS114_DC_PIN  宏定义
+*                  CS                  查看 zf_device_ips114.h 中 IPS114_CS_PIN  宏定义
 *                  BLK                 查看 zf_device_ips114.h 中 IPS114_BLK_PIN 宏定义
 *                  VCC                 3 .3V电源
 *                  GND                 电源地

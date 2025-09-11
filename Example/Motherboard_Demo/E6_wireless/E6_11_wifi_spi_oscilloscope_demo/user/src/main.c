@@ -44,11 +44,11 @@
 //
 // 接入 高速Wifi SPI 模块
 //      模块管脚            单片机管脚
-//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN 宏定义
-//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN 宏定义
-//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN 宏定义
+//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN  宏定义
+//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN  宏定义
+//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN   宏定义
 //      MISO                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MISO_PIN 宏定义
-//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN 宏定义
+//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN  宏定义
 //      MOSI                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MOSI_PIN 宏定义
 //      5V                  5V 电源
 //      GND                 电源地
@@ -106,7 +106,7 @@
 int main(void)
 {
     clock_init(SYSTEM_CLOCK_80M); 	// 时钟配置及系统初始化<务必保留>
-    debug_init();                          // 调试串口信息初始化
+    debug_init();                   // 调试串口信息初始化
     
     // 此处编写用户代码 例如外设初始化代码等
 

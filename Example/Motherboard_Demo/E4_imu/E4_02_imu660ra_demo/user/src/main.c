@@ -43,16 +43,16 @@
 //      直接将下载器正确连接在核心板的调试下载接口即可
 // 使用 USB-TTL 模块连接
 //      模块管脚            单片机管脚
-//      USB-TTL-RX          查看 zf_common_debug.h 文件中 DEBUG_UART_TX_PIN 宏定义的引脚 默认 P00_0
-//      USB-TTL-TX          查看 zf_common_debug.h 文件中 DEBUG_UART_RX_PIN 宏定义的引脚 默认 P00_1
+//      USB-TTL-RX          查看 zf_common_debug.h 文件中 DEBUG_UART_TX_PIN 宏定义的引脚
+//      USB-TTL-TX          查看 zf_common_debug.h 文件中 DEBUG_UART_RX_PIN 宏定义的引脚
 //      USB-TTL-GND         核心板电源地 GND
 //      USB-TTL-3V3         核心板 3V3 电源
 // 接入 imu660ra
 //      模块管脚            单片机管脚
-//      SCL/SPC             查看 zf_device_imu660ra.h 中 IMU6660RA_SPC_PIN 宏定义 默认 P15_2
-//      SDA/DSI             查看 zf_device_imu660ra.h 中 IMU6660RA_SDI_PIN 宏定义 默认 P15_1
-//      SA0/SDO             查看 zf_device_imu660ra.h 中 IMU6660RA_SDO_PIN 宏定义 默认 P15_0
-//      CS                  查看 zf_device_imu660ra.h 中 IMU6660RA_CS_PIN  宏定义 默认 P15_3
+//      SCL/SPC             查看 zf_device_imu660ra.h 中 IMU6660RA_SPC_PIN 宏定义
+//      SDA/DSI             查看 zf_device_imu660ra.h 中 IMU6660RA_SDI_PIN 宏定义
+//      SA0/SDO             查看 zf_device_imu660ra.h 中 IMU6660RA_SDO_PIN 宏定义
+//      CS                  查看 zf_device_imu660ra.h 中 IMU6660RA_CS_PIN  宏定义
 //      GND                 电源地 GND
 //      3V3                 电源 3V3
 
@@ -72,20 +72,20 @@
 int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-		// 此处编写用户代码 例如外设初始化代码等
+    debug_init();					// 调试串口信息初始化
+	// 此处编写用户代码 例如外设初始化代码等
 
     // 初始化陀螺仪
     while(1)
     {
         if(imu660ra_init())
         {
-           printf("\r\n imu660ra init error.");                                 // imu660ra 初始化失败
+			printf("\r\n imu660ra init error.");                              	// imu660ra 初始化失败
         }
         else
         {
-					 printf("\r\n imu660ra init success.");                                 // imu660ra 初始化成功
-           break;
+			printf("\r\n imu660ra init success.");                            	// imu660ra 初始化成功
+			break;
         }
 
     }

@@ -86,8 +86,8 @@ uint8 gpio_status;
 int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-		// 此处编写用户代码 例如外设初始化代码等
+    debug_init();					// 调试串口信息初始化
+	// 此处编写用户代码 例如外设初始化代码等
     adc_init(ADC_CHANNEL1, ADC_12BIT);                                          // 初始化对应 ADC 通道为对应精度
     adc_init(ADC_CHANNEL2, ADC_12BIT);                                          // 初始化对应 ADC 通道为对应精度
     adc_init(ADC_CHANNEL3, ADC_12BIT);                                          // 初始化对应 ADC 通道为对应精度
@@ -97,7 +97,7 @@ int main (void)
     while(true)
     {
         // 此处编写需要循环执行的代码
-				for(channel_index = 0; channel_index < CHANNEL_NUMBER; channel_index ++)
+		for(channel_index = 0; channel_index < CHANNEL_NUMBER; channel_index ++)
         {
             printf(
                 "ADC channel %d convert data is %d.\r\n",

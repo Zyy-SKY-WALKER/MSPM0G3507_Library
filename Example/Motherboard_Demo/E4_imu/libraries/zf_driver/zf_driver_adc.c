@@ -42,7 +42,7 @@ static  uint8       adc_resolution[2]   = {ADC_12BIT, ADC_12BIT};               
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     adc 转换数据
-// 参数说明     ch              选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
+// 参数说明     adc_pin         选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
 // 返回参数     uint16          转换的 adc 值
 // 使用示例     adc_convert(ADC1_CH0_A0);
 // 备注信息     
@@ -74,7 +74,7 @@ uint16 adc_convert (adc_pin_enum adc_pin)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     adc 均值滤波转换
-// 参数说明     ch              选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
+// 参数说明     adc_pin         选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
 // 参数说明     count           均值滤波次数
 // 返回参数     uint16          转换的 adc 值
 // 使用示例     adc_mean_filter_convert(ADC1_CH0_A0, 5);                        // 采集5次 然后返回平均值
@@ -95,7 +95,7 @@ uint16 adc_mean_filter_convert (adc_pin_enum adc_pin, const uint8 count)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     adc 初始化
-// 参数说明     ch              选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
+// 参数说明     adc_pin         选择 adc 通道 (详见 zf_driver_adc.h 中枚举 adc_pin_enum 定义)
 // 参数说明     resolution      选择选择通道分辨率(如果同一个 adc 模块初始化时设置了不同的分辨率 则最后一个初始化的分辨率生效)
 // 返回参数     void
 // 使用示例     adc_init(ADC1_CH0_A0, ADC_8BIT);                                // 初始化 A0 为 ADC1 的 channel0 输入功能 分辨率为8位

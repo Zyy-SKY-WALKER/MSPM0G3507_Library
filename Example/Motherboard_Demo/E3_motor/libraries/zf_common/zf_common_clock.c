@@ -40,7 +40,7 @@
 
 uint32 system_clock = SYSTEM_CLOCK_80M;                                         // 系统时钟信息
 uint32 bus_clock = SYSTEM_CLOCK_80M / 2;                                        // 总线时钟信息
-    extern void system_delay_init (void);
+extern void system_delay_init (void);
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     核心时钟恢复初始设置
 // 参数说明     void
@@ -114,7 +114,7 @@ static void clock_set_freq (uint32 clock)
 void clock_init (uint32 clock)
 {
     clock_reset();
-		SYSCFG_DL_init();
+	SYSCFG_DL_init();
     interrupt_init();
     system_delay_init();
 }

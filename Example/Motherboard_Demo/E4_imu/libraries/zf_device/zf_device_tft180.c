@@ -39,9 +39,9 @@
 *                   SCL                  查看 zf_device_tft180.h 中 TFT180_SCL_PIN 宏定义
 *                   SDA                  查看 zf_device_tft180.h 中 TFT180_SDA_PIN 宏定义
 *                   RES                  查看 zf_device_tft180.h 中 TFT180_RES_PIN 宏定义
-*                   DC                   查看 zf_device_tft180.h 中 TFT180_DC_PIN 宏定义
-*                   CS                   查看 zf_device_tft180.h 中 TFT180_CS_PIN 宏定义
-*                   BL                   查看 zf_device_tft180.h 中 TFT180_BL_PIN 宏定义
+*                   DC                   查看 zf_device_tft180.h 中 TFT180_DC_PIN  宏定义
+*                   CS                   查看 zf_device_tft180.h 中 TFT180_CS_PIN  宏定义
+*                   BL                   查看 zf_device_tft180.h 中 TFT180_BL_PIN  宏定义
 *                   VCC                 3.3V电源
 *                   GND                 电源地
 *                   最大分辨率160*128

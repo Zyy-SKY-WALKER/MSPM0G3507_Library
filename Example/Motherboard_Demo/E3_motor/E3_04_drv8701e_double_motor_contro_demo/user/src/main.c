@@ -39,24 +39,24 @@
 // 第二步 project->clean  等待下方进度条走完
 
 // *************************** 例程硬件连接说明 ***************************
-// 使用 RT1064 核心板直接接线进行测试
+// 使用 MSPM0G3507 核心板直接接线进行测试
 //      模块管脚            单片机管脚
-//      MOTOR1_DIR                B13
-//      MOTOR1_PWM                B12
+//      MOTOR1_DIR          B13
+//      MOTOR1_PWM          B12
 //      GND                 GND   
-//      MOTOR2_DIR                B9
-//      MOTOR2_PWM                B8
+//      MOTOR2_DIR          B9
+//      MOTOR2_PWM          B8
 //      GND                 GND   
-//      MOTOR3_DIR                A27
-//      MOTOR3_PWM                A26
+//      MOTOR3_DIR          A27
+//      MOTOR3_PWM          A26
 //      GND                 GND   
-//      MOTOR4_DIR                B11
-//      MOTOR4_PWM                B10
+//      MOTOR4_DIR          B11
+//      MOTOR4_PWM          B10
 //      GND                 GND
 //      接线端子 +          电池正极
 //      接线端子 -          电池负极
 // 
-// 使用 RT1064 学习主板进行测试
+// 使用 MSPM0G3507 学习主板进行测试
 //      将模块的电源接线端子与主板的驱动供电端子连接
 //      将模块的信号接口使用配套灰排线与主板电机信号接口连接 请注意接线方向 不确定方向就是用万用表确认一下 引脚参考上方核心板连接
 //      将主板与供电电池正确连接
@@ -91,67 +91,67 @@ bool dir = true;
 
 int main(void)
 {
-    clock_init(SYSTEM_CLOCK_80M);  // 不可删除
+    clock_init(SYSTEM_CLOCK_80M);  	// 不可删除
     debug_init();                   // 调试端口初始化
         
     system_delay_ms(300);           //等待主板其他外设上电完成
     
-    gpio_init(MOTOR1_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                            // GPIO 初始化为输出 默认上拉输出高
-    pwm_init(MOTOR1_PWM, 17000, 0);                                                  // PWM 通道初始化频率 17KHz 占空比初始为 0
-    
-    gpio_init(MOTOR2_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                            // GPIO 初始化为输出 默认上拉输出高
-    pwm_init(MOTOR2_PWM, 17000, 0);                                                  // PWM 通道初始化频率 17KHz 占空比初始为 0
-
-    gpio_init(MOTOR3_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                            // GPIO 初始化为输出 默认上拉输出高
-    pwm_init(MOTOR3_PWM, 17000, 0);                                                  // PWM 通道初始化频率 17KHz 占空比初始为 0
-
-    gpio_init(MOTOR4_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                            // GPIO 初始化为输出 默认上拉输出高
-    pwm_init(MOTOR4_PWM, 17000, 0);                                                  // PWM 通道初始化频率 17KHz 占空比初始为 0
+    gpio_init(MOTOR1_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                          	// GPIO 初始化为输出 默认上拉输出高
+    pwm_init(MOTOR1_PWM, 17000, 0);                                                	// PWM 通道初始化频率 17KHz 占空比初始为 0
+		
+    gpio_init(MOTOR2_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                          	// GPIO 初始化为输出 默认上拉输出高
+    pwm_init(MOTOR2_PWM, 17000, 0);                                                	// PWM 通道初始化频率 17KHz 占空比初始为 0
+	
+    gpio_init(MOTOR3_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                          	// GPIO 初始化为输出 默认上拉输出高
+    pwm_init(MOTOR3_PWM, 17000, 0);                                                	// PWM 通道初始化频率 17KHz 占空比初始为 0
+	
+    gpio_init(MOTOR4_DIR, GPO, GPIO_HIGH, GPO_PUSH_PULL);                          	// GPIO 初始化为输出 默认上拉输出高
+    pwm_init(MOTOR4_PWM, 17000, 0);                                                	// PWM 通道初始化频率 17KHz 占空比初始为 0
 
     interrupt_global_enable(0);
     
     while(1)
     {
-        if(duty >= 0)                                                           // 正转
+        if(duty >= 0)                                                           	// 正转
         {
-            gpio_set_level(MOTOR1_DIR, GPIO_HIGH);                                         // DIR输出高电平
-            pwm_set_duty(MOTOR1_PWM, duty * (PWM_DUTY_MAX / 100));                   // 计算占空比
+            gpio_set_level(MOTOR1_DIR, GPIO_HIGH);                                 	// DIR输出高电平
+            pwm_set_duty(MOTOR1_PWM, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
 
-            gpio_set_level(MOTOR2_DIR, GPIO_HIGH);                                         // DIR输出高电平
-            pwm_set_duty(MOTOR2_PWM, duty * (PWM_DUTY_MAX / 100));                   // 计算占空比
+            gpio_set_level(MOTOR2_DIR, GPIO_HIGH);                                 	// DIR输出高电平
+            pwm_set_duty(MOTOR2_PWM, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
 
-            gpio_set_level(MOTOR3_DIR, GPIO_HIGH);                                         // DIR输出高电平
-            pwm_set_duty(MOTOR3_PWM, duty * (PWM_DUTY_MAX / 100));                   // 计算占空比
+            gpio_set_level(MOTOR3_DIR, GPIO_HIGH);                                  // DIR输出高电平
+            pwm_set_duty(MOTOR3_PWM, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
 
-            gpio_set_level(MOTOR4_DIR, GPIO_HIGH);                                         // DIR输出高电平
-            pwm_set_duty(MOTOR4_PWM, duty * (PWM_DUTY_MAX / 100));                   // 计算占空比
+            gpio_set_level(MOTOR4_DIR, GPIO_HIGH);                                  // DIR输出高电平
+            pwm_set_duty(MOTOR4_PWM, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
         }
-        else                                                                    // 反转
+        else                                                                    	// 反转
         {
-            gpio_set_level(MOTOR1_DIR, GPIO_LOW);                                          // DIR输出低电平
-            pwm_set_duty(MOTOR1_PWM, (-duty) * (PWM_DUTY_MAX / 100));                // 计算占空比
+            gpio_set_level(MOTOR1_DIR, GPIO_LOW);                                   // DIR输出低电平
+            pwm_set_duty(MOTOR1_PWM, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
             
-            gpio_set_level(MOTOR2_DIR, GPIO_LOW);                                          // DIR输出低电平
-            pwm_set_duty(MOTOR2_PWM, (-duty) * (PWM_DUTY_MAX / 100));                // 计算占空比
+            gpio_set_level(MOTOR2_DIR, GPIO_LOW);                                   // DIR输出低电平
+            pwm_set_duty(MOTOR2_PWM, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
             
-            gpio_set_level(MOTOR3_DIR, GPIO_LOW);                                          // DIR输出低电平
-            pwm_set_duty(MOTOR3_PWM, (-duty) * (PWM_DUTY_MAX / 100));                // 计算占空比
+            gpio_set_level(MOTOR3_DIR, GPIO_LOW);                                   // DIR输出低电平
+            pwm_set_duty(MOTOR3_PWM, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
             
-            gpio_set_level(MOTOR4_DIR, GPIO_LOW);                                          // DIR输出低电平
-            pwm_set_duty(MOTOR4_PWM, (-duty) * (PWM_DUTY_MAX / 100));                // 计算占空比
+            gpio_set_level(MOTOR4_DIR, GPIO_LOW);                                   // DIR输出低电平
+            pwm_set_duty(MOTOR4_PWM, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
 
         }
-        if(dir)                                                                 // 根据方向判断计数方向 本例程仅作参考
-        {
-            duty ++;                                                            // 正向计数
-            if(duty >= MAX_DUTY)                                                // 达到最大值
-            dir = false;                                                        // 变更计数方向
-        }
-        else
-        {
-            duty --;                                                            // 反向计数
-            if(duty <= -MAX_DUTY)                                               // 达到最小值
-            dir = true;                                                         // 变更计数方向
+        if(dir)                                                                 	// 根据方向判断计数方向 本例程仅作参考
+        {	
+            duty ++;                                                            	// 正向计数
+            if(duty >= MAX_DUTY)                                                	// 达到最大值
+            dir = false;                                                        	// 变更计数方向
+        }	
+        else	
+        {	
+            duty --;                                                            	// 反向计数
+            if(duty <= -MAX_DUTY)                                               	// 达到最小值
+            dir = true;                                                         	// 变更计数方向
         }
         system_delay_ms(50);
     }

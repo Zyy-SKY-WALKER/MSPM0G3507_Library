@@ -44,11 +44,11 @@
 //
 // 接入 高速Wifi SPI 模块
 //      模块管脚            单片机管脚
-//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN 宏定义
-//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN 宏定义
-//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN 宏定义
+//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN  宏定义
+//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN  宏定义
+//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN   宏定义
 //      MISO                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MISO_PIN 宏定义
-//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN 宏定义
+//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN  宏定义
 //      MOSI                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MOSI_PIN 宏定义
 //      5V                  5V 电源
 //      GND                 电源地
@@ -93,7 +93,7 @@
 // **************************** 代码区域 ****************************
 
 #define WIFI_SSID_TEST          "tanyumin"
-#define WIFI_PASSWORD_TEST      "tanyumin1"                      // 如果需要连接的WIFI 没有密码 替换为 NULL
+#define WIFI_PASSWORD_TEST      "tanyumin1"                     // 如果需要连接的WIFI 没有密码 替换为 NULL
 #define TCP_TARGET_IP           "192.168.137.1"                 // 连接目标的 IP
 #define TCP_TARGET_PORT         "8086"                          // 连接目标的端口
 #define WIFI__LOCAL_PORT        "6666"                          // 本机的端口 0：随机  可设置范围2048-65535  默认 6666

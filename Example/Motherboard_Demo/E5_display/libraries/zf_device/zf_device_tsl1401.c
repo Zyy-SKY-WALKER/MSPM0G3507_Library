@@ -35,9 +35,9 @@
 /*********************************************************************************************************************
 * 接线定义：
 *                  ------------------------------------
-*                  模块管脚             单片机管脚
-*                  CLK                查看 zf_device_tsl1401.h 中 TSL1401_CLK_PIN 宏定义
-*                  SI                 查看 zf_device_tsl1401.h 中 TSL1401_SI_PIN 宏定义
+*                  模块管脚           单片机管脚
+*                  CLK                查看 zf_device_tsl1401.h 中 TSL1401_CLK_PIN 	  宏定义
+*                  SI                 查看 zf_device_tsl1401.h 中 TSL1401_SI_PIN      宏定义
 *                  AO[x]              查看 zf_device_tsl1401.h 中 TSL1401_AO_PIN_LIST 宏定义
 *                  VCC                3.3V电源
 *                  GND                电源地
@@ -54,7 +54,7 @@
 
 adc_pin_enum tsl1401_ao_list[TSL1401_AO_PIN_MAX] = TSL1401_AO_PIN_LIST;
 
-uint16 tsl1401_data[TSL1401_AO_PIN_MAX][TSL1401_DATA_LEN];                                       // TSL1401 数据存放数组
+uint16 tsl1401_data[TSL1401_AO_PIN_MAX][TSL1401_DATA_LEN];                      // TSL1401 数据存放数组
 
 static uint8 tsl1401_init_state = 0;                                            // TSL1401 初始化标志位
 vuint8 tsl1401_finish_flag;                                                     // TSL1401 数据准备就绪标志位
@@ -70,7 +70,7 @@ void tsl1401_collect_pit_handler (uint32 event, void *ptr)
 {
 //    *((uint8 *)ptr) = 1;
 
-	    if(!tsl1401_init_state) return;
+	if(!tsl1401_init_state) return;
 
     uint8 i = 0,j = 0;
 

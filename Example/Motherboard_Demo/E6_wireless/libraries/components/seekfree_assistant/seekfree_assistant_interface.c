@@ -1,10 +1,10 @@
 /*********************************************************************************************************************
-* RT1064DVL6A Opensourec Library 即（RT1064DVL6A 开源库）是一个基于官方 SDK 接口的第三方开源库
+* MSPM0G3507 Opensourec Library 即（MSPM0G3507 开源库）是一个基于官方 SDK 接口的第三方开源库
 * Copyright (c) 2022 SEEKFREE 逐飞科技
 * 
-* 本文件是 RT1064DVL6A 开源库的一部分
+* 本文件是 MSPM0G3507 开源库的一部分
 * 
-* RT1064DVL6A 开源库 是免费软件
+* MSPM0G3507 开源库 是免费软件
 * 您可以根据自由软件基金会发布的 GPL（GNU General Public License，即 GNU通用公共许可证）的条款
 * 即 GPL 的第3版（即 GPL3.0）或（您选择的）任何后来的版本，重新发布和/或修改它
 * 
@@ -24,8 +24,8 @@
 * 文件名称          seekfree_assistant_interface
 * 公司名称          成都逐飞科技有限公司
 * 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
-* 开发环境          IAR 8.32.4 or MDK 5.33
-* 适用平台          RT1064DVL6A
+* 开发环境          MDK 5.37
+* 适用平台          MSPM0G3507
 * 店铺链接          https://seekfree.taobao.com/
 * 
 * 修改记录
@@ -79,7 +79,7 @@ ZF_WEAK uint32 seekfree_assistant_receive (uint8 *buff, uint32 length)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     逐飞助手接口 初始化
-// 参数说明
+// 参数说明		transfer_device		逐飞助手接口结构体
 // 返回参数     void
 // 使用示例     seekfree_assistant_interface_init(SEEKFREE_ASSISTANT_WIFI_SPI); 使用高速WIFI SPI模块进行数据收发
 // 备注         需要自行调用设备的初始化，例如使用无线转串口进行数据的收发，则需要自行调用无线转串口的初始化，然后再调用seekfree_assistant_interface_init完成逐飞助手的接口初始化

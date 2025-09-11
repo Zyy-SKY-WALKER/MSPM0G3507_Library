@@ -40,7 +40,7 @@
 *                   SCL/SPC           查看 zf_device_imu660ra.h 中 IMU660RA_SPC_PIN 宏定义
 *                   SDA/DSI           查看 zf_device_imu660ra.h 中 IMU660RA_SDI_PIN 宏定义
 *                   SA0/SDO           查看 zf_device_imu660ra.h 中 IMU660RA_SDO_PIN 宏定义
-*                   CS                查看 zf_device_imu660ra.h 中 IMU660RA_CS_PIN 宏定义
+*                   CS                查看 zf_device_imu660ra.h 中 IMU660RA_CS_PIN 	宏定义
 *                   VCC               3.3V电源
 *                   GND               电源地
 *                   其余引脚悬空
@@ -70,9 +70,9 @@
 //====================================================注意 注意 注意   使用IIC模式下不要接CS
 //====================================================注意 注意 注意   使用IIC模式下不要接CS
 //====================================================注意 注意 注意   使用IIC模式下不要接CS
-#define IMU660RA_SOFT_IIC_DELAY     ( 50  )                                      // 软件 IIC 的时钟延时周期 数值越小 IIC 通信速率越快
-#define IMU660RA_SCL_PIN            ( B23 )                                      // 软件 IIC SCL 引脚 连接 IMU660RA 的 SCL 引脚
-#define IMU660RA_SDA_PIN            ( B22 )                                      // 软件 IIC SDA 引脚 连接 IMU660RA 的 SDA 引脚
+#define IMU660RA_SOFT_IIC_DELAY     ( 50  )                                     // 软件 IIC 的时钟延时周期 数值越小 IIC 通信速率越快
+#define IMU660RA_SCL_PIN            ( B23 )                                     // 软件 IIC SCL 引脚 连接 IMU660RA 的 SCL 引脚
+#define IMU660RA_SDA_PIN            ( B22 )                                     // 软件 IIC SDA 引脚 连接 IMU660RA 的 SDA 引脚
 //====================================================软件 IIC 驱动====================================================
 #else
 //====================================================硬件 IIC 驱动====================================================
@@ -84,11 +84,11 @@
 #endif
 #else
 //====================================================硬件 SPI 驱动====================================================
-#define IMU660RA_SPI_SPEED          ( 8 * 1000 * 1000 )                       // 硬件 SPI 速率
-#define IMU660RA_SPI                ( SPI_1         )                         // 硬件 SPI 号
-#define IMU660RA_SPC_PIN            ( SPI1_SCK_B23  )                         // 硬件 SPI SCK 引脚
-#define IMU660RA_SDI_PIN            ( SPI1_MOSI_B22 )                         // 硬件 SPI MOSI 引脚
-#define IMU660RA_SDO_PIN            ( SPI1_MISO_B21 )                         // 硬件 SPI MISO 引脚
+#define IMU660RA_SPI_SPEED          ( 8 * 1000 * 1000 )                       	// 硬件 SPI 速率
+#define IMU660RA_SPI                ( SPI_1         )                         	// 硬件 SPI 号
+#define IMU660RA_SPC_PIN            ( SPI1_SCK_B23  )                         	// 硬件 SPI SCK 引脚
+#define IMU660RA_SDI_PIN            ( SPI1_MOSI_B22 )                         	// 硬件 SPI MOSI 引脚
+#define IMU660RA_SDO_PIN            ( SPI1_MISO_B21 )                         	// 硬件 SPI MISO 引脚
 //====================================================硬件 SPI 驱动====================================================
 #endif
 #define IMU660RA_CS_PIN             ( B19 )                                     // 硬件 SPI CS 片选引脚

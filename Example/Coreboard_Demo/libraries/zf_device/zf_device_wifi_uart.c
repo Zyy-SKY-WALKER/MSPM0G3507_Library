@@ -36,8 +36,8 @@
 * 接线定义：
 *                   ------------------------------------
 *                   模块管脚            单片机管脚
-*                   RX                  查看 zf_device_wifi_uart.h 中 WIFI_UART_RX_PINx 宏定义
-*                   TX                  查看 zf_device_wifi_uart.h 中 WIFI_UART_TX_PINx 宏定义
+*                   RX                  查看 zf_device_wifi_uart.h 中 WIFI_UART_RX_PINx  宏定义
+*                   TX                  查看 zf_device_wifi_uart.h 中 WIFI_UART_TX_PINx  宏定义
 *                   RTS                 查看 zf_device_wifi_uart.h 中 WIFI_UART_RTS_PINx 宏定义
 *                   RST                 查看 zf_device_wifi_uart.h 中 WIFI_UART_RST_PINx 宏定义
 *                   VCC                 5V 电源
@@ -189,7 +189,7 @@ static uint8 wifi_uart_get_version (void)
 
 //--------------------------------------------------------------------------------------------------
 // 函数简介     模块回显设置
-// 参数说明     model           0:关闭模块的回写功能  其他：开启模块回写
+// 参数说明     model           "0":关闭模块的回写功能  其他：开启模块回写
 // 返回参数     uint8           0：成功   1：失败
 // 使用示例     wifi_uart_echo_set("1");//开启模块回写功能
 // 备注信息     内部调用
@@ -360,7 +360,7 @@ static uint8 wifi_uart_get_information (void)
 // 参数说明     pass_word       WiFi密码
 // 参数说明     model           0:查询WiFi连接情况   其他：连接WiFi
 // 返回参数     uint8           0：成功   1：失败
-// 使用示例     wifi_uart_get_or_connect_wifi("WiFi_name", "Pass_word", 1);
+// 使用示例     wifi_uart_get_or_connect_wifi("WiFi_name", "Pass_word");
 // 备注信息     内部调用
 //--------------------------------------------------------------------------------------------------
 static uint8 wifi_uart_set_wifi (char *wifi_ssid, char *pass_word)
@@ -392,9 +392,9 @@ static uint8 wifi_uart_set_wifi (char *wifi_ssid, char *pass_word)
 
 //--------------------------------------------------------------------------------------------------
 // 函数简介     上电是否自动连接WiFi
-// 参数说明     model           0:上电不自动连接wifi   其他：上电自动连接wifi
+// 参数说明     model           "0":上电不自动连接wifi   其他：上电自动连接wifi
 // 返回参数     uint8           0：成功   1：失败
-// 使用示例     wifi_uart_auto_connect_wifi(0); //上电不自动连接wifi
+// 使用示例     wifi_uart_auto_connect_wifi("0"); //上电不自动连接wifi
 // 备注信息     内部调用
 //--------------------------------------------------------------------------------------------------
 static uint8 wifi_uart_auto_connect_wifi (char *model)
@@ -413,7 +413,7 @@ static uint8 wifi_uart_auto_connect_wifi (char *model)
 
 //--------------------------------------------------------------------------------------------------
 // 函数简介     设置连接模式
-// 参数说明     model           0: 单连接模式     1：多连接模式
+// 参数说明     model           "0": 单连接模式     "1"：多连接模式
 // 返回参数     uint8           0：成功   1：失败
 // 使用示例     wifi_uart_set_connect_model("1");
 // 备注信息     内部调用
@@ -434,8 +434,8 @@ static uint8 wifi_uart_set_connect_model (char *model)
 
 //--------------------------------------------------------------------------------------------------
 // 函数简介     设置传输模式
-// 参数说明     model           – 0: 普通传输模式     IP断开后不重新连接
-//                              – 1: Wi-Fi 透传接收模式，仅支持 TCP 单连接、UDP 固定通信对端、SSL 单连接的情况     IP断开后会不断尝试重新连接
+// 参数说明     model           – "0": 普通传输模式     IP断开后不重新连接
+//                              – "1": Wi-Fi 透传接收模式，仅支持 TCP 单连接、UDP 固定通信对端、SSL 单连接的情况     IP断开后会不断尝试重新连接
 // 返回参数     uint8           0：成功   1：失败
 // 使用示例     wifi_uart_set_transfer_model("1");
 // 备注信息     内部调用
@@ -592,6 +592,7 @@ uint8 wifi_uart_exit_serianet (void)
 // 函数简介     建立TCP连接
 // 参数说明     ip              远端 IPv4 地址、IPv6 地址，或域名
 // 参数说明     port            远端端口值
+// 参数说明     mode            传输模式  0-命令模式    1-透传模式
 // 返回参数     uint8           0：成功   1：失败
 // 使用示例     wifi_uart_connect_tcp_servers("192.168.101.110", "8080");
 // 备注信息     如果总是连接不上电脑的TCP服务器 可以尝试使用网线连接电脑

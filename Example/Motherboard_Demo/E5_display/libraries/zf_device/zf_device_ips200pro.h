@@ -38,14 +38,14 @@
 #include "zf_common_typedef.h"
 
 
-#define IPS200PRO_SPI_SPEED      			    			( 30*1000*1000      	)   // 硬件 SPI 速率
-#define IPS200PRO_SPI_INDEX                	    ( SPI_0         			)   // 硬件 SPI 号
-#define IPS200PRO_CLK_PIN                  	    ( SPI0_SCK_A12  			)   // 硬件 SPI SCK 引脚
-#define IPS200PRO_MOSI_PIN                 	    ( SPI0_MOSI_A9  			)   // 硬件 SPI MOSI 引脚
+#define IPS200PRO_SPI_SPEED      			    ( 30*1000*1000      	)   // 硬件 SPI 速率
+#define IPS200PRO_SPI_INDEX                	    ( SPI_0         		)   // 硬件 SPI 号
+#define IPS200PRO_CLK_PIN                  	    ( SPI0_SCK_A12  		)   // 硬件 SPI SCK 引脚
+#define IPS200PRO_MOSI_PIN                 	    ( SPI0_MOSI_A9  		)   // 硬件 SPI MOSI 引脚
 #define IPS200PRO_MISO_PIN                 	    ( SPI0_MISO_A13   		)   // 硬件 SPI MISO 引脚  TFT没有MISO引脚，但是这里任然需要定义，在spi的初始化时需要使用
-#define IPS200PRO_RST_PIN                  	    ( A7             			)   // 液晶复位引脚定义
+#define IPS200PRO_RST_PIN                  	    ( A7             		)   // 液晶复位引脚定义
 #define IPS200PRO_INT_PIN                  	    ( A15             		)   // 液晶命令位引脚定义
-#define IPS200PRO_CS_PIN                   	    ( A8             			)   // CS 片选引脚
+#define IPS200PRO_CS_PIN                   	    ( A8             		)   // CS 片选引脚
 
 #define IPS200PRO_WAIT_TIME                	    ( 900               	)   // 通讯等待时长，内部是软件延时，因此这里没有时间单位
 #define IPS200PRO_CRC_ENABLE                    ( 0                 	)   // 0：关闭CRC模式（通常关闭即可） 1：使能CRC模式，在传输的数据包中加入CRC校验，能提高屏幕的抗干扰的能力
@@ -118,23 +118,23 @@ typedef enum
 typedef enum	
 {	
     IPS200PRO_PORTRAIT           = 0x01,    // 竖屏模式
-    IPS200PRO_PORTRAIT_180       = 0x02,		// 竖屏模式  旋转180
-    IPS200PRO_CROSSWISE          = 0x03,		// 横屏模式
-    IPS200PRO_CROSSWISE_180      = 0x04,		// 横屏模式  旋转180
+    IPS200PRO_PORTRAIT_180       = 0x02,	// 竖屏模式  旋转180
+    IPS200PRO_CROSSWISE          = 0x03,	// 横屏模式
+    IPS200PRO_CROSSWISE_180      = 0x04,	// 横屏模式  旋转180
 }ips200pro_display_direction_enum;	
 	
 typedef enum	
 {	
-    IPS200PRO_TITLE_LEFT         = 0x00,		// 页面标题显示在左侧 如果不需要显示标题，则将标题高度设置为0即可
-    IPS200PRO_TITLE_RIGHT        = 0x01,		// 页面标题显示在右侧
-    IPS200PRO_TITLE_TOP          = 0x02,		// 页面标题显示在上侧
-    IPS200PRO_TITLE_BOTTOM       = 0x03,		// 页面标题显示在底侧
+    IPS200PRO_TITLE_LEFT         = 0x00,	// 页面标题显示在左侧 如果不需要显示标题，则将标题高度设置为0即可
+    IPS200PRO_TITLE_RIGHT        = 0x01,	// 页面标题显示在右侧
+    IPS200PRO_TITLE_TOP          = 0x02,	// 页面标题显示在上侧
+    IPS200PRO_TITLE_BOTTOM       = 0x03,	// 页面标题显示在底侧
 }ips200pro_title_position_enum;	
 	
 typedef enum	
 {	
-    IPS200PRO_CALENDAR_CHINESE   = 0x01,		// 日历使用中文显示  仅16、20、24号字体支持中文显示
-    IPS200PRO_CALENDAR_ENGLISH   = 0x02,		// 日历使用英文显示
+    IPS200PRO_CALENDAR_CHINESE   = 0x01,	// 日历使用中文显示  仅16、20、24号字体支持中文显示
+    IPS200PRO_CALENDAR_ENGLISH   = 0x02,	// 日历使用英文显示
 }ips200pro_calendar_mode_enum;
 
 typedef enum
@@ -152,8 +152,8 @@ typedef enum
 
 typedef enum
 {
-    IPS200PRO_FORMAT_GBK         = 0x01,		// GBK编码，开源库默认的文件都是GBK编码
-    IPS200PRO_FORMAT_UTF8        = 0x02,		// UTF-8编码
+    IPS200PRO_FORMAT_GBK         = 0x01,	// GBK编码，开源库默认的文件都是GBK编码
+    IPS200PRO_FORMAT_UTF8        = 0x02,	// UTF-8编码
 }ips200pro_format_enum;
 
 typedef enum
@@ -178,18 +178,18 @@ typedef struct
 // 图像叠加线条 uint16类型的线条结构体
 typedef struct	
 {	
-    uint16 x;                        	    	// 点的横坐标
-    uint16 y;                        	    	// 点的纵坐标
+    uint16 x;                        	    // 点的横坐标
+    uint16 y;                        	    // 点的纵坐标
 }ips200pro_image_line_uint16_struct;
 
 typedef struct
 {
-    uint16  id;                      	 	   	// 屏幕ID编号
-    uint16  width;                   	 	   	// 屏幕最大显示宽度
-    uint16  height;                  	 	   	// 屏幕最大显示高度
-    uint8   version_major;           	 	   	// 固件版本-主版本
-    uint8   version_middle;          	 	   	// 固件版本-中版本
-    uint8   version_micro;           	 	   	// 固件版本-微版本
+    uint16  id;                      	 	// 屏幕ID编号
+    uint16  width;                   	 	// 屏幕最大显示宽度
+    uint16  height;                  	 	// 屏幕最大显示高度
+    uint8   version_major;           	 	// 固件版本-主版本
+    uint8   version_middle;          	 	// 固件版本-中版本
+    uint8   version_micro;           	 	// 固件版本-微版本
 }ips200pro_information_struct;	
 	
 typedef struct	

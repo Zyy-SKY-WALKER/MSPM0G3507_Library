@@ -36,9 +36,9 @@
 * 接线定义：
 *                   ------------------------------------
 *                   模块管脚            单片机管脚
-*                   SCL                 查看 zf_device_dl1b.h 中 DL1B_SCL_PIN  宏定义
-*                   SDA                 查看 zf_device_dl1b.h 中 DL1B_SDA_PIN  宏定义
-*                   XS                  查看 zf_device_dl1b.h 中 DL1B_XS_PIN  宏定义
+*                   SCL                 查看 zf_device_dl1b.h 中 DL1B_SCL_PIN  	宏定义
+*                   SDA                 查看 zf_device_dl1b.h 中 DL1B_SDA_PIN  	宏定义
+*                   XS                  查看 zf_device_dl1b.h 中 DL1B_XS_PIN  	宏定义
 *                   VCC                 5V 电源
 *                   GND                 电源地
 *                   ------------------------------------

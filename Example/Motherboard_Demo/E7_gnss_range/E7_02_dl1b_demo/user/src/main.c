@@ -69,11 +69,11 @@
 int main(void)
 {
     clock_init(SYSTEM_CLOCK_80M); 	// 时钟配置及系统初始化<务必保留>
-    debug_init();                          // 调试串口信息初始化
+    debug_init();                   // 调试串口信息初始化
     
     // 此处编写用户代码 例如外设初始化代码等
 
-    gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);                             // 初始化 LED1 输出 默认高电平 推挽输出模式
+    gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);                             	// 初始化 LED1 输出 默认高电平 推挽输出模式
 
     while(1)
     {

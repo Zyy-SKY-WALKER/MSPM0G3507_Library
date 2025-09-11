@@ -54,7 +54,7 @@ static SPI_Regs *spi_list[SPI_NUM] = {SPI0, SPI1};
 #ifndef SPI_SPEED_PRIORITY
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     软件 SPI 8bit 数据读写
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     data            数据
 // 返回参数     uint8           读取的数据
 // 使用示例     spi_8bit_data_handler(spi_index, 5);
@@ -70,7 +70,7 @@ static uint8 spi_8bit_data_handler (spi_index_enum spi_index, const uint8 data)
     SPI_DATA_TX(spi_index, data);                                                   // 发送数据
     while(!SPI_STATE_RX_AVAILABLE(spi_index));                                      // 接收到有效数据
     read_data = SPI_DATA_RX(spi_index);                                             // 读取数据
-		while(SPI_STATE_BUY(spi_index) ){};                                                // 等待传输完毕
+	while(SPI_STATE_BUY(spi_index) ){};                                                // 等待传输完毕
 
     SPI_CTRL_CS(spi_index, ZF_DISABLE);
     SPI_CTRL_RX(spi_index, ZF_DISABLE);
@@ -80,7 +80,7 @@ static uint8 spi_8bit_data_handler (spi_index_enum spi_index, const uint8 data)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     软件 SPI 16bit 数据读写
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     data            数据
 // 返回参数     uint16          读取的数据
 // 使用示例     spi_16bit_data_handler(spi_index, 5);
@@ -100,7 +100,7 @@ static uint16 spi_16bit_data_handler (spi_index_enum spi_index, const uint16 dat
     SPI_DATA_TX(spi_index, (uint8)(data & 0x00FF));                                 // 发送数据
     while(!SPI_STATE_RX_AVAILABLE(spi_index));                                      // 接收到有效数据
     read_data = ((read_data << 8) | SPI_DATA_RX(spi_index));                        // 读取数据
-		while(SPI_STATE_BUY(spi_index)){};                                                // 等待传输完毕
+	while(SPI_STATE_BUY(spi_index)){};                                                // 等待传输完毕
     SPI_CTRL_CS(spi_index, ZF_DISABLE);
     SPI_CTRL_RX(spi_index, ZF_DISABLE);
 
@@ -110,7 +110,7 @@ static uint16 spi_16bit_data_handler (spi_index_enum spi_index, const uint16 dat
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口写 8bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     data            数据
 // 返回参数     void
 // 使用示例     spi_write_8bit(SPI_1, 0x11);
@@ -133,7 +133,7 @@ void spi_write_8bit (spi_index_enum spi_index, const uint8 data)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口写 8bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             缓冲区长度
 // 返回参数     void
@@ -164,7 +164,7 @@ void spi_write_8bit_array (spi_index_enum spi_index, const uint8 *data, uint32 l
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口写 16bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     data            数据
 // 返回参数     void
 // 使用示例     spi_write_16bit(SPI_1, 0x1101);
@@ -190,7 +190,7 @@ void spi_write_16bit (spi_index_enum spi_index, const uint16 data)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口写 16bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             缓冲区长度
 // 返回参数     void
@@ -224,7 +224,7 @@ void spi_write_16bit_array (spi_index_enum spi_index, const uint16 *data, uint32
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口向传感器的寄存器写 8bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     data            数据
 // 返回参数     void
@@ -252,7 +252,7 @@ void spi_write_8bit_register (spi_index_enum spi_index, const uint8 register_nam
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口向传感器的寄存器写 8bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             缓冲区长度
@@ -288,7 +288,7 @@ void spi_write_8bit_registers (spi_index_enum spi_index, const uint8 register_na
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口向传感器的寄存器写 16bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     data            数据
 // 返回参数     void
@@ -322,7 +322,7 @@ void spi_write_16bit_register (spi_index_enum spi_index, const uint16 register_n
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口向传感器的寄存器写 16bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             缓冲区长度
@@ -364,7 +364,7 @@ void spi_write_16bit_registers (spi_index_enum spi_index, const uint16 register_
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口读 8bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 返回参数     uint8           数据
 // 使用示例     spi_read_8bit(SPI_1);
@@ -392,7 +392,7 @@ uint8 spi_read_8bit (spi_index_enum spi_index)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口读 8bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             发送缓冲区长度
 // 返回参数     void
@@ -425,7 +425,7 @@ void spi_read_8bit_array (spi_index_enum spi_index, uint8 *data, uint32 len)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口读 16bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 返回参数     uint16          数据
 // 使用示例     spi_read_16bit(SPI_1);
@@ -457,7 +457,7 @@ uint16 spi_read_16bit (spi_index_enum spi_index)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口读 16bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             发送缓冲区长度
 // 返回参数     void
@@ -495,7 +495,7 @@ void spi_read_16bit_array (spi_index_enum spi_index, uint16 *data, uint32 len)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口从传感器的寄存器读 8bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 返回参数     uint8           数据
 // 使用示例     spi_read_8bit_register(SPI_1, 0x11);
@@ -529,7 +529,7 @@ uint8 spi_read_8bit_register (spi_index_enum spi_index, const uint8 register_nam
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口从传感器的寄存器读 8bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             发送缓冲区长度
@@ -574,7 +574,7 @@ void spi_read_8bit_registers (spi_index_enum spi_index, const uint8 register_nam
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口从传感器的寄存器读 16bit 数据
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 返回参数     uint16          数据
 // 使用示例     spi_read_16bit_register(SPI_1, 0x1011);
@@ -613,7 +613,7 @@ uint16 spi_read_16bit_register (spi_index_enum spi_index, const uint16 register_
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口从传感器的寄存器读 16bit 数组
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     register_name   寄存器地址
 // 参数说明     *data           数据存放缓冲区
 // 参数说明     len             发送缓冲区长度
@@ -660,7 +660,7 @@ void spi_read_16bit_registers (spi_index_enum spi_index, const uint16 register_n
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 8bit 数据传输 发送与接收数据是同时进行的
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     write_buffer    发送的数据缓冲区地址
 // 参数说明     read_buffer     发送数据时接收到的数据的存储地址(不需要接收则传 NULL)
 // 参数说明     len             缓冲区长度
@@ -713,7 +713,7 @@ void spi_transfer_8bit (spi_index_enum spi_index, const uint8 *write_buffer, uin
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 16bit 数据传输 发送与接收数据是同时进行的
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     write_buffer    发送的数据缓冲区地址
 // 参数说明     read_buffer     发送数据时接收到的数据的存储地址(不需要接收则传 NULL)
 // 参数说明     len             缓冲区长度
@@ -778,7 +778,7 @@ void spi_transfer_16bit (spi_index_enum spi_index, const uint16 *write_buffer, u
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     SPI 接口初始化
-// 参数说明     spi_index           SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
+// 参数说明     spi_index       SPI 模块号 参照 zf_driver_spi.h 内 spi_index_enum 枚举体定义
 // 参数说明     mode            SPI 模式 参照 zf_driver_spi.h 内 spi_mode_enum 枚举体定义
 // 参数说明     baud            设置 SPI 的波特率 不超过系统时钟的一半 部分速率会被适配成相近的速率
 // 参数说明     sck_pin         选择 SCK 引脚 参照 zf_driver_spi.h 内 spi_sck_pin_enum 枚举体定义

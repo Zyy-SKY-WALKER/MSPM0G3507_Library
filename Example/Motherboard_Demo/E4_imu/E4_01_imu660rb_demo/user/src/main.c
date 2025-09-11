@@ -72,20 +72,20 @@
 int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
-		// 此处编写用户代码 例如外设初始化代码等
+    debug_init();					// 调试串口信息初始化
+	// 此处编写用户代码 例如外设初始化代码等
 
     // 初始化陀螺仪
     while(1)
     {
         if(imu660rb_init())
         {
-           printf("\r\n imu660rb init error.");                                 // imu660rb 初始化失败
+			printf("\r\n imu660rb init error.");                                // imu660rb 初始化失败
         }
         else
         {
-					 printf("\r\n imu660rb init success.");                                 // imu660rb 初始化成功
-           break;
+			printf("\r\n imu660rb init success.");                              // imu660rb 初始化成功
+			break;
         }
 
     }

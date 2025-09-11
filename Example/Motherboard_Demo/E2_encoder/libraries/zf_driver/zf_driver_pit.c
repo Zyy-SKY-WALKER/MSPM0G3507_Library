@@ -116,7 +116,7 @@ void pit_disable (pit_index_enum pit_n)
 // 参数说明     callback            回调函数 为无返回值 uint32 加 void * 参数的函数
 // 参数说明     *ptr                回调参数 用户自拟定的参数指针 不需要的话就传入 NULL
 // 返回参数     void
-// 使用示例     pit_init(pit_n, period);
+// 使用示例     pit_init(pit_n, period, callback, NULL);
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void pit_init (pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr callback, void *ptr)
@@ -178,7 +178,7 @@ void pit_init (pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr cal
 // 参数说明     callback            回调函数 为无返回值 uint32 加 void * 参数的函数
 // 参数说明     *ptr                回调参数 用户自拟定的参数指针 不需要的话就传入 NULL
 // 返回参数     void
-// 使用示例     pit_us_init(pit_n, period);
+// 使用示例     pit_us_init(pit_n, period, callback, NULL);
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void pit_us_init(pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr callback, void *ptr)
@@ -232,7 +232,7 @@ void pit_us_init(pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr c
 // 参数说明     callback            回调函数 为无返回值 uint32 加 void * 参数的函数
 // 参数说明     *ptr                回调参数 用户自拟定的参数指针 不需要的话就传入 NULL
 // 返回参数     void
-// 使用示例     pit_ms_init(pit_n, period);
+// 使用示例     pit_ms_init(pit_n, period, callback, NULL);
 // 备注信息     
 //-------------------------------------------------------------------------------------------------------------------
 void pit_ms_init(pit_index_enum pit_n, uint32 period, void_callback_uint32_ptr callback, void *ptr)

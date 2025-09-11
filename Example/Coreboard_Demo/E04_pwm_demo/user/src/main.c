@@ -67,9 +67,9 @@ pwm_channel_enum channel_list[CHANNEL_NUMBER] = {PWM_CH1, PWM_CH2, PWM_CH3, PWM_
 int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-    debug_init();										// 调试串口信息初始化
+    debug_init();					// 调试串口信息初始化
 	
-	  // 此处编写用户代码 例如外设初始化代码等
+	// 此处编写用户代码 例如外设初始化代码等
     pwm_init(PWM_CH1, 17000, 0);                                                // 初始化 PWM 通道 频率 17KHz 初始占空比 0%
     pwm_init(PWM_CH2, 10000, 0);                                                // 初始化 PWM 通道 频率 10KHz 初始占空比 0%
     pwm_init(PWM_CH3, 50, 0);                                                	// 初始化 PWM 通道 频率 50Hz 初始占空比 0%
@@ -78,7 +78,7 @@ int main (void)
     while(true)
     {
         // 此处编写需要循环执行的代码
-				for(channel_index = 0; channel_index < CHANNEL_NUMBER; channel_index++)
+		for(channel_index = 0; channel_index < CHANNEL_NUMBER; channel_index++)
         {
             for(duty = 0; duty <= PWM_DUTY_MAX / 2; duty ++)                    // 输出占空比递增到 50%
             {

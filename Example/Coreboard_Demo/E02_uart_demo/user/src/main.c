@@ -70,7 +70,7 @@
 #define UART_TX_PIN             (DEBUG_UART_TX_PIN  )                           // 默认 UART0_TX_A10
 #define UART_RX_PIN             (DEBUG_UART_RX_PIN  )                           // 默认 UART0_RX_A11
 
-#define UART_PRIORITY           (UART0_INT_IRQn)                                // 对应串口中断的中断编号 在 MIMXRT1064.h 头文件中查看 IRQn_Type 枚举体
+#define UART_PRIORITY           (UART0_INT_IRQn)                                // 对应串口中断的中断编号 在 MIMXMSPM0G3507.h 头文件中查看 IRQn_Type 枚举体
 
 uint8 uart_get_data[64];                                                        // 串口接收数据缓冲区
 uint8 fifo_get_data[64];                                                        // fifo 输出读出缓冲区
@@ -90,8 +90,10 @@ fifo_struct uart_data_fifo;
 void uart_rx_interrupt_handler (uint32 state, void *ptr)
 { 
 //    get_data = uart_read_byte(UART_INDEX);                                    // 接收数据 while 等待式 不建议在中断使用
-    uart_query_byte(UART_INDEX, &get_data);                                     // 接收数据 查询式 有数据会返回 TRUE 没有数据会返回 FALSE
-    fifo_write_buffer(&uart_data_fifo, &get_data, 1);                           // 将数据写入 fifo 中
+    if(uart_query_byte(UART_INDEX, &get_data))                                  // 接收数据 查询式 有数据会返回 TRUE 没有数据会返回 FALSE
+	{
+	    fifo_write_buffer(&uart_data_fifo, &get_data, 1);                       // 将数据写入 fifo 中
+	}
 }
 // **************************** 代码区域 ****************************
 

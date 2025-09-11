@@ -40,11 +40,11 @@
 
 // *************************** 例程硬件连接说明 ***************************
 //      模块管脚            单片机管脚
-//      D0                  zf_device_oled.h 中 OLED_D0_PIN 宏定义 默认 B0
-//      D1                  zf_device_oled.h 中 OLED_D1_PIN 宏定义 默认 B1
-//      RES                 zf_device_oled.h 中 OLED_RES_PIN 宏定义 默认 B2 
-//      DC                  zf_device_oled.h 中 OLED_DC_PIN 宏定义 默认 C19
-//      CS                  zf_device_oled.h 中 OLED_CS_PIN 宏定义 默认 B3 
+//      D0                  zf_device_oled.h 中 OLED_D0_PIN  宏定义
+//      D1                  zf_device_oled.h 中 OLED_D1_PIN  宏定义
+//      RES                 zf_device_oled.h 中 OLED_RES_PIN 宏定义
+//      DC                  zf_device_oled.h 中 OLED_DC_PIN  宏定义
+//      CS                  zf_device_oled.h 中 OLED_CS_PIN  宏定义
 //      GND                 核心板电源地 GND
 //      3V3                 核心板 3V3 电源
 

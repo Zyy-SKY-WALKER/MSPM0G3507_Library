@@ -39,24 +39,24 @@
 // 第二步 project->clean  等待下方进度条走完
 
 // *************************** 例程硬件连接说明 ***************************
-// 使用 RT1064 核心板直接接线进行测试
+// 使用 MSPM0G3507 核心板直接接线进行测试
 //      模块管脚            单片机管脚
-//      MOTOR1_PWM1                 B13
-//      MOTOR1_PWM2                 B12
-//      GND                 GND
-//      MOTOR2_PWM1                 B9
-//      MOTOR2_PWM2                 B8
-//      GND                 GND
-//      MOTOR3_PWM1                 A27
-//      MOTOR3_PWM2                 A26
-//      GND                 GND
-//      MOTOR4_PWM1                 B11
-//      MOTOR4_PWM2                 B10
-//      GND                 GND
+//      MOTOR1_PWM1            	B13
+//      MOTOR1_PWM2            	B12
+//      GND                 	GND
+//      MOTOR2_PWM1            	B9
+//      MOTOR2_PWM2           	B8
+//      GND                 	GND
+//      MOTOR3_PWM1        		A27
+//      MOTOR3_PWM2         	A26
+//      GND                 	GND
+//      MOTOR4_PWM1         	B11
+//      MOTOR4_PWM2          	B10
+//      GND                 	GND
 //      接线端子 +          电池正极
 //      接线端子 -          电池负极
 // 
-// 使用 RT1064 学习主板进行测试
+// 使用 MSPM0G3507 学习主板进行测试
 //      将模块的电源接线端子与主板的驱动供电端子连接
 //      将模块的信号接口使用配套灰排线与主板电机信号接口连接 请注意接线方向 不确定方向就是用万用表确认一下 引脚参考上方核心板连接
 //      将主板与供电电池正确连接
@@ -75,7 +75,7 @@
 // **************************** 代码区域 ****************************
 #define MAX_DUTY                    (50)                                                // 最大 MAX_DUTY% 占空比
 #define MOTOR1_PWM1                 (PWM_TIM_A0_CH3_B13)
-#define MOTOR1_PWM2                 (PWM_TIM_A0_CH1_B12)
+#define MOTOR1_PWM2                 (PWM_TIM_A0_CH2_B12)
 
 #define MOTOR2_PWM1                 (PWM_TIM_A0_CH1_B9)
 #define MOTOR2_PWM2                 (PWM_TIM_A0_CH0_B8)

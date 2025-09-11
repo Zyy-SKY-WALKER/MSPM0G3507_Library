@@ -37,11 +37,11 @@
 * 接线定义：
 *                  ------------------------------------
 *                  模块管脚             单片机管脚
-*                  D0                 查看 zf_device_oled.h 中 OLED_D0_PIN 宏定义
-*                  D1                 查看 zf_device_oled.h 中 OLED_D1_PIN 宏定义
+*                  D0                 查看 zf_device_oled.h 中 OLED_D0_PIN  宏定义
+*                  D1                 查看 zf_device_oled.h 中 OLED_D1_PIN  宏定义
 *                  RES                查看 zf_device_oled.h 中 OLED_RES_PIN 宏定义
-*                  DC                 查看 zf_device_oled.h 中 OLED_DC_PIN 宏定义
-*                  CS                 查看 zf_device_oled.h 中 OLED_CS_PIN 宏定义
+*                  DC                 查看 zf_device_oled.h 中 OLED_DC_PIN  宏定义
+*                  CS                 查看 zf_device_oled.h 中 OLED_CS_PIN  宏定义
 *                  VCC                3.3V电源
 *                  GND                电源地
 *                  ------------------------------------

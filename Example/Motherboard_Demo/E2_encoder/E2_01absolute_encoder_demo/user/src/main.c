@@ -94,7 +94,7 @@ void absolute_encoder_pit_handler (uint32 event, void *ptr)
 
     for(encoder_index = 0; encoder_index < ENCODER_INEX_MAX; encoder_index ++)
     {
-        // 获取编码器当前大角度信息
+        // 获取编码器当前的角度信息
         location_data[encoder_index] = absolute_encoder_get_location(encoder_index);
         // 通过两次角度对比得到当前的旋转速度
         offset_data[encoder_index] = absolute_encoder_get_offset(encoder_index);

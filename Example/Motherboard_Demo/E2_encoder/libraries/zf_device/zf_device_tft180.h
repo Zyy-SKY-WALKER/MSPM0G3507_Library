@@ -39,9 +39,9 @@
 *                   SCL                  查看 zf_device_tft180.h 中 TFT180_SCL_PIN 宏定义
 *                   SDA                  查看 zf_device_tft180.h 中 TFT180_SDA_PIN 宏定义
 *                   RES                  查看 zf_device_tft180.h 中 TFT180_RES_PIN 宏定义
-*                   DC                   查看 zf_device_tft180.h 中 TFT180_DC_PIN 宏定义
-*                   CS                   查看 zf_device_tft180.h 中 TFT180_CS_PIN 宏定义
-*                   BL                   查看 zf_device_tft180.h 中 TFT180_BL_PIN 宏定义
+*                   DC                   查看 zf_device_tft180.h 中 TFT180_DC_PIN  宏定义
+*                   CS                   查看 zf_device_tft180.h 中 TFT180_CS_PIN  宏定义
+*                   BL                   查看 zf_device_tft180.h 中 TFT180_BL_PIN  宏定义
 *                   VCC                 3.3V电源
 *                   GND                 电源地
 *                   最大分辨率160*128
@@ -56,21 +56,21 @@
 #define TFT180_USE_SOFT_SPI             ( 0 )                           //只能使用硬件SPI        // 默认使用硬件 SPI 方式驱动 建议使用硬件 SPI 方式驱动
 #if TFT180_USE_SOFT_SPI                                                         // 这两段 颜色正常的才是正确的 颜色灰的就是没有用的
 //====================================================软件 SPI 驱动====================================================
-#define TFT180_SOFT_SPI_DELAY           ( 100  )                                  // 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
-#define TFT180_SCL_PIN                  ( A12 )                                  // 软件 SPI SCK 引脚
-#define TFT180_SDA_PIN                  ( A9 )                                  // 软件 SPI MOSI 引脚
+#define TFT180_SOFT_SPI_DELAY           ( 100 )                                 // 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
+#define TFT180_SCL_PIN                  ( A12 )                                 // 软件 SPI SCK 引脚
+#define TFT180_SDA_PIN                  ( A9  )                                 // 软件 SPI MOSI 引脚
 //====================================================软件 SPI 驱动====================================================
 #else
 //====================================================硬件 SPI 驱动====================================================
 #define TFT180_SPI_SPEED                ( 30 * 1000 * 1000 )                    // 硬件 SPI 速率
 #define TFT180_SPI                      ( SPI_0            )                    // 硬件 SPI 号
-#define TFT180_SCL_PIN                  ( SPI0_SCK_A12      )                    // 硬件 SPI SCK 引脚
+#define TFT180_SCL_PIN                  ( SPI0_SCK_A12     )                    // 硬件 SPI SCK 引脚
 #define TFT180_SDA_PIN                  ( SPI0_MOSI_A9     )                    // 硬件 SPI MOSI 引脚
 //====================================================硬件 SPI 驱动====================================================
 #endif
 
-#define TFT180_RES_PIN                  ( A7 )                                 // 液晶复位引脚定义
-#define TFT180_DC_PIN                   ( A15  )                                 // 液晶命令位引脚定义
+#define TFT180_RES_PIN                  ( A7 )                                 	// 液晶复位引脚定义
+#define TFT180_DC_PIN                   ( A15 )                                 // 液晶命令位引脚定义
 #define TFT180_CS_PIN                   ( A8  )                                 // CS 片选引脚
 #define TFT180_BL_PIN                   ( A13 )                                 // 液晶背光引脚定义
 

@@ -71,10 +71,10 @@ int main (void)
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
     debug_init();					// 调试串口信息初始化
 	
-  // 此处编写用户代码 例如外设初始化代码等
+	// 此处编写用户代码 例如外设初始化代码等
     timer_init(TIM_A0, TIMER_SYSTEM_CLOCK);                                  // 定时器使用 TIM_A0 使用外设时钟频率1/2计时
     timer_start(TIM_A0);                                                     // 启动定时
-    system_delay_us(540);                                                       // 
+    system_delay_us(540);                                                     
     timer_stop(TIM_A0);                                                      // 停止定时器
     printf("Timer count is %d ipg/2 clock.\r\n", timer_get(TIM_A0));         // 获取定时器的值并输出
     timer_clear(TIM_A0);                                                     // 计时值使用完毕后记得清除，避免导致下次计时不从0开始
@@ -82,14 +82,14 @@ int main (void)
     
     timer_init(TIM_A1, TIMER_US);                                            // 定时器使用 TIM_A1 使用微秒级计数
     timer_start(TIM_A1);                                                     // 启动定时
-    system_delay_ms(65);                                                        // 
+    system_delay_ms(65);                                                     
     timer_stop(TIM_A1);                                                      // 停止定时器
     printf("Timer count is %d us.\r\n", timer_get(TIM_A1));                  // 获取定时器的值并输出
     timer_clear(TIM_A1);                                                     // 计时值使用完毕后记得清除，避免导致下次计时不从0开始
     
     timer_init(TIM_G0, TIMER_MS);                                            // 定时器使用 TIM_G0 使用毫秒级计数
     timer_start(TIM_G0);                                                     // 启动定时
-    system_delay_ms(1000);                                                      //
+    system_delay_ms(1000);                                                   
     timer_stop(TIM_G0);                                                      // 停止定时器
     printf("Timer count is %d ms.\r\n", timer_get(TIM_G0));                  // 获取定时器的值并输出
     timer_clear(TIM_G0);                                                     // 计时值使用完毕后记得清除，避免导致下次计时不从0开始

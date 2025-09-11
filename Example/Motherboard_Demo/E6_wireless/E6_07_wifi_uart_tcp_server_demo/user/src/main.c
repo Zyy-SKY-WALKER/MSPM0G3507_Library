@@ -41,10 +41,10 @@
 // *************************** 例程硬件连接说明 ***************************
 // 接入 Wi-Fi 转串口模块
 //      模块管脚            单片机管脚
-//      RX                  查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RX_PINx 宏定义    默认 D16
-//      TX                  查看 zf_device_wifi_uart.h 中 WRIELESS_UART_TX_PINx 宏定义    默认 D17
-//      RTS                 查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RTS_PINx 宏定义   默认 D26
-//      RST                 查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RST_PINx 宏定义   默认 B9
+//      RX                  查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RX_PINx  宏定义   
+//      TX                  查看 zf_device_wifi_uart.h 中 WRIELESS_UART_TX_PINx  宏定义   
+//      RTS                 查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RTS_PINx 宏定义  
+//      RST                 查看 zf_device_wifi_uart.h 中 WRIELESS_UART_RST_PINx 宏定义  
 //      VCC                 5V 电源
 //      GND                 电源地
 
@@ -95,7 +95,7 @@ char *link_id = NULL;
 
 int main(void)
 {
-    clock_init(SYSTEM_CLOCK_80M);  // 不可删除
+    clock_init(SYSTEM_CLOCK_80M);   // 不可删除
     debug_init();                   // 调试端口初始化
             
     system_delay_ms(300);           //等待主板其他外设上电完成

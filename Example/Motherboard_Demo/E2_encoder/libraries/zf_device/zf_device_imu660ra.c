@@ -40,7 +40,7 @@
 *                   SCL/SPC           查看 zf_device_imu660ra.h 中 IMU660RA_SPC_PIN 宏定义
 *                   SDA/DSI           查看 zf_device_imu660ra.h 中 IMU660RA_SDI_PIN 宏定义
 *                   SA0/SDO           查看 zf_device_imu660ra.h 中 IMU660RA_SDO_PIN 宏定义
-*                   CS                查看 zf_device_imu660ra.h 中 IMU660RA_CS_PIN 宏定义
+*                   CS                查看 zf_device_imu660ra.h 中 IMU660RA_CS_PIN  宏定义
 *                   VCC               3.3V电源
 *                   GND               电源地
 *                   其余引脚悬空
@@ -65,7 +65,7 @@
 #include "zf_device_imu660ra.h"
 
 int16 imu660ra_gyro_x = 0, imu660ra_gyro_y = 0, imu660ra_gyro_z = 0;            // 三轴陀螺仪数据   gyro (陀螺仪)
-int16 imu660ra_acc_x = 0, imu660ra_acc_y = 0, imu660ra_acc_z = 0;               // 三轴加速度计数据 acc  (accelerometer 加速度计)
+int16 imu660ra_acc_x = 0,  imu660ra_acc_y = 0,  imu660ra_acc_z = 0;             // 三轴加速度计数据 acc  (accelerometer 加速度计)
 float imu660ra_transition_factor[2] = {4096, 16.4};
 
 #if IMU660RA_USE_IIC
@@ -198,7 +198,7 @@ void imu660ra_get_acc (void)
 // 返回参数     void
 // 使用示例     imu660ra_get_gyro();                                            // 执行该函数后，直接查看对应的变量即可
 // 备注信息     使用 SPI 的采集时间为69us
-//             使用 IIC 的采集时间为126us
+//              使用 IIC 的采集时间为126us
 //-------------------------------------------------------------------------------------------------------------------
 void imu660ra_get_gyro (void)
 {

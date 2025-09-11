@@ -47,8 +47,8 @@
 #define DEBUG_UART_USE_INTERRUPT    ( 1 )                                       // 是否启用 debug uart 接收中断
 
 #if DEBUG_UART_USE_INTERRUPT                                                    // 条件编译 只有在启用串口中断才编译
-		#define DEBUG_UART_PRIORITY         (UART0_INT_IRQn)                        // 对应串口中断的中断编号 mspm0g350x  IRQn_Type 枚举体
-		#define DEBUG_UART_PRIORITY0_7      (1)                            					// 中断优先级
+		#define DEBUG_UART_PRIORITY         (UART0_INT_IRQn)                    // 对应串口中断的中断编号 mspm0g350x  IRQn_Type 枚举体
+		#define DEBUG_UART_PRIORITY0_7      (1)                            		// 中断优先级
 	
 #endif
 
@@ -91,10 +91,10 @@ typedef struct
 }debug_output_struct;
 
 
-uint32      debug_send_buffer       (const uint8 *buff, uint32 len);            // 调试串口发送缓冲区
+uint32      debug_send_buffer       	(const uint8 *buff, uint32 len);        // 调试串口发送缓冲区
 #define     DEBUG_RING_BUFFER_LEN       ( 64 )                                  // 定义环形缓冲区大小 默认 64byte
 void        debug_interrupr_handler     (void);
-uint32 			debug_read_ring_buffer 			(uint8 *buff, uint32 len);
+uint32 		debug_read_ring_buffer 		(uint8 *buff, uint32 len);
 
 void        debug_assert_enable         (void);
 void        debug_assert_disable        (void);

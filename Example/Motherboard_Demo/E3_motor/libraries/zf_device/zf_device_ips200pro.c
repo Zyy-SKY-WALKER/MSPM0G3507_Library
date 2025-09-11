@@ -32,6 +32,7 @@
 * 日期              作者                备注
 * 2025-06-1        SeekFree            first version
 ********************************************************************************************************************/
+
 #include "zf_common_debug.h"
 #include "zf_common_function.h"
 #include "zf_driver_delay.h"
@@ -45,7 +46,7 @@
 #define MAX_ID_PAGE             ( 30 )
 #define MAX_ID_LABEL            ( 50 )
 #define MAX_ID_TABLE            ( 20 )
-#define MAX_ID_METER            ( 10  )
+#define MAX_ID_METER            ( 10 )
 #define MAX_ID_CLOCK            ( 1  )
 #define MAX_ID_PROGRESS_BAR     ( 20 )
 #define MAX_ID_CALENDAR         ( 1  )

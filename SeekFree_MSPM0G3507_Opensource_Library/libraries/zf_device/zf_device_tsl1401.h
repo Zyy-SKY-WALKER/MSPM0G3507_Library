@@ -36,8 +36,8 @@
 * 接线定义：
 *                  ------------------------------------
 *                  模块管脚             单片机管脚
-*                  CLK                查看 zf_device_tsl1401.h 中 TSL1401_CLK_PIN 宏定义
-*                  SI                 查看 zf_device_tsl1401.h 中 TSL1401_SI_PIN 宏定义
+*                  CLK                查看 zf_device_tsl1401.h 中 TSL1401_CLK_PIN 		宏定义
+*                  SI                 查看 zf_device_tsl1401.h 中 TSL1401_SI_PIN 		宏定义
 *                  AO[x]              查看 zf_device_tsl1401.h 中 TSL1401_AO_PIN_BUFFER 宏定义
 *                  VCC                3.3V电源
 *                  GND                电源地

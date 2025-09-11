@@ -37,13 +37,8 @@
 *                   ------------------------------------
 *                   模块管脚            单片机管脚
 *                   // 双排排针 并口两寸屏 硬件引脚
-*                   RD                  查看 zf_device_ips200.h 中 IPS200_RD_PIN_PARALLEL8     宏定义
-*                   WR                  查看 zf_device_ips200.h 中 IPS200_WR_PIN_PARALLEL8     宏定义
-*                   RS                  查看 zf_device_ips200.h 中 IPS200_RS_PIN_PARALLEL8     宏定义
-*                   RST                 查看 zf_device_ips200.h 中 IPS200_RST_PIN_PARALLEL8    宏定义
-*                   CS                  查看 zf_device_ips200.h 中 IPS200_CS_PIN_PARALLEL8     宏定义
-*                   BL                  查看 zf_device_ips200.h 中 IPS200_BL_PIN_PARALLEL8     宏定义
-*                   D0-D7               查看 zf_device_ips200.h 中 IPS200_Dx_PIN_PARALLEL8     宏定义
+*                   不支持
+*
 *                   // 单排排针 SPI 两寸屏 硬件引脚
 *                   SCL                 查看 zf_device_ips200.h 中 IPS200_SCL_PIN_SPI  宏定义
 *                   SDA                 查看 zf_device_ips200.h 中 IPS200_SDA_PIN_SPI  宏定义
@@ -51,7 +46,6 @@
 *                   DC                  查看 zf_device_ips200.h 中 IPS200_DC_PIN_SPI   宏定义
 *                   CS                  查看 zf_device_ips200.h 中 IPS200_CS_PIN_SPI   宏定义
 *                   BLk                 查看 zf_device_ips200.h 中 IPS200_BLk_PIN_SPI  宏定义
-*                   电源引脚
 *                   VCC                 3.3V电源
 *                   GND                 电源地
 *                   最大分辨率 320 * 240
@@ -67,17 +61,17 @@
 #if IPS200_USE_SOFT_SPI                                                         // 这两段 颜色正常的才是正确的 颜色灰的就是没有用的
 //====================================================软件 SPI 驱动====================================================
 // 如果使用的是单排排针的两寸屏幕 SPI 驱动控制引脚 可以修改
-#define IPS200_SOFT_SPI_DELAY           ( 1 )                                    // 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
-#define IPS200_SCL_PIN                  ( A12 )                                  // 软件 SPI SCK 引脚
-#define IPS200_SDA_PIN                  ( A9 )                                   // 软件 SPI MOSI 引脚
+#define IPS200_SOFT_SPI_DELAY           ( 1 )                                  	// 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
+#define IPS200_SCL_PIN                  ( A12 )                               	// 软件 SPI SCK 引脚
+#define IPS200_SDA_PIN                  ( A9 )                                	// 软件 SPI MOSI 引脚
 //====================================================软件 SPI 驱动====================================================
 #else
 //====================================================硬件 SPI 驱动====================================================
 // 如果使用的是单排排针的两寸屏幕 SPI 驱动控制引脚 可以修改
-#define IPS200_SPI_SPEED                 ( 30 * 1000 * 1000 )                      // 硬件 SPI 速率 这里设置为系统时钟二分频
-#define IPS200_SPI                       ( SPI_0            )                      // 硬件 SPI 号
-#define IPS200_SCL_PIN_SPI               ( SPI0_SCK_A12      )                     // 硬件 SPI SCK 引脚
-#define IPS200_SDA_PIN_SPI               ( SPI0_MOSI_A9     )                      // 硬件 SPI MOSI 引脚
+#define IPS200_SPI_SPEED                 ( 30 * 1000 * 1000 )          			// 硬件 SPI 速率 这里设置为系统时钟二分频
+#define IPS200_SPI                       ( SPI_0            )     				// 硬件 SPI 号
+#define IPS200_SCL_PIN_SPI               ( SPI0_SCK_A12      )               	// 硬件 SPI SCK 引脚
+#define IPS200_SDA_PIN_SPI               ( SPI0_MOSI_A9     )                  	// 硬件 SPI MOSI 引脚
 //====================================================硬件 SPI 驱动====================================================
 #endif
 // 如果使用的是单排排针的两寸屏幕 SPI 驱动控制引脚 可以修改

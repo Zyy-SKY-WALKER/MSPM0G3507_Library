@@ -54,7 +54,7 @@
 #define LED1                    (A14 )
 
 #define PIT_CH                  (PIT_TIM_A0 )                                      		// 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
-#define PIT_PRIORITY            (TIMA0_INT_IRQn)                                      // 对应周期中断的中断编号 
+#define PIT_PRIORITY            (TIMA0_INT_IRQn)                                      	// 对应周期中断的中断编号 
 
 void pit_exti_handler (uint32 state, void *ptr);
 
@@ -62,9 +62,9 @@ uint8 exti_state[4];
 int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
-		debug_init();                   // 调试端口初始化
+	debug_init();                   // 调试端口初始化
     
-		// 此处编写用户代码 例如外设初始化代码等
+	// 此处编写用户代码 例如外设初始化代码等
     gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);                             				// 初始化 LED1 输出 默认高电平 推挽输出模式
 
     pit_ms_init(PIT_CH, 200,pit_exti_handler,NULL);                                         // 初始化 PIT 为周期中断 200ms 周期

@@ -44,11 +44,11 @@
 //
 // 接入 高速Wifi SPI 模块
 //      模块管脚            单片机管脚
-//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN 宏定义
-//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN 宏定义
-//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN 宏定义
+//      RST                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_RST_PIN  宏定义
+//      INT                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_INT_PIN  宏定义
+//      CS                  查看 zf_device_wifi_spi.h 中 WIFI_SPI_CS_PIN   宏定义
 //      MISO                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MISO_PIN 宏定义
-//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN 宏定义
+//      SCK                 查看 zf_device_wifi_spi.h 中 WIFI_SPI_SCK_PIN  宏定义
 //      MOSI                查看 zf_device_wifi_spi.h 中 WIFI_SPI_MOSI_PIN 宏定义
 //      5V                  5V 电源
 //      GND                 电源地
@@ -154,14 +154,14 @@ int main(void)
     {
         // 此处编写需要循环执行的代码
         data_length = wifi_spi_read_buffer(wifi_spi_get_data_buffer, sizeof(wifi_spi_get_data_buffer));
-        if(data_length)                                                         // 如果接收到数据 则进行数据类型判断
+        if(data_length)                                                  		// 如果接收到数据 则进行数据类型判断
         {
             printf("\r\n Get data: <%s>.", wifi_spi_get_data_buffer);
             if(!wifi_spi_send_buffer(wifi_spi_get_data_buffer, data_length))
             {
                 wifi_spi_udp_send_now();
                 printf("\r\n send success.");
-                memset(wifi_spi_get_data_buffer, 0, data_length);          // 数据发送完成 清空数据
+                memset(wifi_spi_get_data_buffer, 0, data_length);          		// 数据发送完成 清空数据
             }
             else
             {

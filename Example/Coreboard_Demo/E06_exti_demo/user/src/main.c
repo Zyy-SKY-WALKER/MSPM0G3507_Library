@@ -85,10 +85,10 @@ int main (void)
 
     gpio_init(LED1, GPO, GPIO_LOW, GPO_PUSH_PULL);                             // 初始化 LED1 输出 默认高电平 推挽输出模式
 
-    exti_init(KEY1, EXTI_TRIGGER_RISING,key1_exti_handler,NULL);                                       // 初始化 KEY1 为外部中断输入 上升沿触发
-    exti_init(KEY2, EXTI_TRIGGER_FALLING,key2_exti_handler,NULL);                                      // 初始化 KEY2 为外部中断输入 下降沿触发
-    exti_init(KEY3, EXTI_TRIGGER_BOTH,key3_exti_handler,NULL);                                         // 初始化 KEY3 为外部中断输入 双边沿触发
-    exti_init(KEY4, EXTI_TRIGGER_BOTH,key4_exti_handler,NULL);                                         // 初始化 KEY4 为外部中断输入 双边沿触发
+    exti_init(KEY1, EXTI_TRIGGER_RISING,key1_exti_handler,NULL);               // 初始化 KEY1 为外部中断输入 上升沿触发
+    exti_init(KEY2, EXTI_TRIGGER_FALLING,key2_exti_handler,NULL);              // 初始化 KEY2 为外部中断输入 下降沿触发
+    exti_init(KEY3, EXTI_TRIGGER_BOTH,key3_exti_handler,NULL);                 // 初始化 KEY3 为外部中断输入 双边沿触发
+    exti_init(KEY4, EXTI_TRIGGER_BOTH,key4_exti_handler,NULL);                 // 初始化 KEY4 为外部中断输入 双边沿触发
 
     interrupt_set_priority(KEY_EXTI, 0);                                       // 设置 KEY1 对应外部中断的中断有先级为 0  KEY1 KEY2 KEY3 KEY4共用一个中断函数
     // 此处编写用户代码 例如外设初始化代码等
@@ -152,8 +152,7 @@ int main (void)
 //-------------------------------------------------------------------------------------------------------------------
 void key1_exti_handler (uint32 state, void *ptr)
 {
-     exti_state[0] = 1;                                                      // 外部中断触发 标志位置位
-
+    exti_state[0] = 1;                                                      // 外部中断触发 标志位置位
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -164,8 +163,7 @@ void key1_exti_handler (uint32 state, void *ptr)
 //-------------------------------------------------------------------------------------------------------------------
 void key2_exti_handler (uint32 state, void *ptr)
 {
-
-     exti_state[1] = 1;                                                      // 外部中断触发 标志位置位
+    exti_state[1] = 1;                                                      // 外部中断触发 标志位置位
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -176,9 +174,7 @@ void key2_exti_handler (uint32 state, void *ptr)
 //-------------------------------------------------------------------------------------------------------------------
 void key3_exti_handler (uint32 state, void *ptr)
 {
-
-     exti_state[2] = 1;                                                      // 外部中断触发 标志位置位
-
+    exti_state[2] = 1;                                                      // 外部中断触发 标志位置位
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -189,9 +185,7 @@ void key3_exti_handler (uint32 state, void *ptr)
 //-------------------------------------------------------------------------------------------------------------------
 void key4_exti_handler (uint32 state, void *ptr)
 {
-
-     exti_state[3] = 1;                                                      // 外部中断触发 标志位置位
-
+    exti_state[3] = 1;                                                      // 外部中断触发 标志位置位
 }
 // **************************** 代码区域 ****************************
 

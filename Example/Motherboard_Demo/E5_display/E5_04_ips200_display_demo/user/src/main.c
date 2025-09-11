@@ -40,13 +40,13 @@
 
 // *************************** 例程硬件连接说明 ***************************
 //      模块管脚            单片机管脚
-//      BL                  查看 zf_device_ips200_parallel8.h 中 IPS200_BL_PIN 宏定义 
-//      CS                  查看 zf_device_ips200_parallel8.h 中 IPS200_CS_PIN 宏定义 
+//      BL                  查看 zf_device_ips200_parallel8.h 中 IPS200_BL_PIN  宏定义 
+//      CS                  查看 zf_device_ips200_parallel8.h 中 IPS200_CS_PIN  宏定义 
 //      RST                 查看 zf_device_ips200_parallel8.h 中 IPS200_RST_PIN 宏定义
-//      RS                  查看 zf_device_ips200_parallel8.h 中 IPS200_RS_PIN 宏定义 
-//      WR                  查看 zf_device_ips200_parallel8.h 中 IPS200_WR_PIN 宏定义 
-//      RD                  查看 zf_device_ips200_parallel8.h 中 IPS200_RD_PIN 宏定义 
-//      D0-D7               查看 zf_device_ips200_parallel8.h 中 IPS200_Dx_PIN 宏定义 
+//      RS                  查看 zf_device_ips200_parallel8.h 中 IPS200_RS_PIN  宏定义 
+//      WR                  查看 zf_device_ips200_parallel8.h 中 IPS200_WR_PIN  宏定义 
+//      RD                  查看 zf_device_ips200_parallel8.h 中 IPS200_RD_PIN  宏定义 
+//      D0-D7               查看 zf_device_ips200_parallel8.h 中 IPS200_Dx_PIN  宏定义 
 //      GND                 核心板电源地 GND
 //      3V3                 核心板 3V3 电源
 
@@ -59,12 +59,11 @@
 
 // **************************** 代码区域 ****************************
 #define IPS200_TYPE     (IPS200_TYPE_SPI)                                       // SPI 串口两寸屏 这里宏定义填写 IPS200_TYPE_SPI
-                                                                                // 
 
 int main(void)
 {
     clock_init(SYSTEM_CLOCK_80M); 	// 时钟配置及系统初始化<务必保留>
-    debug_init();                          // 调试串口信息初始化
+    debug_init();                   // 调试串口信息初始化
     
     // 此处编写用户代码 例如外设初始化代码等
 

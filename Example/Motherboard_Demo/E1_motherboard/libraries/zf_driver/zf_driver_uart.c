@@ -64,7 +64,7 @@ static void uart_callbakc_defalut (uint32 event, void *ptr)
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     UART 字节输出
 // 参数说明     uart_index          UART 模块号     (详见 zf_driver_uart.h 内 uart_index_enum 定义)
-// 参数说明     data                需要发送的字节
+// 参数说明     dat                需要发送的字节
 // 返回参数     void        
 // 使用示例     uart_write_byte(uart_index, data);
 // 备注信息     
@@ -243,7 +243,7 @@ void uart_set_interrupt_config (uart_index_enum uart_index, uart_interrupt_confi
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     UART 初始化
 // 参数说明     uart_index          UART 模块号     (详见 zf_driver_uart.h 内 uart_index_enum 定义)
-// 参数说明     baudrate            UART 波特率
+// 参数说明     baud            	UART 波特率
 // 参数说明     tx_pin              UART 发送引脚   (详见 zf_driver_uart.h 内 uart_tx_pin_enum 定义)
 // 参数说明     rx_pin              UART 接收引脚   (详见 zf_driver_uart.h 内 uart_rx_pin_enum 定义)
 // 返回参数     void                

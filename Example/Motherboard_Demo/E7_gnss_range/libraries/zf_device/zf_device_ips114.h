@@ -35,12 +35,12 @@
 /********************************************************************************************************************
 * 接线定义：
 *                  ------------------------------------
-*                  模块管脚              单片机管脚
+*                  模块管脚            单片机管脚
 *                  SCL                 查看 zf_device_ips114.h 中 IPS114_SCL_PIN 宏定义
 *                  SDA                 查看 zf_device_ips114.h 中 IPS114_SDA_PIN 宏定义
 *                  RST                 查看 zf_device_ips114.h 中 IPS114_RST_PIN 宏定义
-*                  DC                  查看 zf_device_ips114.h 中 IPS114_DC_PIN 宏定义
-*                  CS                  查看 zf_device_ips114.h 中 IPS114_CS_PIN 宏定义
+*                  DC                  查看 zf_device_ips114.h 中 IPS114_DC_PIN  宏定义
+*                  CS                  查看 zf_device_ips114.h 中 IPS114_CS_PIN  宏定义
 *                  BLK                 查看 zf_device_ips114.h 中 IPS114_BLK_PIN 宏定义
 *                  VCC                 3 .3V电源
 *                  GND                 电源地
@@ -54,32 +54,32 @@
 #include "zf_common_typedef.h"
 
 //=================================================定义 IPS114 基本配置================================================
-#define IPS114_USE_SOFT_SPI             (0)                                     // 默认使用硬件 SPI 方式驱动 建议使用硬件 SPI 方式驱动
-#if IPS114_USE_SOFT_SPI                                                         // 这两段 颜色正常的才是正确的 颜色灰的就是没有用的
+#define IPS114_USE_SOFT_SPI             (0)                               		// 默认使用硬件 SPI 方式驱动 建议使用硬件 SPI 方式驱动
+#if IPS114_USE_SOFT_SPI                                                 		// 这两段 颜色正常的才是正确的 颜色灰的就是没有用的
 //====================================================软件 SPI 驱动==================================================
-#define IPS114_SOFT_SPI_DELAY           ( 1 )                                  // 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
-#define IPS114_SCL_PIN                  ( A12 )                                // 软件 SPI SCK 引脚
-#define IPS114_SDA_PIN                  ( A9 )                                 // 软件 SPI MOSI 引脚
+#define IPS114_SOFT_SPI_DELAY           ( 1 )                                  	// 软件 SPI 的时钟延时周期 数值越小 SPI 通信速率越快
+#define IPS114_SCL_PIN                  ( A12 )                                	// 软件 SPI SCK 引脚
+#define IPS114_SDA_PIN                  ( A9 )                                 	// 软件 SPI MOSI 引脚
 //====================================================软件 SPI 驱动==================================================
 #else
 //====================================================硬件 SPI 驱动==================================================
-#define IPS114_SPI_SPEED                ( 30 * 1000 * 1000 )                        // 硬件 SPI 速率
+#define IPS114_SPI_SPEED                ( 30 * 1000 * 1000 )                 	// 硬件 SPI 速率
 #define IPS114_SPI                      ( SPI_0            )                    // 硬件 SPI 号
-#define IPS114_SCL_PIN                  ( SPI0_SCK_A12      )                       // 硬件 SPI SCK 引脚
-#define IPS114_SDA_PIN                  ( SPI0_MOSI_A9     )                        // 硬件 SPI MOSI 引脚
+#define IPS114_SCL_PIN                  ( SPI0_SCK_A12      )                 	// 硬件 SPI SCK 引脚
+#define IPS114_SDA_PIN                  ( SPI0_MOSI_A9     )                 	// 硬件 SPI MOSI 引脚
 #define IPS114_SDA_IN_PIN               (SPI_MISO_NULL	)                       // 定义SPI_MISO引脚  IPS没有MISO引脚，但是这里任然需要定义，在spi的初始化时需要使用
 //====================================================硬件 SPI 驱动==================================================
 #endif
 
-#define IPS114_RST_PIN                  ( A7 )                                    // 液晶复位引脚定义
-#define IPS114_DC_PIN                   ( A15  )                                  // 液晶命令位引脚定义
-#define IPS114_CS_PIN                   ( A8  )                                   // CS 片选引脚
-#define IPS114_BLK_PIN                  ( A13 )                                   // 液晶背光引脚定义
+#define IPS114_RST_PIN                  ( A7 )                                	// 液晶复位引脚定义
+#define IPS114_DC_PIN                   ( A15  )                              	// 液晶命令位引脚定义
+#define IPS114_CS_PIN                   ( A8  )                             	// CS 片选引脚
+#define IPS114_BLK_PIN                  ( A13 )                             	// 液晶背光引脚定义
 
-#define IPS114_DEFAULT_DISPLAY_DIR      ( IPS114_PORTAIT        )                // 默认的显示方向
-#define IPS114_DEFAULT_PENCOLOR         (RGB565_RED)                             // 默认的画笔颜色
-#define IPS114_DEFAULT_BGCOLOR          (RGB565_WHITE)                           // 默认的背景颜色
-#define IPS114_DEFAULT_DISPLAY_FONT     (IPS114_8X16_FONT)                       // 默认的字体模式
+#define IPS114_DEFAULT_DISPLAY_DIR      ( IPS114_PORTAIT        )           	// 默认的显示方向
+#define IPS114_DEFAULT_PENCOLOR         (RGB565_RED)                        	// 默认的画笔颜色
+#define IPS114_DEFAULT_BGCOLOR          (RGB565_WHITE)                     		// 默认的背景颜色
+#define IPS114_DEFAULT_DISPLAY_FONT     (IPS114_8X16_FONT)                  	// 默认的字体模式
 
 #define IPS114_DC(x)                    ((x) ? (gpio_high(IPS114_DC_PIN))  : (gpio_low(IPS114_DC_PIN)))
 #define IPS114_RST(x)                   ((x) ? (gpio_high(IPS114_RST_PIN)) : (gpio_low(IPS114_RST_PIN)))

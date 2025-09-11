@@ -56,7 +56,7 @@ uint8 data_len;
 int main(void)
 {
     clock_init(SYSTEM_CLOCK_80M); 	// 时钟配置及系统初始化<务必保留>
-    debug_init();                          // 调试串口信息初始化
+    debug_init();                   // 调试串口信息初始化
     
     // 此处编写用户代码 例如外设初始化代码等
     uint8 count = 0;
@@ -79,14 +79,14 @@ int main(void)
     {
         // 此处编写需要循环执行的代码
 
-        data_len = (uint8)wireless_uart_read_buffer(data_buffer, 32);             // 查看是否有消息 默认缓冲区是 WIRELESS_UART_BUFFER_SIZE 总共 64 字节
+        data_len = (uint8)wireless_uart_read_buffer(data_buffer, 32);         	// 查看是否有消息 默认缓冲区是 WIRELESS_UART_BUFFER_SIZE 总共 64 字节
         if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
         {
-            wireless_uart_send_buffer(data_buffer, data_len);                     // 将收到的消息发送回去
+            wireless_uart_send_buffer(data_buffer, data_len);                	// 将收到的消息发送回去
             memset(data_buffer, 0, 32);
             func_uint_to_str((char *)data_buffer, data_len);
-            wireless_uart_send_string("\r\ndata len:");                                 // 显示实际收到的数据信息
-            wireless_uart_send_buffer(data_buffer, strlen((const char *)data_buffer));    // 显示收到的数据个数
+            wireless_uart_send_string("\r\ndata len:");                              	// 显示实际收到的数据信息
+            wireless_uart_send_buffer(data_buffer, strlen((const char *)data_buffer));	// 显示收到的数据个数
             wireless_uart_send_string(".\r\n");
         }
         if(count ++ > 10)
