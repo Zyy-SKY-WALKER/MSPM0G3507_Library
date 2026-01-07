@@ -59,7 +59,7 @@
 // 如果发现现象与说明严重不符 请参照本文件最下方 例程常见问题说明 进行排查
 
 // **************************** 代码区域 ****************************
-#define SERVO_MOTOR1_PWM             (PWM_TIM_A0_CH2_B4)                          // 定义主板上舵机对应引脚
+#define SERVO_MOTOR1_PWM             (PWM_TIM_A1_CH0_B4)                          // 定义主板上舵机对应引脚
 #define SERVO_MOTOR2_PWM             (PWM_TIM_A1_CH1_B5)                          // 定义主板上舵机对应引脚
 #define SERVO_MOTOR_FREQ             (50 )                                        // 定义主板上舵机频率  请务必注意范围 50-300
 
