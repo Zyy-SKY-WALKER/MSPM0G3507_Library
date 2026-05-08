@@ -78,6 +78,7 @@
 #include "zf_device_imu660ra.h"
 #include "zf_device_imu963ra.h"
 #include "zf_device_imu660rb.h"
+#include "zf_device_imu660rc.h"
 #include "zf_device_type.h"
 #include "zf_device_wifi_uart.h"
 #include "zf_device_wifi_spi.h"
