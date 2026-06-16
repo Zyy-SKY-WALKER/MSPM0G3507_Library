@@ -66,8 +66,8 @@
 
 // **************************** 代码区域 ****************************
 #define MAX_DUTY            (50             )                                   // 最大 MAX_DUTY% 占空比
-#define DIR                 (B13)
-#define PWM                 (PWM_TIM_A0_CH1_B12)
+#define DIR                 (A1)
+#define PWM                 (PWM_TIM_A0_CH0_A0)
 
 int8 duty = 0;
 bool dir = true;

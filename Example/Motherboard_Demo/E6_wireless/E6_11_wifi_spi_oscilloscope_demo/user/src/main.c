@@ -103,8 +103,20 @@
 #define TCP_TARGET_PORT         "8086"                          // 连接目标的端口
 #define WIFI__LOCAL_PORT        "6666"                          // 本机的端口 0：随机  可设置范围2048-65535  默认 6666
 
+// 定义虚拟示波器的通道数量 最大支持16通道
+#define OSCILLOSCOPE_CHANNEL_NUM    ( 4 )
+
+seekfree_assistant_oscilloscope_struct oscilloscope_config;
+
+float oscilloscope_buffer[OSCILLOSCOPE_CHANNEL_NUM];
+
+// 定义接收参数的变量
+seekfree_assistant_debug_param_struct debug_para;
+
 int main(void)
 {
+    uint8 i = 0;
+    
     clock_init(SYSTEM_CLOCK_80M); 	// 时钟配置及系统初始化<务必保留>
     debug_init();                   // 调试串口信息初始化
     
@@ -140,31 +152,42 @@ int main(void)
 
     // 逐飞助手初始化 数据传输使用高速WIFI SPI
     seekfree_assistant_interface_init(SEEKFREE_ASSISTANT_WIFI_SPI);
-
+    
+    // 初始化逐飞助手示波器的结构体
+    seekfree_assistant_oscilloscope_config(&oscilloscope_config, OSCILLOSCOPE_CHANNEL_NUM, oscilloscope_buffer);
     // 此处编写用户代码 例如外设初始化代码等
     while(true)
     {
         // 此处编写需要循环执行的代码
       
-        // 写入需要发送的数据，有几个通道就写多少个数据
-        // 这里仅写入4个通道数据
-        seekfree_assistant_oscilloscope_data.data[0] += 0.1;
-        seekfree_assistant_oscilloscope_data.data[1] += 0.5;
-        seekfree_assistant_oscilloscope_data.data[2] += 1;
-        seekfree_assistant_oscilloscope_data.data[3] += 2;
-
-        // 设置本次需要发送几个通道的数据
-        seekfree_assistant_oscilloscope_data.channel_num = 4;
-
-        // 这里进发送了4个通道的数据，最大支持8通道
-        seekfree_assistant_oscilloscope_send(&seekfree_assistant_oscilloscope_data);
+        // 通过串口发送到虚拟示波器上
+        oscilloscope_buffer[0] -= 1;
+        oscilloscope_buffer[1] -= 2;
+        oscilloscope_buffer[2] += 1;
+        oscilloscope_buffer[3] += 2;
+        
+        seekfree_assistant_oscilloscope_send(&oscilloscope_config);
 
         system_delay_ms(20);
         // 有可能会在逐飞助手软件上看到波形更新不够连续，这是因为使用WIFI有不确定的延迟导致的
 
-        // 解析上位机发送过来的参数，解析后数据会存放在seekfree_assistant_oscilloscope_data数组中，可以通过在线调试的方式查看数据
-        // 例程为了方便因此写在了主循环，实际使用中推荐放到周期中断等位置，需要确保函数能够及时的被调用，调用周期不超过20ms
-        seekfree_assistant_data_analysis();
+        // 逐飞助手解析接收到的数据
+        seekfree_assistant_debug_param_analysis(&debug_para);
+
+        // 遍历
+        for(i = 0; i < SEEKFREE_ASSISTANT_DEBUG_PARAM_MAX; i++)
+        {
+            // 更新标志位
+            if(debug_para.update_flag[i])
+            {
+                debug_para.update_flag[i] = 0;
+
+                // 通过DEBBUG串口发送信息
+                printf("receive data channel : %d ", i);
+                printf("data : %f ", debug_para.data[i]);
+                printf("\r\n");
+            }
+        }
 
         // 此处编写需要循环执行的代码
     }

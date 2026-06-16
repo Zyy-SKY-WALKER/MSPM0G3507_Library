@@ -47,12 +47,6 @@
 //      MOTOR2_PWM1            	B9
 //      MOTOR2_PWM2           	B8
 //      GND                 	GND
-//      MOTOR3_PWM1        		A27
-//      MOTOR3_PWM2         	A26
-//      GND                 	GND
-//      MOTOR4_PWM1         	B11
-//      MOTOR4_PWM2          	B10
-//      GND                 	GND
 //      接线端子 +          电池正极
 //      接线端子 -          电池负极
 // 
@@ -74,17 +68,12 @@
 
 // **************************** 代码区域 ****************************
 #define MAX_DUTY                    (50)                                                // 最大 MAX_DUTY% 占空比
-#define MOTOR1_PWM1                 (PWM_TIM_A0_CH3_B13)
-#define MOTOR1_PWM2                 (PWM_TIM_A0_CH2_B12)
+#define MOTOR1_PWM1                 (PWM_TIM_A0_CH0_A0)
+#define MOTOR1_PWM2                 (PWM_TIM_A0_CH1_A1)
 
-#define MOTOR2_PWM1                 (PWM_TIM_A0_CH1_B9)
-#define MOTOR2_PWM2                 (PWM_TIM_A0_CH0_B8)
+#define MOTOR2_PWM1                 (PWM_TIM_A0_CH2_B12)
+#define MOTOR2_PWM2                 (PWM_TIM_A0_CH3_B13)
 
-#define MOTOR3_PWM1                 (PWM_TIM_G7_CH1_A27)
-#define MOTOR3_PWM2                 (PWM_TIM_G7_CH0_A26)
-
-#define MOTOR4_PWM1                 (PWM_TIM_G0_CH1_B11)
-#define MOTOR4_PWM2                 (PWM_TIM_G0_CH0_B10)
 int8 duty = 0;
 bool dir = true;
 
@@ -100,12 +89,7 @@ int main(void)
     
     pwm_init(MOTOR2_PWM1, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
 	pwm_init(MOTOR2_PWM2, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
-    
-    pwm_init(MOTOR3_PWM1, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
-	pwm_init(MOTOR3_PWM2, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
-    
-    pwm_init(MOTOR4_PWM1, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
-	pwm_init(MOTOR4_PWM2, 17000, 0);											        // PWM初始化频率 17KHz 占空比初始为 0
+
     interrupt_global_enable(0);
     
     while(1)
@@ -117,13 +101,6 @@ int main(void)
             
             pwm_set_duty(MOTOR2_PWM1, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
             pwm_set_duty(MOTOR2_PWM2, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
-            
-            pwm_set_duty(MOTOR3_PWM1, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
-            pwm_set_duty(MOTOR3_PWM2, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
-            
-            pwm_set_duty(MOTOR4_PWM1, duty * (PWM_DUTY_MAX / 100));                  // 计算占空比
-            pwm_set_duty(MOTOR4_PWM2, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
-
         }
         else                                                                    // 左侧反转
         {
@@ -132,12 +109,6 @@ int main(void)
             
             pwm_set_duty(MOTOR2_PWM1, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
             pwm_set_duty(MOTOR2_PWM2, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
-            
-            pwm_set_duty(MOTOR3_PWM1, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
-            pwm_set_duty(MOTOR3_PWM2, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
-            
-            pwm_set_duty(MOTOR4_PWM1, 0);                                            // 同一时间 一个电机只能输出一个 PWM 另一通道保持低电平
-            pwm_set_duty(MOTOR4_PWM2, (-duty) * (PWM_DUTY_MAX / 100));               // 计算占空比
         }
         if(dir)                                                                 // 根据方向判断计数方向 本例程仅作参考
         {
