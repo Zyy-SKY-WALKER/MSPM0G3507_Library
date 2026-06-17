@@ -71,6 +71,8 @@ void gpio_set_a0_a1_output (void)
 {
     gpio_init(A0, GPO, 0, GPO_PUSH_PULL);
     gpio_init(A1, GPO, 0, GPO_PUSH_PULL);
+    // 避免V1.0主板上电之后蜂鸣器会鸣叫
+    gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
