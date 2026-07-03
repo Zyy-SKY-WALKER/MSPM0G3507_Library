@@ -158,7 +158,7 @@ void gpio_set_dir (gpio_pin_enum pin, gpio_dir_enum dir, gpio_mode_enum mode)
         case GPI_PULL_UP        : register_temp |= IOMUX_PINCM_PIPU_ENABLE;     break;
 
         case GPO_PUSH_PULL      : register_temp |= 0;                           break;
-        case GPO_OPEN_DTAIN     : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
+        case GPO_OPEN_DRAIN     : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
         case GPO_AF_PUSH_PULL   : register_temp |= 0;                           break;
         case GPO_AF_OPEN_DTAIN  : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
     }
@@ -193,7 +193,7 @@ void gpio_init (gpio_pin_enum pin, gpio_dir_enum dir, const uint8 dat, gpio_mode
         case GPI_PULL_UP        : register_temp |= (0x00000001 | IOMUX_PINCM_PIPU_ENABLE);  break;
 
         case GPO_PUSH_PULL      : register_temp |= (0x00000001);                            break;
-        case GPO_OPEN_DTAIN     : register_temp |= (0x00000001 | IOMUX_PINCM_HIZ1_ENABLE);  break;
+        case GPO_OPEN_DRAIN     : register_temp |= (0x00000001 | IOMUX_PINCM_HIZ1_ENABLE);  break;
         case GPO_AF_PUSH_PULL   : register_temp |= 0;                                       break;
         case GPO_AF_OPEN_DTAIN  : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;                 break;
 		
@@ -243,7 +243,7 @@ void afio_init (gpio_pin_enum pin, gpio_dir_enum dir, gpio_af_enum af, gpio_mode
         case GPI_PULL_UP        : register_temp |= IOMUX_PINCM_PIPU_ENABLE;     break;
 
         case GPO_PUSH_PULL      : register_temp |= 0;                           break;
-        case GPO_OPEN_DTAIN     : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
+        case GPO_OPEN_DRAIN     : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
         case GPO_AF_PUSH_PULL   : register_temp |= 0;                           break;
         case GPO_AF_OPEN_DTAIN  : register_temp |= IOMUX_PINCM_HIZ1_ENABLE;     break;
     }
