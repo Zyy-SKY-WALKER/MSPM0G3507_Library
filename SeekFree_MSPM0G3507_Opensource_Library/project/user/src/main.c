@@ -44,6 +44,7 @@ int main (void)
 {
     clock_init(SYSTEM_CLOCK_80M);   // 时钟配置及系统初始化<务必保留>
     debug_init();					// 调试串口信息初始化
+    
 	// 此处编写用户代码 例如外设初始化代码等
 
 
@@ -51,7 +52,11 @@ int main (void)
     while(true)
     {
         // 此处编写需要循环执行的代码
-
+        
+        gpio_init(B14, GPO, GPIO_HIGH, GPO_AF_PUSH_PULL);
+         gpio_set_level (B14,1 ) ;
+         system_delay_ms (100);
+         gpio_set_level (B14,0 ) ;
 
 
         // 此处编写需要循环执行的代码

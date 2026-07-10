@@ -54,7 +54,7 @@ int main (void)
 	// 此处编写用户代码 例如外设初始化代码等
 
     // 初始化GPIO A14 为输出 默认输出低电平
-    gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
+    gpio_init(B14, GPO, 0, GPO_PUSH_PULL);
 
     // 初始化GPIO A30 为输入引脚
     gpio_init(A30, GPI, 0, GPI_PULL_UP);
@@ -64,15 +64,15 @@ int main (void)
     {
         // 此处编写需要循环执行的代码
 
-        gpio_set_level(A14, 1);              // 设置引脚电平为高电平
-        system_delay_ms(100);                  
-        gpio_set_level(A14, 0);              // 设置引脚电平为低电平
-        system_delay_ms(100);                  
-        gpio_toggle_level(A14);              // 翻转引脚电平
-        system_delay_ms(100);     
+        gpio_set_level(B14, 1);              // 设置引脚电平为高电平
+        system_delay_ms(50);                  
+        gpio_set_level(B14, 0);              // 设置引脚电平为低电平
+        system_delay_ms(50);                  
+        gpio_toggle_level(B14);              // 翻转引脚电平
+        system_delay_ms(300);     
 			
 		gpio_status = gpio_get_level(A30);   // 获取引脚电平
-        system_delay_ms(100);
+        system_delay_ms(10);
 			
         // 此处编写需要循环执行的代码
     }
