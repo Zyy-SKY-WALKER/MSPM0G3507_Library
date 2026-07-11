@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>__MSPM0G3507__</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code;..\my_lib</IncludePath>
+              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code;..\my_lib;..\test</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -383,6 +383,23 @@
       <Groups>
         <Group>
           <GroupName>code</GroupName>
+          <Files>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\motor.h</FilePath>
+            </File>
+            <File>
+              <FileName>新建文本文档.txt</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\新建文本文档.txt</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>user</GroupName>
@@ -1071,6 +1088,36 @@
               <FileName>ml_oled_font.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\my_lib\ml_oled_font.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>test</GroupName>
+          <Files>
+            <File>
+              <FileName>test_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_motor.h</FilePath>
             </File>
           </Files>
         </Group>

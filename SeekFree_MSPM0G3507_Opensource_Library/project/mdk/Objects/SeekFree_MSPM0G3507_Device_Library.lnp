@@ -1,4 +1,5 @@
 --cpu Cortex-M0+
+".\objects\motor.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
@@ -80,6 +81,8 @@
 ".\objects\dl_sysctl_mspm0g1x0x_g3x0x.o"
 ".\objects\my_lib_ili9341.o"
 ".\objects\ml_oled.o"
+".\objects\test_ili9341.o"
+".\objects\test_motor.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
