@@ -40,15 +40,21 @@ static void test_encoder_show_direction(uint16 x, uint16 y, uint8 level)
  * @param y Vertical coordinate.
  * @param count Signed encoder count.
  */
-static void test_encoder_show_count(uint16 x, uint16 y, int16 count)
+static void test_encoder_show_count(
+    uint16 x,
+    uint16 y,
+    int32 count,
+    uint8 digits)
 {
+    uint16 field_width = (uint16)((digits + 1U) * 8U);
+
     ili9341_fill_rect(
         x,
         y,
-        (uint16)(x + 63U),
+        (uint16)(x + field_width - 1U),
         (uint16)(y + 15U),
         ILI9341_COLOR_BLACK);
-    ili9341_show_int(x, y, count, 6U);
+    ili9341_show_int(x, y, count, digits);
 }
 
 /**
@@ -58,6 +64,9 @@ static void test_encoder_show_count(uint16 x, uint16 y, int16 count)
  */
 void test_encoder_run(void)
 {
+    int32 left_total = 0;
+    int32 right_total = 0;
+
     ili9341_init();
     my_encoder_init();
 
@@ -65,30 +74,43 @@ void test_encoder_run(void)
     ili9341_set_font(ILI9341_FONT_8X16);
     ili9341_set_color(ILI9341_COLOR_WHITE, ILI9341_COLOR_BLACK);
     ili9341_show_string(8U, 8U, "ENCODER TEST");
-    ili9341_show_string(8U, 40U, "LEFT :");
-    ili9341_show_string(8U, 72U, "RIGHT:");
-    ili9341_show_string(8U, 104U, "L DIR:");
-    ili9341_show_string(8U, 136U, "R DIR:");
-    ili9341_show_string(8U, 184U, "TURN WHEELS");
-    ili9341_show_string(8U, 208U, "FORWARD THEN BACK");
+    ili9341_show_string(8U, 40U, "L TOTAL:");
+    ili9341_show_string(8U, 72U, "R TOTAL:");
+    ili9341_show_string(8U, 104U, "L STEP :");
+    ili9341_show_string(8U, 136U, "R STEP :");
+    ili9341_show_string(8U, 168U, "L DIR  :");
+    ili9341_show_string(8U, 200U, "R DIR  :");
+    ili9341_show_string(8U, 240U, "TURN WHEELS");
+    ili9341_show_string(8U, 264U, "FORWARD THEN BACK");
 
     while(true)
     {
+        int16 left_step;
+        int16 right_step;
+
+        my_encoder_get_delta(&left_step, &right_step);
+        left_total += left_step;
+        right_total += right_step;
+
         test_encoder_show_count(
-            120U,
+            96U,
             40U,
-            my_encoder_get_left_count());
+            left_total,
+            8U);
         test_encoder_show_count(
-            120U,
+            96U,
             72U,
-            my_encoder_get_right_count());
+            right_total,
+            8U);
+        test_encoder_show_count(96U, 104U, left_step, 6U);
+        test_encoder_show_count(96U, 136U, right_step, 6U);
         test_encoder_show_direction(
-            120U,
-            104U,
+            96U,
+            168U,
             my_encoder_get_left_direction());
         test_encoder_show_direction(
-            120U,
-            136U,
+            96U,
+            200U,
             my_encoder_get_right_direction());
         system_delay_ms(ENCODER_TEST_UPDATE_TIME_MS);
     }

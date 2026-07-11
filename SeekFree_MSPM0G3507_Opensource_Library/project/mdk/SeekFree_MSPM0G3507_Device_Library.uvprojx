@@ -399,6 +399,26 @@
               <FileType>5</FileType>
               <FilePath>..\code\新建文本文档.txt</FilePath>
             </File>
+            <File>
+              <FileName>speed_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\speed_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>speed_pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\speed_pid.h</FilePath>
+            </File>
+            <File>
+              <FileName>imu_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\imu_uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>imu_uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\imu_uart.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1089,6 +1109,16 @@
               <FileType>5</FileType>
               <FilePath>..\my_lib\ml_oled_font.h</FilePath>
             </File>
+            <File>
+              <FileName>my_lib_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\my_lib_encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_encoder.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\my_lib_encoder.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1118,6 +1148,36 @@
               <FileName>test_motor.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_motor.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_encoder.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_encoder.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_speed_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_speed_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_speed_pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_speed_pid.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_imu_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_imu_uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_imu_uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_imu_uart.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -10,6 +10,12 @@
 #define TEST_MODE_ILI9341            (1)
 #define TEST_MODE_MOTOR              (2)
 #define TEST_MODE_ENCODER            (3)
+#define TEST_MODE_SPEED_PID          (4)
+#define TEST_MODE_IMU_UART           (5)
+#define TEST_MODE_ODOMETRY           (6)
+#define TEST_MODE_GRAY_SENSOR        (7)
+#define TEST_MODE_VOFA_SPEED         (8)
+#define TEST_MODE_LINE_TRACKER       (9)
 
 #define TEST_MODE                    TEST_MODE_ENCODER
 

@@ -82,7 +82,172 @@ I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
 F (..\code\motor.h)(0x6A5267A1)()
 F (..\code\新建文本文档.txt)(0x6A4B2C2D)()
-F (..\user\src\main.c)(0x6A5267A1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/main.o -MMD)
+F (..\code\speed_pid.c)(0x6A5280A4)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/speed_pid.o -MMD)
+I (..\code\speed_pid.h)(0x6A5280A4)
+I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
+I (..\code\motor.h)(0x6A5267A1)
+I (..\..\libraries\zf_driver\zf_driver_pwm.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_timer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\DeviceFamily.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g350x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h)(0x6A4B2C2C)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gptimer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_iomux.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_oa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wuc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_cpuss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_debugss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\driverlib.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aesadv.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crcp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\sysctl\dl_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpamp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_iwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lfss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_keystorectl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lcd.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_opa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_a.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_b.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_scratchpad.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_tamperio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timera.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timerg.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_extend.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_main.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
+I (..\my_lib\my_lib_encoder.h)(0x6A52757B)
+I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A4B2C2D)
+F (..\code\speed_pid.h)(0x6A5280A4)()
+F (..\code\imu_uart.c)(0x6A5287AD)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/imu_uart.o -MMD)
+I (..\code\imu_uart.h)(0x6A528691)
+I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\DeviceFamily.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g350x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h)(0x6A4B2C2C)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gptimer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_iomux.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_oa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wuc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_cpuss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_debugss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\driverlib.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aesadv.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crcp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\sysctl\dl_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpamp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_iwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lfss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_keystorectl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lcd.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_opa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_a.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_b.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_scratchpad.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_tamperio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timera.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timerg.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_extend.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_main.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
+F (..\code\imu_uart.h)(0x6A528691)()
+F (..\user\src\main.c)(0x6A5286C7)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/main.o -MMD)
 I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A4B2C2D)
@@ -176,7 +341,7 @@ I (..\..\libraries\zf_driver\zf_driver_pwm.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_soft_iic.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_spi.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_uart.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A5279ED)
 I (..\..\libraries\zf_device\zf_device_absolute_encoder.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_device\zf_device_oled.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_device\zf_device_tft180.h)(0x6A4B2C2D)
@@ -198,8 +363,8 @@ I (..\..\libraries\zf_device\zf_device_key.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_device\zf_device_gs08ra.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_components\seekfree_assistant.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_components\seekfree_assistant_interface.h)(0x6A4B2C2D)
-I (..\test\test_config.h)(0x6A5267A1)
-I (..\test\test_motor.h)(0x6A5267A1)
+I (..\test\test_config.h)(0x6A5286C7)
+I (..\test\test_encoder.h)(0x6A526A1A)
 F (..\user\src\isr.c)(0x6A4B2C2D)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/isr.o -MMD)
 I (..\user\inc\isr.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A4B2C2D)
@@ -295,7 +460,7 @@ I (..\..\libraries\zf_driver\zf_driver_pwm.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_soft_iic.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_spi.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_uart.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A5279ED)
 I (..\..\libraries\zf_device\zf_device_absolute_encoder.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_device\zf_device_oled.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_device\zf_device_tft180.h)(0x6A4B2C2D)
@@ -1475,7 +1640,7 @@ I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_flash.h)(0x6A4B2C2D)
 F (..\..\libraries\zf_driver\zf_driver_flash.h)(0x6A4B2C2D)()
-F (..\..\libraries\zf_driver\zf_driver_encoder.c)(0x6A4B2C2D)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/zf_driver_encoder.o -MMD)
+F (..\..\libraries\zf_driver\zf_driver_encoder.c)(0x6A5279ED)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/zf_driver_encoder.o -MMD)
 I (..\..\libraries\zf_common\zf_common_debug.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A4B2C2D)
@@ -1553,10 +1718,10 @@ I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A5279ED)
 I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_timer.h)(0x6A4B2C2D)
-F (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A4B2C2D)()
+F (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A5279ED)()
 F (..\..\libraries\zf_device\zf_device_absolute_encoder.c)(0x6A4B2C2D)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/zf_device_absolute_encoder.o -MMD)
 I (..\..\libraries\zf_common\zf_common_clock.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
@@ -4494,17 +4659,10 @@ I (..\..\libraries\zf_driver\zf_driver_delay.h)(0x6A4B2C2D)
 I (..\..\libraries\zf_driver\zf_driver_soft_iic.h)(0x6A4B2C2D)
 F (..\my_lib\ml_oled.h)(0x6A5212CA)()
 F (..\my_lib\ml_oled_font.h)(0x6A5212CA)()
-F (..\test\test_config.h)(0x6A5267A1)()
-F (..\test\test_ili9341.c)(0x6A5267A1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_ili9341.o -MMD)
-I (..\test\test_config.h)(0x6A5267A1)
-F (..\test\test_ili9341.h)(0x6A5267A1)()
-F (..\test\test_motor.c)(0x6A5267A1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_motor.o -MMD)
-I (..\test\test_config.h)(0x6A5267A1)
-I (..\test\test_motor.h)(0x6A5267A1)
-I (..\code\motor.h)(0x6A5267A1)
+F (..\my_lib\my_lib_encoder.c)(0x6A5279F5)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/my_lib_encoder.o -MMD)
+I (..\my_lib\my_lib_encoder.h)(0x6A52757B)
 I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_pwm.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_timer.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\devices\DeviceFamily.h)(0x6A4B2C2D)
@@ -4579,6 +4737,104 @@ I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
-I (..\..\libraries\zf_driver\zf_driver_delay.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A5279ED)
+I (..\..\libraries\zf_driver\zf_driver_timer.h)(0x6A4B2C2D)
+F (..\my_lib\my_lib_encoder.h)(0x6A52757B)()
+F (..\test\test_config.h)(0x6A5286C7)()
+F (..\test\test_ili9341.c)(0x6A5267A1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_ili9341.o -MMD)
+I (..\test\test_config.h)(0x6A5286C7)
+F (..\test\test_ili9341.h)(0x6A5267A1)()
+F (..\test\test_motor.c)(0x6A5267A1)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_motor.o -MMD)
+I (..\test\test_config.h)(0x6A5286C7)
 F (..\test\test_motor.h)(0x6A5267A1)()
+F (..\test\test_encoder.c)(0x6A526ECD)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_encoder.o -MMD)
+I (..\test\test_config.h)(0x6A5286C7)
+I (..\test\test_encoder.h)(0x6A526A1A)
+I (..\my_lib\my_lib_encoder.h)(0x6A52757B)
+I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\DeviceFamily.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g350x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h)(0x6A4B2C2C)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gptimer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_iomux.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_oa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wuc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_cpuss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_debugss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\driverlib.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_adc12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aes.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_aesadv.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_comp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_crcp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dac12.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_dma.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_flashctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_sysctl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\sysctl\dl_sysctl_mspm0g1x0x_g3x0x.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpamp.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_i2c.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_iwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lfss.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_keystorectl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_lcd.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mathacl.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_mcan.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_opa.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_common.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_a.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_b.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_scratchpad.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_tamperio.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timera.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timer.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_timerg.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_trng.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_extend.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_main.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A4B2C2D)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A4B2C2D)
+I (..\my_lib\my_lib_ili9341.h)(0x6A5228F6)
+I (..\..\libraries\zf_driver\zf_driver_spi.h)(0x6A4B2C2D)
+I (..\..\libraries\zf_driver\zf_driver_delay.h)(0x6A4B2C2D)
+F (..\test\test_encoder.h)(0x6A526A1A)()
+F (..\test\test_speed_pid.c)(0x6A5280A4)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_speed_pid.o -MMD)
+I (..\test\test_config.h)(0x6A5286C7)
+F (..\test\test_speed_pid.h)(0x6A527DEA)()
+F (..\test\test_imu_uart.c)(0x6A5287AD)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -Wno-covered-switch-default -Wno-unreachable-code-break -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -I ../my_lib -I ../test -D__UVISION_VERSION="543" -D__MSPM0G3507__ -D__MSPM0G3507__-o ./objects/test_imu_uart.o -MMD)
+I (..\test\test_config.h)(0x6A5286C7)
+F (..\test\test_imu_uart.h)(0x6A5286C7)()

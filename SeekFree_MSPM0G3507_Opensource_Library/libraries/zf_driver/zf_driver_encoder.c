@@ -49,6 +49,61 @@ static GPTIMER_Regs* const timer_list[] = {TIMA0, TIMA1, TIMG0, TIMG6, TIMG7, TI
 static gpio_pin_enum encoder_dir[TIM_MAX] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 //-------------------------------------------------------------------------------------------------------------------
+// 函数简介     ENCODER 脉冲方向模式底层初始化
+// 参数说明     index           TIMER 外设模块号
+// 参数说明     lsb_pin         编码器脉冲输入引脚及复用信息
+// 参数说明     dir_pin         编码器方向输入引脚
+// 参数说明     cc_index        定时器捕获比较通道
+// 返回参数     void
+// 备注信息     支持 CCP0 与 CCP1 单边沿硬件计数
+//-------------------------------------------------------------------------------------------------------------------
+static void encoder_dir_counter_init (timer_index_enum index, uint32 lsb_pin, gpio_pin_enum dir_pin, DL_TIMER_CC_INDEX cc_index)
+{
+    uint32 input_select;
+    uint32 ccp_direction;
+    DL_TIMER_CZC zero_control;
+    DL_TIMER_CAC advance_control;
+    DL_TIMER_CLC load_control;
+
+    if(DL_TIMER_CC_0_INDEX == cc_index)
+    {
+        input_select = DL_TIMER_CC_IN_SEL_CCP0;
+        ccp_direction = DL_TIMER_CC0_INPUT;
+        zero_control = DL_TIMER_CZC_CCCTL0_ZCOND;
+        advance_control = DL_TIMER_CAC_CCCTL0_ACOND;
+        load_control = DL_TIMER_CLC_CCCTL0_LCOND;
+    }
+    else
+    {
+        input_select = DL_TIMER_CC_IN_SEL_CCPX;
+        ccp_direction = DL_TIMER_CC1_INPUT;
+        zero_control = DL_TIMER_CZC_CCCTL1_ZCOND;
+        advance_control = DL_TIMER_CAC_CCCTL1_ACOND;
+        load_control = DL_TIMER_CLC_CCCTL1_LCOND;
+    }
+
+    afio_init(lsb_pin & ENCODER_PIN_INDEX_MASK, GPI, (lsb_pin >> ENCODER_PIN_AF_OFFSET) & ENCODER_PIN_AF_MASK, GPI_PULL_UP);
+
+    encoder_dir[index] = dir_pin;
+    gpio_init(dir_pin, GPI, 0, GPI_PULL_UP);
+
+    DL_Timer_setClockConfig(timer_list[index], &gCAPTURE_0ClockConfig);
+    DL_Timer_setCaptureCompareInput(timer_list[index], DL_TIMER_CC_INPUT_INV_NOINVERT, input_select, cc_index);
+    DL_Timer_setLoadValue(timer_list[index], 65535);
+    DL_Timer_setCaptureCompareCtl(timer_list[index], DL_TIMER_CC_MODE_CAPTURE, DL_TIMER_CC_ZCOND_NONE | DL_TIMER_CC_ACOND_TRIG_RISE | DL_TIMER_CC_LCOND_NONE | DL_TIMER_CAPTURE_EDGE_DETECTION_MODE_RISING, cc_index);
+    DL_Timer_setCCPDirection(timer_list[index], ccp_direction);
+    DL_Timer_setCounterControl(timer_list[index], zero_control, advance_control, load_control);
+    DL_Timer_setCounterMode(timer_list[index], DL_TIMER_COUNT_MODE_UP);
+    DL_Timer_setCounterValueAfterEnable(timer_list[index], DL_TIMER_COUNT_AFTER_EN_NO_CHANGE);
+    DL_Timer_setCounterRepeatMode(timer_list[index], DL_TIMER_REPEAT_MODE_ENABLED);
+    DL_Timer_setCaptureCompareInputFilter(timer_list[index], DL_TIMER_CC_INPUT_FILT_CPV_CONSEC_PER, DL_TIMER_CC_INPUT_FILT_FP_PER_8, cc_index);
+    DL_Timer_enableCaptureCompareInputFilter(timer_list[index], cc_index);
+    DL_Timer_setTimerCount(timer_list[index], 0);
+    DL_Timer_enableClock(timer_list[index]);
+    DL_Timer_startCounter(timer_list[index]);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 // 函数简介     ENCODER 获取计数值
 // 参数说明     index           TIMER 外设模块号
 // 返回参数     void
@@ -126,17 +181,22 @@ void encoder_quad_init (timer_index_enum index, encoder_channel1_enum ch1_pin, e
 void encoder_dir_init (timer_index_enum index, encoder_channel1_enum lsb_pin, gpio_pin_enum dir_pin)
 {
     zf_assert(((lsb_pin >> ENCODER_INDEX_OFFSET) & ENCODER_INDEX_MASK) == index);
-    
-    // 初始化引脚
-    afio_init(lsb_pin & ENCODER_PIN_INDEX_MASK, GPI, (lsb_pin >> ENCODER_PIN_AF_OFFSET) & ENCODER_PIN_AF_MASK, GPI_PULL_UP);
-    
-    // 保存方向引脚
-    encoder_dir[index] = dir_pin;
-    gpio_init(dir_pin, GPI, 0, GPI_PULL_UP);
-    
-    DL_Timer_setClockConfig(timer_list[index], &gCAPTURE_0ClockConfig);
-    DL_Timer_Count_CCP(timer_list[index]);
-    DL_Timer_setCaptureCompareInputFilter(timer_list[index], DL_TIMER_CC_INPUT_FILT_CPV_CONSEC_PER, DL_TIMER_CC_INPUT_FILT_FP_PER_8, DL_TIMER_CC_0_INDEX);
-    DL_Timer_enableCaptureCompareInputFilter(timer_list[index], DL_TIMER_CC_0_INDEX);
-    DL_Timer_enableClock(timer_list[index]);
+
+    encoder_dir_counter_init(index, (uint32)lsb_pin, dir_pin, DL_TIMER_CC_0_INDEX);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     ENCODER 脉冲方向模式初始化 使用定时器通道 2
+// 参数说明     index           TIMER 外设模块号
+// 参数说明     lsb_pin         编码器脉冲输入引脚
+// 参数说明     dir_pin         编码器方向输入引脚
+// 返回参数     void
+// 使用示例     encoder_dir_timg8_ch2_init(TIMG8_ENCODER1_CH2_B22, B23);
+// 备注信息     用于脉冲引脚仅支持 CCP1 的情况
+//-------------------------------------------------------------------------------------------------------------------
+void encoder_dir_timg8_ch2_init (encoder_channel2_enum lsb_pin, gpio_pin_enum dir_pin)
+{
+    zf_assert(((lsb_pin >> ENCODER_INDEX_OFFSET) & ENCODER_INDEX_MASK) == TIM_G8);
+
+    encoder_dir_counter_init(TIM_G8, (uint32)lsb_pin, dir_pin, DL_TIMER_CC_1_INDEX);
 }

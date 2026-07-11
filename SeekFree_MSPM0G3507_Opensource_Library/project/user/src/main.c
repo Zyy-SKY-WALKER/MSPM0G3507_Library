@@ -38,6 +38,18 @@
 #include "test_motor.h"
 #elif (TEST_MODE == TEST_MODE_ENCODER)
 #include "test_encoder.h"
+#elif (TEST_MODE == TEST_MODE_SPEED_PID)
+#include "test_speed_pid.h"
+#elif (TEST_MODE == TEST_MODE_IMU_UART)
+#include "test_imu_uart.h"
+#elif (TEST_MODE == TEST_MODE_ODOMETRY)
+#include "test_odometry.h"
+#elif (TEST_MODE == TEST_MODE_GRAY_SENSOR)
+#include "test_gray_sensor.h"
+#elif (TEST_MODE == TEST_MODE_VOFA_SPEED)
+#include "test_vofa_speed.h"
+#elif (TEST_MODE == TEST_MODE_LINE_TRACKER)
+#include "test_line_tracker.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -60,6 +72,18 @@ int main(void)
     test_motor_run();
 #elif (TEST_MODE == TEST_MODE_ENCODER)
     test_encoder_run();
+#elif (TEST_MODE == TEST_MODE_SPEED_PID)
+    test_speed_pid_run();
+#elif (TEST_MODE == TEST_MODE_IMU_UART)
+    test_imu_uart_run();
+#elif (TEST_MODE == TEST_MODE_ODOMETRY)
+    test_odometry_run();
+#elif (TEST_MODE == TEST_MODE_GRAY_SENSOR)
+    test_gray_sensor_run();
+#elif (TEST_MODE == TEST_MODE_VOFA_SPEED)
+    test_vofa_speed_run();
+#elif (TEST_MODE == TEST_MODE_LINE_TRACKER)
+    test_line_tracker_run();
 #endif
 
     while (true)

@@ -1,99 +1,37 @@
 /**
  * @file    my_lib_encoder.c
  * @brief   Dual single-edge motor encoder driver for MSPM0G3507.
- * @note    Left encoder uses TIMG8 CCP1 because B22 is not exposed by the
- *          SeekFree single-edge encoder wrapper. Right encoder reuses the
- *          existing TIMG6 CCP0 wrapper.
+ * @note    Left encoder uses the extended TIMG8 CCP1 wrapper. Right encoder
+ *          uses the existing TIMG6 CCP0 wrapper.
  */
 
 #include "my_lib_encoder.h"
 
+#include "zf_common_interrupt.h"
 #include "zf_driver_encoder.h"
-#include "zf_driver_gpio.h"
 #include "zf_driver_timer.h"
 
-#define MY_ENCODER_LEFT_TIMER             (TIMG8)
-#define MY_ENCODER_LEFT_CC_INDEX          (DL_TIMER_CC_1_INDEX)
-#define MY_ENCODER_LEFT_CC_DIRECTION      (DL_TIMER_CC1_INPUT)
+#define MY_ENCODER_LEFT_TIMER             (TIM_G8)
+#define MY_ENCODER_LEFT_CHANNEL           (TIMG8_ENCODER1_CH2_B22)
 
 #define MY_ENCODER_RIGHT_TIMER            (TIM_G6)
 #define MY_ENCODER_RIGHT_CHANNEL          (TIMG6_ENCODER1_CH1_B26)
 
-static const DL_TimerG_ClockConfig my_encoder_clock_config =
-{
-    .clockSel = DL_TIMER_CLOCK_BUSCLK,
-    .divideRatio = DL_TIMER_CLOCK_DIVIDE_1,
-    .prescale = 0U,
-};
+static uint16 my_encoder_left_previous;
+static uint16 my_encoder_right_previous;
 
 /**
- * @brief Configure TIMG8 CCP1 as a hardware rising-edge counter.
+ * @brief Apply a sampled direction level to an interval count.
+ * @param count Unsigned interval pulse count.
+ * @param direction GPIO direction level sampled with the counter.
+ * @return Signed interval count. High direction level is positive.
+ * @note Each sample interval must contain fewer than 32768 pulses.
  */
-static void my_encoder_left_counter_init(void)
-{
-    afio_init(
-        MY_ENCODER_LEFT_PULSE_PIN,
-        GPI,
-        GPIO_AF3,
-        GPI_PULL_UP);
-    gpio_init(
-        MY_ENCODER_LEFT_DIRECTION_PIN,
-        GPI,
-        GPIO_LOW,
-        GPI_PULL_UP);
-
-    DL_Timer_setClockConfig(
-        MY_ENCODER_LEFT_TIMER,
-        &my_encoder_clock_config);
-    DL_Timer_setCaptureCompareInput(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_CC_INPUT_INV_NOINVERT,
-        DL_TIMER_CC_IN_SEL_CCPX,
-        MY_ENCODER_LEFT_CC_INDEX);
-    DL_Timer_setLoadValue(MY_ENCODER_LEFT_TIMER, 0xFFFFU);
-    DL_Timer_setCaptureCompareCtl(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_CC_MODE_CAPTURE,
-        DL_TIMER_CC_ZCOND_NONE
-            | DL_TIMER_CC_ACOND_TRIG_RISE
-            | DL_TIMER_CC_LCOND_NONE
-            | DL_TIMER_CAPTURE_EDGE_DETECTION_MODE_RISING,
-        MY_ENCODER_LEFT_CC_INDEX);
-    DL_Timer_setCCPDirection(
-        MY_ENCODER_LEFT_TIMER,
-        MY_ENCODER_LEFT_CC_DIRECTION);
-    DL_Timer_setCounterControl(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_CZC_CCCTL1_ZCOND,
-        DL_TIMER_CAC_CCCTL1_ACOND,
-        DL_TIMER_CLC_CCCTL1_LCOND);
-    DL_Timer_setCounterMode(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_COUNT_MODE_UP);
-    DL_Timer_setCounterValueAfterEnable(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_COUNT_AFTER_EN_NO_CHANGE);
-    DL_Timer_setCounterRepeatMode(
-        MY_ENCODER_LEFT_TIMER,
-        DL_TIMER_REPEAT_MODE_ENABLED);
-    DL_Timer_setTimerCount(MY_ENCODER_LEFT_TIMER, 0U);
-    DL_Timer_enableClock(MY_ENCODER_LEFT_TIMER);
-    DL_Timer_startCounter(MY_ENCODER_LEFT_TIMER);
-}
-
-/**
- * @brief Convert an unsigned hardware counter to a signed direction count.
- * @param count Hardware counter value.
- * @param direction_pin GPIO sampled to determine direction.
- * @return Signed encoder count. High direction level is positive.
- */
-static int16 my_encoder_get_signed_count(
-    uint16 count,
-    gpio_pin_enum direction_pin)
+static int16 my_encoder_apply_direction(uint16 count, uint8 direction)
 {
     int16 signed_count = (int16)count;
 
-    if(gpio_get_level(direction_pin) == GPIO_LOW)
+    if(direction == GPIO_LOW)
     {
         signed_count = -signed_count;
     }
@@ -106,35 +44,53 @@ static int16 my_encoder_get_signed_count(
  */
 void my_encoder_init(void)
 {
-    my_encoder_left_counter_init();
+    encoder_dir_timg8_ch2_init(
+        MY_ENCODER_LEFT_CHANNEL,
+        MY_ENCODER_LEFT_DIRECTION_PIN);
     encoder_dir_init(
         MY_ENCODER_RIGHT_TIMER,
         MY_ENCODER_RIGHT_CHANNEL,
         MY_ENCODER_RIGHT_DIRECTION_PIN);
-    DL_Timer_setCounterValueAfterEnable(
-        TIMG6,
-        DL_TIMER_COUNT_AFTER_EN_NO_CHANGE);
     my_encoder_clear_count();
 }
 
 /**
- * @brief Read the signed left encoder count.
- * @return Count since the last left counter clear.
+ * @brief Take a near-synchronous snapshot of both encoder counters.
+ * @param left_count Destination for the signed left interval count.
+ * @param right_count Destination for the signed right interval count.
+ * @note Hardware counters continue running while the snapshot is taken.
  */
-int16 my_encoder_get_left_count(void)
+void my_encoder_get_delta(int16 *left_count, int16 *right_count)
 {
-    return my_encoder_get_signed_count(
-        (uint16)DL_Timer_getTimerCount(MY_ENCODER_LEFT_TIMER),
-        MY_ENCODER_LEFT_DIRECTION_PIN);
-}
+    uint32 primask;
+    uint16 left_current;
+    uint16 right_current;
+    uint16 left_delta;
+    uint16 right_delta;
+    uint8 left_direction;
+    uint8 right_direction;
 
-/**
- * @brief Read the signed right encoder count.
- * @return Count since the last right counter clear.
- */
-int16 my_encoder_get_right_count(void)
-{
-    return encoder_get_count(MY_ENCODER_RIGHT_TIMER);
+    if((left_count == NULL) || (right_count == NULL))
+    {
+        return;
+    }
+
+    primask = interrupt_global_disable();
+
+    left_current = timer_get(MY_ENCODER_LEFT_TIMER);
+    right_current = timer_get(MY_ENCODER_RIGHT_TIMER);
+    left_direction = gpio_get_level(MY_ENCODER_LEFT_DIRECTION_PIN);
+    right_direction = gpio_get_level(MY_ENCODER_RIGHT_DIRECTION_PIN);
+
+    left_delta = (uint16)(left_current - my_encoder_left_previous);
+    right_delta = (uint16)(right_current - my_encoder_right_previous);
+    my_encoder_left_previous = left_current;
+    my_encoder_right_previous = right_current;
+
+    interrupt_global_enable(primask);
+
+    *left_count = my_encoder_apply_direction(left_delta, left_direction);
+    *right_count = my_encoder_apply_direction(right_delta, right_direction);
 }
 
 /**
@@ -156,28 +112,38 @@ uint8 my_encoder_get_right_direction(void)
 }
 
 /**
- * @brief Clear the left hardware counter.
+ * @brief Reset the left software sampling baseline.
  */
 void my_encoder_clear_left_count(void)
 {
-    DL_Timer_stopCounter(MY_ENCODER_LEFT_TIMER);
-    DL_Timer_setTimerCount(MY_ENCODER_LEFT_TIMER, 0U);
-    DL_Timer_startCounter(MY_ENCODER_LEFT_TIMER);
+    uint32 primask = interrupt_global_disable();
+
+    my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
+
+    interrupt_global_enable(primask);
 }
 
 /**
- * @brief Clear the right hardware counter.
+ * @brief Reset the right software sampling baseline.
  */
 void my_encoder_clear_right_count(void)
 {
-    encoder_clear_count(MY_ENCODER_RIGHT_TIMER);
+    uint32 primask = interrupt_global_disable();
+
+    my_encoder_right_previous = timer_get(MY_ENCODER_RIGHT_TIMER);
+
+    interrupt_global_enable(primask);
 }
 
 /**
- * @brief Clear both hardware counters.
+ * @brief Reset both software sampling baselines near-synchronously.
  */
 void my_encoder_clear_count(void)
 {
-    my_encoder_clear_left_count();
-    my_encoder_clear_right_count();
+    uint32 primask = interrupt_global_disable();
+
+    my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
+    my_encoder_right_previous = timer_get(MY_ENCODER_RIGHT_TIMER);
+
+    interrupt_global_enable(primask);
 }

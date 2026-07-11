@@ -169,5 +169,15 @@ void    encoder_quad_init       (timer_index_enum index, encoder_channel1_enum c
 //-------------------------------------------------------------------------------------------------------------------
 void    encoder_dir_init        (timer_index_enum index, encoder_channel1_enum lsb_pin, gpio_pin_enum dir_pin);
 
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     ENCODER 脉冲方向模式初始化 使用定时器通道 2
+// 参数说明     index           TIMER 外设模块号
+// 参数说明     lsb_pin         编码器脉冲输入引脚
+// 参数说明     dir_pin         编码器方向输入引脚
+// 返回参数     void
+// 使用示例     encoder_dir_timg8_ch2_init(TIMG8_ENCODER1_CH2_B22, B23);
+// 备注信息     用于脉冲引脚仅支持 CCP1 的情况
+//-------------------------------------------------------------------------------------------------------------------
+void    encoder_dir_timg8_ch2_init  (encoder_channel2_enum lsb_pin, gpio_pin_enum dir_pin);
 #endif
 
