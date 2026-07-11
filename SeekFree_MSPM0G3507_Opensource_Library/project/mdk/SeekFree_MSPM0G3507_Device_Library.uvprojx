@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>__MSPM0G3507__</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code</IncludePath>
+              <IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code;..\my_lib</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1041,6 +1041,36 @@
               <FileName>version.txt</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\libraries\doc\version.txt</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>my_lib</GroupName>
+          <Files>
+            <File>
+              <FileName>my_lib_ili9341.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\my_lib_ili9341.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_ili9341.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\my_lib_ili9341.h</FilePath>
+            </File>
+            <File>
+              <FileName>ml_oled.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\ml_oled.c</FilePath>
+            </File>
+            <File>
+              <FileName>ml_oled.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\ml_oled.h</FilePath>
+            </File>
+            <File>
+              <FileName>ml_oled_font.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\ml_oled_font.h</FilePath>
             </File>
           </Files>
         </Group>

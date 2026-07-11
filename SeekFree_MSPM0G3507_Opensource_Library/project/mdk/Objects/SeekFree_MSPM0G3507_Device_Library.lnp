@@ -78,6 +78,8 @@
 ".\objects\dl_vref.o"
 ".\objects\dl_wwdt.o"
 ".\objects\dl_sysctl_mspm0g1x0x_g3x0x.o"
+".\objects\my_lib_ili9341.o"
+".\objects\ml_oled.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
