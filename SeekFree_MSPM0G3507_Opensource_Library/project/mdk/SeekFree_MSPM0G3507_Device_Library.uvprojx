@@ -419,6 +419,51 @@
               <FileType>5</FileType>
               <FilePath>..\code\imu_uart.h</FilePath>
             </File>
+            <File>
+              <FileName>drive_geometry.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\drive_geometry.h</FilePath>
+            </File>
+            <File>
+              <FileName>gray_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\gray_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>gray_sensor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\gray_sensor.h</FilePath>
+            </File>
+            <File>
+              <FileName>line_tracker.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\line_tracker.c</FilePath>
+            </File>
+            <File>
+              <FileName>line_tracker.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\line_tracker.h</FilePath>
+            </File>
+            <File>
+              <FileName>odometry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\odometry.c</FilePath>
+            </File>
+            <File>
+              <FileName>odometry.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\odometry.h</FilePath>
+            </File>
+            <File>
+              <FileName>vofa.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\vofa.c</FilePath>
+            </File>
+            <File>
+              <FileName>vofa.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\vofa.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1178,6 +1223,46 @@
               <FileName>test_imu_uart.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_imu_uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_gray_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_gray_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_gray_sensor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_gray_sensor.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_line_tracker.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_line_tracker.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_line_tracker.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_line_tracker.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_odometry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_odometry.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_odometry.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_odometry.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_vofa_speed.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_vofa_speed.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_vofa_speed.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_vofa_speed.h</FilePath>
             </File>
           </Files>
         </Group>

@@ -2,6 +2,10 @@
 ".\objects\motor.o"
 ".\objects\speed_pid.o"
 ".\objects\imu_uart.o"
+".\objects\gray_sensor.o"
+".\objects\line_tracker.o"
+".\objects\odometry.o"
+".\objects\vofa.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
@@ -89,6 +93,10 @@
 ".\objects\test_encoder.o"
 ".\objects\test_speed_pid.o"
 ".\objects\test_imu_uart.o"
+".\objects\test_gray_sensor.o"
+".\objects\test_line_tracker.o"
+".\objects\test_odometry.o"
+".\objects\test_vofa_speed.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

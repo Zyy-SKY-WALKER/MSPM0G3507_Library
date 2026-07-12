@@ -17,6 +17,6 @@
 #define TEST_MODE_VOFA_SPEED         (8)
 #define TEST_MODE_LINE_TRACKER       (9)
 
-#define TEST_MODE                    TEST_MODE_ENCODER
+#define TEST_MODE                    TEST_MODE_ILI9341
 
 #endif
