@@ -10,10 +10,10 @@
 #include "zf_common_typedef.h"
 #include "zf_driver_uart.h"
 
-#define VOFA_UART_CONFIGURED           (0U)
-#define VOFA_UART_INDEX                (UART_2)
-#define VOFA_UART_TX_PIN               (UART2_TX_B15)
-#define VOFA_UART_RX_PIN               (UART2_RX_B16)
+#define VOFA_UART_CONFIGURED           (1U)
+#define VOFA_UART_INDEX                (UART_1)
+#define VOFA_UART_TX_PIN               (UART1_TX_B6)
+#define VOFA_UART_RX_PIN               (UART1_RX_B7)
 #define VOFA_UART_BAUD_RATE            (115200U)
 
 #define VOFA_STREAM_DEFAULT_HZ         (50U)
@@ -29,6 +29,8 @@ typedef struct
     uint32 rx_overflow_count;
     uint32 queue_drop_count;
     uint32 timeout_stop_count;
+    float left_target_mm_s;
+    float right_target_mm_s;
     uint8 armed;
     uint8 stream_enabled;
     uint8 stream_rate_hz;

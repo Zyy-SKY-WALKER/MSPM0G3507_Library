@@ -6,6 +6,7 @@
 ".\objects\line_tracker.o"
 ".\objects\odometry.o"
 ".\objects\vofa.o"
+".\objects\control_scheduler.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
@@ -97,6 +98,9 @@
 ".\objects\test_line_tracker.o"
 ".\objects\test_odometry.o"
 ".\objects\test_vofa_speed.o"
+".\objects\test_gpio_output.o"
+".\objects\test_gpio_input.o"
+".\objects\test_control_scheduler.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

@@ -49,6 +49,8 @@ static volatile uint8 vofa_initialized;
 static volatile uint8 vofa_armed;
 static volatile uint8 vofa_stream_enabled;
 static volatile uint8 vofa_stream_rate_hz;
+static volatile float vofa_left_target_mm_s;
+static volatile float vofa_right_target_mm_s;
 
 static vofa_gain_struct vofa_left_gains;
 static vofa_gain_struct vofa_right_gains;
@@ -345,6 +347,8 @@ static void vofa_stop_and_disarm(void)
     uint32 primask = interrupt_global_disable();
 
     vofa_armed = 0U;
+    vofa_left_target_mm_s = 0.0F;
+    vofa_right_target_mm_s = 0.0F;
     vofa_valid_command_count++;
     vofa_last_command_ms = vofa_uptime_ms;
     speed_pid_stop();
@@ -372,6 +376,8 @@ static uint8 vofa_apply_target_if_armed(
 
     vofa_valid_command_count++;
     vofa_last_command_ms = vofa_uptime_ms;
+    vofa_left_target_mm_s = left_mm_s;
+    vofa_right_target_mm_s = right_mm_s;
     speed_pid_set_target(left_mm_s, right_mm_s);
 
     interrupt_global_enable(primask);
@@ -542,7 +548,7 @@ uint8 vofa_init(void)
         return ZF_FALSE;
     }
 
-    if ((VOFA_UART_INDEX != UART_2)
+    if ((VOFA_UART_INDEX != UART_1)
         || (((VOFA_UART_TX_PIN >> UART_INDEX_OFFSET) & UART_INDEX_MASK)
             != VOFA_UART_INDEX)
         || (((VOFA_UART_RX_PIN >> UART_INDEX_OFFSET) & UART_INDEX_MASK)
@@ -569,6 +575,8 @@ uint8 vofa_init(void)
     vofa_queue_drop_count = 0U;
     vofa_timeout_stop_count = 0U;
     vofa_armed = 0U;
+    vofa_left_target_mm_s = 0.0F;
+    vofa_right_target_mm_s = 0.0F;
     vofa_stream_enabled = 1U;
     vofa_stream_rate_hz = VOFA_STREAM_DEFAULT_HZ;
     vofa_left_gains.kp = SPEED_PID_LEFT_KP;
@@ -609,6 +617,8 @@ void vofa_tick_10ms(void)
             >= VOFA_COMMAND_TIMEOUT_MS))
     {
         vofa_armed = 0U;
+        vofa_left_target_mm_s = 0.0F;
+        vofa_right_target_mm_s = 0.0F;
         vofa_timeout_stop_count++;
         speed_pid_stop();
     }
@@ -738,6 +748,8 @@ void vofa_get_stats(vofa_stats_struct *stats)
     stats->rx_overflow_count = vofa_rx_overflow_count;
     stats->queue_drop_count = vofa_queue_drop_count;
     stats->timeout_stop_count = vofa_timeout_stop_count;
+    stats->left_target_mm_s = vofa_left_target_mm_s;
+    stats->right_target_mm_s = vofa_right_target_mm_s;
     stats->armed = vofa_armed;
     stats->stream_enabled = vofa_stream_enabled;
     stats->stream_rate_hz = vofa_stream_rate_hz;

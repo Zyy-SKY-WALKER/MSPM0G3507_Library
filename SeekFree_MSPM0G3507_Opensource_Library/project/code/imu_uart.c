@@ -8,9 +8,9 @@
 #include "zf_common_interrupt.h"
 #include "zf_driver_uart.h"
 
-#define IMU_UART_INDEX                  (UART_3)
-#define IMU_UART_TX_PIN                 (UART3_TX_B12)
-#define IMU_UART_RX_PIN                 (UART3_RX_B13)
+#define IMU_UART_INDEX                  (UART_2)
+#define IMU_UART_TX_PIN                 (UART2_TX_B15)
+#define IMU_UART_RX_PIN                 (UART2_RX_B16)
 
 #define IMU_UART_FRAME_HEADER           (0x55U)
 #define IMU_UART_FRAME_ACCEL            (0x51U)
@@ -20,7 +20,8 @@
 #define IMU_UART_ACCEL_SCALE            (16.0F / 32768.0F)
 #define IMU_UART_GYRO_SCALE             (2000.0F / 32768.0F)
 #define IMU_UART_ANGLE_SCALE            (180.0F / 32768.0F)
-#define IMU_UART_TEMPERATURE_SCALE      (1.0F / 100.0F)
+#define IMU_UART_TEMPERATURE_SCALE      (1.0F / 340.0F)
+#define IMU_UART_TEMPERATURE_OFFSET_C   (36.53F)
 
 typedef struct
 {
@@ -188,7 +189,7 @@ static void imu_uart_process_byte(uint8 byte)
 }
 
 /**
- * @brief Drain received bytes from the UART3 interrupt callback.
+ * @brief Drain received bytes from the UART2 interrupt callback.
  * @param state UART interrupt state.
  * @param user_data Optional callback context.
  */
@@ -210,7 +211,7 @@ static void imu_uart_callback(uint32 state, void *user_data)
 }
 
 /**
- * @brief Initialize the UART3 attitude-module interface.
+ * @brief Initialize the UART2 attitude-module interface.
  */
 void imu_uart_init(void)
 {
@@ -248,13 +249,13 @@ void imu_uart_init(void)
     uart_set_interrupt_config(
         IMU_UART_INDEX,
         UART_INTERRUPT_CONFIG_RX_ENABLE);
-    imu_uart_reset_yaw();
+    imu_uart_angle_init();
 }
 
 /**
- * @brief Send the module command that resets the yaw reference.
+ * @brief Send the module command that initializes the Z-axis angle to zero.
  */
-void imu_uart_reset_yaw(void)
+void imu_uart_angle_init(void)
 {
     static const uint8 command[] = {0xFFU, 0xAAU, 0x52U};
 
@@ -262,6 +263,14 @@ void imu_uart_reset_yaw(void)
         IMU_UART_INDEX,
         command,
         sizeof(command));
+}
+
+/**
+ * @brief Reset the yaw reference through the module angle-init command.
+ */
+void imu_uart_reset_yaw(void)
+{
+    imu_uart_angle_init();
 }
 
 /**
@@ -294,7 +303,8 @@ uint8 imu_uart_get_data(imu_uart_data_struct *data)
             (float)raw_data.angle[index] * IMU_UART_ANGLE_SCALE;
     }
     data->temperature_c =
-        (float)raw_data.temperature * IMU_UART_TEMPERATURE_SCALE;
+        ((float)raw_data.temperature * IMU_UART_TEMPERATURE_SCALE)
+        + IMU_UART_TEMPERATURE_OFFSET_C;
     data->valid_flags = raw_data.valid_flags;
     data->frame_count = raw_data.frame_count;
     data->angle_frame_count = raw_data.angle_frame_count;

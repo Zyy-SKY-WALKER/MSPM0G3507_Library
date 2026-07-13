@@ -50,6 +50,12 @@
 #include "test_vofa_speed.h"
 #elif (TEST_MODE == TEST_MODE_LINE_TRACKER)
 #include "test_line_tracker.h"
+#elif (TEST_MODE == TEST_MODE_GPIO_OUTPUT)
+#include "test_gpio_output.h"
+#elif (TEST_MODE == TEST_MODE_GPIO_INPUT)
+#include "test_gpio_input.h"
+#elif (TEST_MODE == TEST_MODE_CONTROL_SCHEDULER)
+#include "test_control_scheduler.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -84,6 +90,12 @@ int main(void)
     test_vofa_speed_run();
 #elif (TEST_MODE == TEST_MODE_LINE_TRACKER)
     test_line_tracker_run();
+#elif (TEST_MODE == TEST_MODE_GPIO_OUTPUT)
+    test_gpio_output_run();
+#elif (TEST_MODE == TEST_MODE_GPIO_INPUT)
+    test_gpio_input_run();
+#elif (TEST_MODE == TEST_MODE_CONTROL_SCHEDULER)
+    test_control_scheduler_run();
 #endif
 
     while (true)

@@ -464,6 +464,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\vofa.h</FilePath>
             </File>
+            <File>
+              <FileName>control_scheduler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\control_scheduler.c</FilePath>
+            </File>
+            <File>
+              <FileName>control_scheduler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\control_scheduler.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1263,6 +1273,36 @@
               <FileName>test_vofa_speed.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_vofa_speed.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_gpio_output.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_gpio_output.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_gpio_output.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_gpio_output.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_gpio_input.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_gpio_input.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_gpio_input.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_gpio_input.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_control_scheduler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_control_scheduler.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_control_scheduler.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_control_scheduler.h</FilePath>
             </File>
           </Files>
         </Group>

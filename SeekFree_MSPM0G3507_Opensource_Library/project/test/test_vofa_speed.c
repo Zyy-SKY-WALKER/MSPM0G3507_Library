@@ -1,16 +1,17 @@
 /**
  * @file    test_vofa_speed.c
- * @brief   VOFA speed PID telemetry and safe command test.
+ * @brief   VOFA UART telemetry and target-command loopback test.
  *
  * Commands:
  *   ARM
  *   STOP
  *   TARGET,100,100
- *   KP,L,1.0
- *   KI,R,0.2
- *   KD,B,0.0
- *   STREAM,0
- *   RATE,50
+ *
+ * JustFloat channels:
+ *   0 parsed left target, 1 simulated left speed,
+ *   2 parsed right target, 3 simulated right speed,
+ *   4 valid commands, 5 invalid commands,
+ *   6 received lines, 7 armed state.
  */
 
 #include "test_config.h"
@@ -19,36 +20,37 @@
 
 #include "test_vofa_speed.h"
 
-#include "my_lib_encoder.h"
 #include "speed_pid.h"
 #include "vofa.h"
 #include "zf_driver_delay.h"
-#include "zf_driver_pit.h"
 
-#define VOFA_SPEED_TEST_PIT           (PIT_TIM_G12)
-#define VOFA_SPEED_TEST_IDLE_MS       (1U)
+#define VOFA_SPEED_TEST_SEND_MS             (20U)
+#define VOFA_SPEED_TEST_LEFT_MM_S            (123.0F)
+#define VOFA_SPEED_TEST_RIGHT_MM_S           (-123.0F)
 
 /**
- * @brief Update encoder sampling, speed PID and VOFA timeout timing.
- * @param event PIT callback event value.
- * @param user_data Optional callback context.
+ * @brief Send parsed targets with fixed simulated wheel speeds.
  */
-static void vofa_speed_test_pit_callback(uint32 event, void *user_data)
+static void vofa_speed_test_send(void)
 {
-    int16 left_count;
-    int16 right_count;
+    speed_pid_status_struct status = {0};
+    vofa_stats_struct stats;
 
-    (void)event;
-    (void)user_data;
-
-    my_encoder_get_delta(&left_count, &right_count);
-    speed_pid_update_10ms(left_count, right_count);
-    vofa_tick_10ms();
+    vofa_get_stats(&stats);
+    status.left_target_mm_s = stats.left_target_mm_s;
+    status.left_speed_mm_s = VOFA_SPEED_TEST_LEFT_MM_S;
+    status.right_target_mm_s = stats.right_target_mm_s;
+    status.right_speed_mm_s = VOFA_SPEED_TEST_RIGHT_MM_S;
+    status.left_duty = (int16)stats.valid_command_count;
+    status.right_duty = (int16)stats.invalid_command_count;
+    status.left_count = (int16)stats.received_line_count;
+    status.right_count = (int16)stats.armed;
+    vofa_send_speed(&status);
 }
 
 /**
- * @brief Run the foreground VOFA speed tuning test.
- * @note Raise both wheels before enabling nonzero TARGET commands.
+ * @brief Run the foreground VOFA UART loopback test.
+ * @note The test never executes the speed control update, so PWM stays zero.
  */
 void test_vofa_speed_run(void)
 {
@@ -61,7 +63,6 @@ void test_vofa_speed_run(void)
         }
     }
 
-    my_encoder_init();
     speed_pid_init();
 
     if (vofa_init() == ZF_FALSE)
@@ -74,18 +75,14 @@ void test_vofa_speed_run(void)
         }
     }
 
-    pit_ms_init(
-        VOFA_SPEED_TEST_PIT,
-        SPEED_PID_SAMPLE_PERIOD_MS,
-        vofa_speed_test_pit_callback,
-        NULL);
-
-    printf("VOFA speed test ready. Send ARM before TARGET.\r\n");
+    vofa_set_stream_enabled(0U);
+    printf("VOFA UART test ready. Send ARM, then TARGET,100,100.\r\n");
 
     while (true)
     {
         vofa_process();
-        system_delay_ms(VOFA_SPEED_TEST_IDLE_MS);
+        vofa_speed_test_send();
+        system_delay_ms(VOFA_SPEED_TEST_SEND_MS);
     }
 }
 

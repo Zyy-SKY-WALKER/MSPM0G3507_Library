@@ -28,6 +28,7 @@ typedef struct
 } imu_uart_data_struct;
 
 void imu_uart_init(void);
+void imu_uart_angle_init(void);
 void imu_uart_reset_yaw(void);
 uint8 imu_uart_get_data(imu_uart_data_struct *data);
 uint8 imu_uart_get_yaw(float *yaw_deg, uint32 *angle_frame_count);
