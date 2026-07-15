@@ -14,7 +14,7 @@
 #include "zf_driver_delay.h"
 #include "zf_driver_gpio.h"
 
-#define ENCODER_TEST_UPDATE_TIME_MS    (100U)
+#define ENCODER_TEST_REFRESH_DELAY_MS    (100U)
 
 /**
  * @brief Display one GPIO phase level as H or L.
@@ -66,8 +66,12 @@ void test_encoder_run(void)
 {
     int32 left_total = 0;
     int32 right_total = 0;
-    int16 left_step;
-    int16 right_step;
+    int16 left_delta;
+    int16 right_delta;
+    uint8 left_phase_a;
+    uint8 left_phase_b;
+    uint8 right_phase_a;
+    uint8 right_phase_b;
 
     ili9341_init();
     my_encoder_init();
@@ -78,19 +82,24 @@ void test_encoder_run(void)
     ili9341_show_string(8U, 8U, "ENCODER TEST");
     ili9341_show_string(8U, 40U, "L TOTAL:");
     ili9341_show_string(8U, 72U, "R TOTAL:");
-    ili9341_show_string(8U, 104U, "L STEP :");
-    ili9341_show_string(8U, 136U, "R STEP :");
+    ili9341_show_string(8U, 104U, "L DELTA:");
+    ili9341_show_string(8U, 136U, "R DELTA:");
     ili9341_show_string(8U, 168U, "L A/B  :");
     ili9341_show_string(8U, 200U, "R A/B  :");
     ili9341_show_string(8U, 240U, "TURN ONE WHEEL");
     ili9341_show_string(8U, 264U, "ONE REV ~= 10250");
     ili9341_show_string(8U, 288U, "CHECK FORWARD SIGN");
 
+    my_encoder_clear_count();
     while (true)
     {
-        my_encoder_get_delta(&left_step, &right_step);
-        left_total += left_step;
-        right_total += right_step;
+        my_encoder_get_delta(&left_delta, &right_delta);
+        left_total += left_delta;
+        right_total += right_delta;
+        left_phase_a = my_encoder_get_left_phase_a();
+        left_phase_b = my_encoder_get_left_phase_b();
+        right_phase_a = my_encoder_get_right_phase_a();
+        right_phase_b = my_encoder_get_right_phase_b();
 
         test_encoder_show_count(
             96U,
@@ -102,25 +111,25 @@ void test_encoder_run(void)
             72U,
             right_total,
             8U);
-        test_encoder_show_count(96U, 104U, left_step, 6U);
-        test_encoder_show_count(96U, 136U, right_step, 6U);
+        test_encoder_show_count(96U, 104U, left_delta, 6U);
+        test_encoder_show_count(96U, 136U, right_delta, 6U);
         test_encoder_show_level(
             96U,
             168U,
-            my_encoder_get_left_phase_a());
+            left_phase_a);
         test_encoder_show_level(
             120U,
             168U,
-            my_encoder_get_left_phase_b());
+            left_phase_b);
         test_encoder_show_level(
             96U,
             200U,
-            my_encoder_get_right_phase_a());
+            right_phase_a);
         test_encoder_show_level(
             120U,
             200U,
-            my_encoder_get_right_phase_b());
-        system_delay_ms(ENCODER_TEST_UPDATE_TIME_MS);
+            right_phase_b);
+        system_delay_ms(ENCODER_TEST_REFRESH_DELAY_MS);
     }
 }
 
