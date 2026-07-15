@@ -56,6 +56,8 @@
 #include "test_gpio_input.h"
 #elif (TEST_MODE == TEST_MODE_CONTROL_SCHEDULER)
 #include "test_control_scheduler.h"
+#elif (TEST_MODE == TEST_MODE_SERVO)
+#include "test_servo.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -96,6 +98,8 @@ int main(void)
     test_gpio_input_run();
 #elif (TEST_MODE == TEST_MODE_CONTROL_SCHEDULER)
     test_control_scheduler_run();
+#elif (TEST_MODE == TEST_MODE_SERVO)
+    test_servo_run();
 #endif
 
     while (true)

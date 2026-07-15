@@ -474,6 +474,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\control_scheduler.h</FilePath>
             </File>
+            <File>
+              <FileName>servo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\servo.c</FilePath>
+            </File>
+            <File>
+              <FileName>servo.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\servo.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1303,6 +1313,16 @@
               <FileName>test_control_scheduler.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_control_scheduler.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_servo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_servo.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_servo.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_servo.h</FilePath>
             </File>
           </Files>
         </Group>

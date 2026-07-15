@@ -19,7 +19,8 @@
 #define TEST_MODE_GPIO_OUTPUT        (10)
 #define TEST_MODE_GPIO_INPUT         (11)
 #define TEST_MODE_CONTROL_SCHEDULER  (12)
+#define TEST_MODE_SERVO              (13)
 
-#define TEST_MODE                    TEST_MODE_VOFA_SPEED
+#define TEST_MODE                    TEST_MODE_SERVO
 
 #endif
