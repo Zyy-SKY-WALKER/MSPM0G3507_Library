@@ -7,6 +7,7 @@
 
 #include <float.h>
 
+#include "drive_geometry.h"
 #include "imu_uart.h"
 #include "my_lib_encoder.h"
 #include "zf_common_interrupt.h"
@@ -29,11 +30,17 @@
 #define CONTROL_REQUEST_LINE_STOP                    (0x0008U)
 #define CONTROL_REQUEST_FAULT_CLEAR                  (0x0010U)
 #define CONTROL_REQUEST_MANUAL_TARGET                (0x0020U)
-#define CONTROL_REQUEST_CHASSIS_DISTANCE             (0x0040U)
-#define CONTROL_REQUEST_CHASSIS_TIMED                (0x0080U)
-#define CONTROL_REQUEST_CHASSIS_TURN                 (0x0100U)
-#define CONTROL_REQUEST_CHASSIS_CANCEL               (0x0200U)
-#define CONTROL_REQUEST_CHASSIS_PID_PROFILE          (0x0400U)
+#define CONTROL_REQUEST_CHASSIS_COMMAND              (0x0040U)
+#define CONTROL_REQUEST_CHASSIS_CANCEL               (0x0080U)
+#define CONTROL_REQUEST_CHASSIS_PID_PROFILE          (0x0100U)
+
+typedef enum
+{
+    CONTROL_CHASSIS_REQUEST_NONE = 0,
+    CONTROL_CHASSIS_REQUEST_DISTANCE,
+    CONTROL_CHASSIS_REQUEST_TIMED,
+    CONTROL_CHASSIS_REQUEST_TURN,
+} control_chassis_request_enum;
 
 typedef struct
 {
@@ -43,6 +50,7 @@ typedef struct
     float chassis_value;
     float chassis_speed;
     uint32 chassis_duration_ms;
+    control_chassis_request_enum chassis_command;
     uint8 chassis_profile_id;
 } control_request_mailbox_struct;
 
@@ -113,6 +121,34 @@ static uint8 control_value_is_valid(float value)
     return (uint8)((value == value)
         && (value >= -FLT_MAX)
         && (value <= FLT_MAX));
+}
+
+/**
+ * @brief Validate one bounded relative-turn request.
+ * @param angle_deg Requested relative angle in degrees.
+ * @param angular_speed_deg_s Positive angular-speed limit in degrees per second.
+ * @return Nonzero when the request can map to valid wheel targets.
+ */
+static uint8 control_turn_request_is_valid(
+    float angle_deg,
+    float angular_speed_deg_s)
+{
+    float wheel_speed_mm_s;
+
+    if ((control_value_is_valid(angle_deg) == 0U)
+        || (control_value_is_valid(angular_speed_deg_s) == 0U)
+        || (angle_deg == 0.0F)
+        || (angle_deg < -180.0F)
+        || (angle_deg > 180.0F)
+        || (angular_speed_deg_s <= 0.0F))
+    {
+        return 0U;
+    }
+
+    wheel_speed_mm_s = angular_speed_deg_s
+        * (DRIVE_PI / 180.0F)
+        * (DRIVE_TRACK_WIDTH_MM * 0.5F);
+    return (uint8)(wheel_speed_mm_s <= SPEED_PID_TARGET_LIMIT_MM_S);
 }
 
 /**
@@ -187,7 +223,13 @@ static control_request_mailbox_struct control_take_requests(void)
     requests.flags = control_mailbox.flags;
     requests.left_target_mm_s = control_mailbox.left_target_mm_s;
     requests.right_target_mm_s = control_mailbox.right_target_mm_s;
+    requests.chassis_value = control_mailbox.chassis_value;
+    requests.chassis_speed = control_mailbox.chassis_speed;
+    requests.chassis_duration_ms = control_mailbox.chassis_duration_ms;
+    requests.chassis_command = control_mailbox.chassis_command;
+    requests.chassis_profile_id = control_mailbox.chassis_profile_id;
     control_mailbox.flags = 0U;
+    control_mailbox.chassis_command = CONTROL_CHASSIS_REQUEST_NONE;
 
     return requests;
 }
@@ -342,23 +384,29 @@ static void control_apply_requests(
     if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
         || (control_status.mode == CONTROL_MODE_CHASSIS_MOTION))
     {
-        if ((requests->flags & CONTROL_REQUEST_CHASSIS_DISTANCE) != 0U)
+        if ((requests->flags & CONTROL_REQUEST_CHASSIS_COMMAND) != 0U)
         {
-            chassis_started = chassis_motion_start_distance(
-                requests->chassis_value,
-                requests->chassis_speed);
-        }
-        else if ((requests->flags & CONTROL_REQUEST_CHASSIS_TIMED) != 0U)
-        {
-            chassis_started = chassis_motion_start_timed(
-                requests->chassis_speed,
-                requests->chassis_duration_ms);
-        }
-        else if ((requests->flags & CONTROL_REQUEST_CHASSIS_TURN) != 0U)
-        {
-            chassis_started = chassis_motion_start_turn_relative(
-                requests->chassis_value,
-                requests->chassis_speed);
+            if (requests->chassis_command
+                == CONTROL_CHASSIS_REQUEST_DISTANCE)
+            {
+                chassis_started = chassis_motion_start_distance(
+                    requests->chassis_value,
+                    requests->chassis_speed);
+            }
+            else if (requests->chassis_command
+                == CONTROL_CHASSIS_REQUEST_TIMED)
+            {
+                chassis_started = chassis_motion_start_timed(
+                    requests->chassis_speed,
+                    requests->chassis_duration_ms);
+            }
+            else if (requests->chassis_command
+                == CONTROL_CHASSIS_REQUEST_TURN)
+            {
+                chassis_started = chassis_motion_start_turn_relative(
+                    requests->chassis_value,
+                    requests->chassis_speed);
+            }
         }
 
         if (chassis_started != 0U)
@@ -515,6 +563,7 @@ uint8 control_scheduler_init(void)
     control_mailbox.chassis_value = 0.0F;
     control_mailbox.chassis_speed = 0.0F;
     control_mailbox.chassis_duration_ms = 0U;
+    control_mailbox.chassis_command = CONTROL_CHASSIS_REQUEST_NONE;
     control_mailbox.chassis_profile_id =
         CHASSIS_MOTION_PID_PROFILE_INVALID;
 
@@ -863,7 +912,9 @@ uint8 control_scheduler_request_chassis_motion_distance(
     primask = interrupt_global_disable();
     control_mailbox.chassis_value = distance_mm;
     control_mailbox.chassis_speed = max_speed_mm_s;
-    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_DISTANCE;
+    control_mailbox.chassis_duration_ms = 0U;
+    control_mailbox.chassis_command = CONTROL_CHASSIS_REQUEST_DISTANCE;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_COMMAND;
     interrupt_global_enable(primask);
 
     return ZF_TRUE;
@@ -891,7 +942,9 @@ uint8 control_scheduler_request_chassis_motion_timed(
     primask = interrupt_global_disable();
     control_mailbox.chassis_speed = speed_mm_s;
     control_mailbox.chassis_duration_ms = duration_ms;
-    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_TIMED;
+    control_mailbox.chassis_value = 0.0F;
+    control_mailbox.chassis_command = CONTROL_CHASSIS_REQUEST_TIMED;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_COMMAND;
     interrupt_global_enable(primask);
 
     return ZF_TRUE;
@@ -899,7 +952,8 @@ uint8 control_scheduler_request_chassis_motion_timed(
 
 /**
  * @brief Submit a high-level relative heading-turn command.
- * @param angle_deg Positive for left and negative for right rotation.
+ * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive maximum angular speed.
  * @return ZF_TRUE when request values are valid.
  */
@@ -909,10 +963,9 @@ uint8 control_scheduler_request_chassis_motion_turn_relative(
 {
     uint32 primask;
 
-    if ((control_value_is_valid(angle_deg) == 0U)
-        || (control_value_is_valid(max_angular_speed_deg_s) == 0U)
-        || (angle_deg == 0.0F)
-        || (max_angular_speed_deg_s <= 0.0F))
+    if (control_turn_request_is_valid(
+            angle_deg,
+            max_angular_speed_deg_s) == 0U)
     {
         return ZF_FALSE;
     }
@@ -920,7 +973,9 @@ uint8 control_scheduler_request_chassis_motion_turn_relative(
     primask = interrupt_global_disable();
     control_mailbox.chassis_value = angle_deg;
     control_mailbox.chassis_speed = max_angular_speed_deg_s;
-    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_TURN;
+    control_mailbox.chassis_duration_ms = 0U;
+    control_mailbox.chassis_command = CONTROL_CHASSIS_REQUEST_TURN;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_COMMAND;
     interrupt_global_enable(primask);
 
     return ZF_TRUE;

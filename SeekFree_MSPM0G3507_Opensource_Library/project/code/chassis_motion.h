@@ -147,7 +147,8 @@ uint8 chassis_motion_start_timed(
 
 /**
  * @brief Start or smoothly replan a relative IMU-heading turn.
- * @param angle_deg Positive for left and negative for right rotation.
+ * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive angular-speed limit in degrees per second.
  * @return ZF_TRUE when the command was accepted.
  * @note Call from the unique 10 ms scheduler context.

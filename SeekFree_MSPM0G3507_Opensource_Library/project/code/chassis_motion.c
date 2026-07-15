@@ -150,17 +150,44 @@ static float chassis_motion_clamp_wheel_target(float target_mm_s)
  */
 static float chassis_motion_wrap_angle_deg(float angle_deg)
 {
-    while (angle_deg > 180.0F)
+    if (angle_deg > 180.0F)
     {
         angle_deg -= 360.0F;
     }
-
-    while (angle_deg < -180.0F)
+    else if (angle_deg < -180.0F)
     {
         angle_deg += 360.0F;
     }
 
     return angle_deg;
+}
+
+/**
+ * @brief Calculate heading error while preserving a requested 180-degree turn.
+ * @param target_heading_deg Desired heading in degrees.
+ * @param current_heading_deg Current heading in degrees.
+ * @return Signed shortest-path heading error in degrees.
+ */
+static float chassis_motion_get_heading_error(
+    float target_heading_deg,
+    float current_heading_deg)
+{
+    float error;
+
+    error = chassis_motion_wrap_angle_deg(
+        target_heading_deg - current_heading_deg);
+    if ((error == -180.0F)
+        && (chassis_motion_status.command_value > 0.0F))
+    {
+        error = 180.0F;
+    }
+    else if ((error == 180.0F)
+        && (chassis_motion_status.command_value < 0.0F))
+    {
+        error = -180.0F;
+    }
+
+    return error;
 }
 
 /**
@@ -280,18 +307,29 @@ static void chassis_motion_reset_heading_pid(void)
  * @brief Calculate the heading PID correction in wheel-speed units.
  * @param target_heading_deg Desired heading in degrees.
  * @param current_heading_deg Current heading in degrees.
+ * @param output_limit Nonnegative correction limit in millimeters per second.
  * @return Signed left-turn correction in millimeters per second.
  */
 static float chassis_motion_update_heading_pid(
     float target_heading_deg,
-    float current_heading_deg)
+    float current_heading_deg,
+    float output_limit)
 {
     float error;
 
-    error = chassis_motion_wrap_angle_deg(
-        target_heading_deg - current_heading_deg);
+    error = chassis_motion_get_heading_error(
+        target_heading_deg,
+        current_heading_deg);
     chassis_motion_heading_pid.integral +=
         chassis_motion_heading_pid.ki * error;
+    if (chassis_motion_heading_pid.integral > output_limit)
+    {
+        chassis_motion_heading_pid.integral = output_limit;
+    }
+    else if (chassis_motion_heading_pid.integral < -output_limit)
+    {
+        chassis_motion_heading_pid.integral = -output_limit;
+    }
     chassis_motion_heading_pid.output =
         (chassis_motion_heading_pid.kp * error)
         + chassis_motion_heading_pid.integral
@@ -494,9 +532,9 @@ static uint8 chassis_motion_command_is_complete(void)
     if (chassis_motion_status.command
         == CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
     {
-        heading_error = chassis_motion_wrap_angle_deg(
-            chassis_motion_status.target_heading_deg
-            - chassis_motion_status.current_heading_deg);
+        heading_error = chassis_motion_get_heading_error(
+            chassis_motion_status.target_heading_deg,
+            chassis_motion_status.current_heading_deg);
         return (uint8)(chassis_motion_abs(heading_error)
             <= CHASSIS_MOTION_TURN_TOLERANCE_DEG);
     }
@@ -521,14 +559,14 @@ static void chassis_motion_generate_targets(
     float available_speed;
 
     base_speed = chassis_motion_update_speed_transition();
-    correction = chassis_motion_update_heading_pid(
-        chassis_motion_status.target_heading_deg,
-        yaw_deg);
-
     if (chassis_motion_status.command
         == CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
     {
         correction_limit = chassis_motion_abs(base_speed);
+        correction = chassis_motion_update_heading_pid(
+            chassis_motion_status.target_heading_deg,
+            yaw_deg,
+            correction_limit);
         if (correction > correction_limit)
         {
             correction = correction_limit;
@@ -550,6 +588,11 @@ static void chassis_motion_generate_targets(
         {
             correction_limit = available_speed;
         }
+
+        correction = chassis_motion_update_heading_pid(
+            chassis_motion_status.target_heading_deg,
+            yaw_deg,
+            correction_limit);
 
         if (correction > correction_limit)
         {
@@ -910,7 +953,8 @@ uint8 chassis_motion_start_timed(
 
 /**
  * @brief Start or smoothly replan a relative IMU-heading turn.
- * @param angle_deg Positive for left and negative for right rotation.
+ * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive angular-speed limit in degrees per second.
  * @return ZF_TRUE when the command was accepted.
  */
@@ -924,6 +968,8 @@ uint8 chassis_motion_start_turn_relative(
     if ((chassis_motion_value_is_valid(angle_deg) == 0U)
         || (chassis_motion_value_is_valid(max_angular_speed_deg_s) == 0U)
         || (angle_deg == 0.0F)
+        || (angle_deg < -180.0F)
+        || (angle_deg > 180.0F)
         || (max_angular_speed_deg_s <= 0.0F))
     {
         return ZF_FALSE;

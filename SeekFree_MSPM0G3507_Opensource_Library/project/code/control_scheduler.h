@@ -98,7 +98,8 @@ uint8 control_scheduler_request_chassis_motion_timed(
 
 /**
  * @brief Submit a high-level relative heading-turn command.
- * @param angle_deg Positive for left and negative for right rotation.
+ * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive maximum angular speed.
  * @return ZF_TRUE when request values are valid.
  */
