@@ -266,6 +266,37 @@ void speed_pid_set_target(float left_mm_s, float right_mm_s)
 }
 
 /**
+ * @brief Apply one shared PID gain set to both wheel controllers.
+ * @param kp Proportional gain.
+ * @param ki Integral gain.
+ * @param kd Derivative gain.
+ * @return ZF_TRUE when the gains were accepted.
+ * @note Runtime state and current output are preserved during the update.
+ */
+uint8 speed_pid_set_shared_gains(float kp, float ki, float kd)
+{
+    uint32 primask;
+
+    if ((speed_pid_gain_is_valid(kp) == 0U)
+        || (speed_pid_gain_is_valid(ki) == 0U)
+        || (speed_pid_gain_is_valid(kd) == 0U))
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    speed_pid_left.kp = kp;
+    speed_pid_left.ki = ki;
+    speed_pid_left.kd = kd;
+    speed_pid_right.kp = kp;
+    speed_pid_right.ki = ki;
+    speed_pid_right.kd = kd;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
  * @brief Execute one 10 millisecond dual-wheel control update.
  */
 void speed_pid_update_10ms(int16 left_count, int16 right_count)

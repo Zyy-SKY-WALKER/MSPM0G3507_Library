@@ -58,6 +58,8 @@
 #include "test_control_scheduler.h"
 #elif (TEST_MODE == TEST_MODE_SERVO)
 #include "test_servo.h"
+#elif (TEST_MODE == TEST_MODE_CHASSIS_MOTION)
+#include "test_chassis_motion.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -100,6 +102,8 @@ int main(void)
     test_control_scheduler_run();
 #elif (TEST_MODE == TEST_MODE_SERVO)
     test_servo_run();
+#elif (TEST_MODE == TEST_MODE_CHASSIS_MOTION)
+    test_chassis_motion_run();
 #endif
 
     while (true)

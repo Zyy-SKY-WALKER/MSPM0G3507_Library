@@ -6,6 +6,7 @@
 #ifndef CONTROL_SCHEDULER_H
 #define CONTROL_SCHEDULER_H
 
+#include "chassis_motion.h"
 #include "gray_sensor.h"
 #include "line_tracker.h"
 #include "odometry.h"
@@ -20,6 +21,7 @@ typedef enum
     CONTROL_MODE_BOOT = 0,
     CONTROL_MODE_DISARMED,
     CONTROL_MODE_MANUAL_ARMED,
+    CONTROL_MODE_CHASSIS_MOTION,
     CONTROL_MODE_LINE_FOLLOW,
     CONTROL_MODE_FAULT_LATCHED,
 } control_mode_enum;
@@ -51,6 +53,7 @@ typedef struct
     gray_sensor_result_struct gray;
     line_tracker_output_struct line_output;
     line_tracker_status_struct line_status;
+    chassis_motion_status_struct chassis_motion;
     speed_pid_status_struct speed;
     odometry_state_struct odometry;
     uint8 initialized;
@@ -72,6 +75,48 @@ void control_scheduler_request_fault_clear(void);
 uint8 control_scheduler_request_manual_target(
     float left_mm_s,
     float right_mm_s);
+
+/**
+ * @brief Submit a high-level signed distance command.
+ * @param distance_mm Positive for forward and negative for reverse distance.
+ * @param max_speed_mm_s Positive maximum center speed.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_distance(
+    float distance_mm,
+    float max_speed_mm_s);
+
+/**
+ * @brief Submit a high-level timed signed-speed command.
+ * @param speed_mm_s Positive for forward and negative for reverse speed.
+ * @param duration_ms Command duration.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_timed(
+    float speed_mm_s,
+    uint32 duration_ms);
+
+/**
+ * @brief Submit a high-level relative heading-turn command.
+ * @param angle_deg Positive for left and negative for right rotation.
+ * @param max_angular_speed_deg_s Positive maximum angular speed.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_turn_relative(
+    float angle_deg,
+    float max_angular_speed_deg_s);
+
+/**
+ * @brief Submit a request to smoothly cancel the active chassis command.
+ */
+void control_scheduler_request_chassis_motion_cancel(void);
+
+/**
+ * @brief Submit a request to select one configured chassis PID parameter group.
+ * @param profile_id Profile identifier from 0 to 3.
+ * @return ZF_TRUE when the profile identifier is valid.
+ */
+uint8 control_scheduler_request_chassis_motion_pid_profile(uint8 profile_id);
 
 void control_scheduler_get_status(control_scheduler_status_struct *status);
 

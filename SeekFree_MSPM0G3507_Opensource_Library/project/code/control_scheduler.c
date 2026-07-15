@@ -23,18 +23,27 @@
     (CONTROL_SCHEDULER_MANUAL_TIMEOUT_MS \
         / CONTROL_SCHEDULER_PERIOD_MS)
 
-#define CONTROL_REQUEST_ARM                  (0x01U)
-#define CONTROL_REQUEST_DISARM               (0x02U)
-#define CONTROL_REQUEST_LINE_START           (0x04U)
-#define CONTROL_REQUEST_LINE_STOP            (0x08U)
-#define CONTROL_REQUEST_FAULT_CLEAR           (0x10U)
-#define CONTROL_REQUEST_MANUAL_TARGET         (0x20U)
+#define CONTROL_REQUEST_ARM                          (0x0001U)
+#define CONTROL_REQUEST_DISARM                       (0x0002U)
+#define CONTROL_REQUEST_LINE_START                   (0x0004U)
+#define CONTROL_REQUEST_LINE_STOP                    (0x0008U)
+#define CONTROL_REQUEST_FAULT_CLEAR                  (0x0010U)
+#define CONTROL_REQUEST_MANUAL_TARGET                (0x0020U)
+#define CONTROL_REQUEST_CHASSIS_DISTANCE             (0x0040U)
+#define CONTROL_REQUEST_CHASSIS_TIMED                (0x0080U)
+#define CONTROL_REQUEST_CHASSIS_TURN                 (0x0100U)
+#define CONTROL_REQUEST_CHASSIS_CANCEL               (0x0200U)
+#define CONTROL_REQUEST_CHASSIS_PID_PROFILE          (0x0400U)
 
 typedef struct
 {
-    uint8 flags;
+    uint16 flags;
     float left_target_mm_s;
     float right_target_mm_s;
+    float chassis_value;
+    float chassis_speed;
+    uint32 chassis_duration_ms;
+    uint8 chassis_profile_id;
 } control_request_mailbox_struct;
 
 static volatile control_scheduler_status_struct control_status;
@@ -95,6 +104,18 @@ static uint8 control_target_is_valid(float target_mm_s)
 }
 
 /**
+ * @brief Check that one floating-point control request value is finite.
+ * @param value Request value.
+ * @return Nonzero when valid.
+ */
+static uint8 control_value_is_valid(float value)
+{
+    return (uint8)((value == value)
+        && (value >= -FLT_MAX)
+        && (value <= FLT_MAX));
+}
+
+/**
  * @brief Force zero output and latch one or more fault flags.
  * @param fault_flags Fault bits to latch.
  */
@@ -103,6 +124,7 @@ static void control_latch_fault(uint32 fault_flags)
     control_status.fault_flags |= fault_flags;
     control_status.mode = CONTROL_MODE_FAULT_LATCHED;
     control_clear_manual_target();
+    chassis_motion_reset();
     speed_pid_stop();
 }
 
@@ -113,6 +135,7 @@ static void control_enter_disarmed(void)
 {
     control_status.mode = CONTROL_MODE_DISARMED;
     control_clear_manual_target();
+    chassis_motion_reset();
     line_tracker_reset();
     speed_pid_stop();
 }
@@ -183,6 +206,7 @@ static void control_add_key_requests(
     if (key1_state == KEY_SHORT_PRESS)
     {
         if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
+            || (control_status.mode == CONTROL_MODE_CHASSIS_MOTION)
             || (control_status.mode == CONTROL_MODE_LINE_FOLLOW))
         {
             requests->flags |= CONTROL_REQUEST_DISARM;
@@ -230,6 +254,8 @@ static void control_apply_requests(
     const control_request_mailbox_struct *requests,
     uint8 emergency_active)
 {
+    uint8 chassis_started = 0U;
+
     if ((requests->flags & CONTROL_REQUEST_FAULT_CLEAR) != 0U)
     {
         uint8 was_faulted =
@@ -298,6 +324,49 @@ static void control_apply_requests(
             control_manual_target_age_ticks = 0U;
         }
     }
+
+    if ((requests->flags & CONTROL_REQUEST_CHASSIS_PID_PROFILE) != 0U)
+    {
+        (void)chassis_motion_pid_profile_select(
+            requests->chassis_profile_id);
+    }
+
+    if ((requests->flags & CONTROL_REQUEST_CHASSIS_CANCEL) != 0U)
+    {
+        if (control_status.mode == CONTROL_MODE_CHASSIS_MOTION)
+        {
+            chassis_motion_cancel();
+        }
+    }
+
+    if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
+        || (control_status.mode == CONTROL_MODE_CHASSIS_MOTION))
+    {
+        if ((requests->flags & CONTROL_REQUEST_CHASSIS_DISTANCE) != 0U)
+        {
+            chassis_started = chassis_motion_start_distance(
+                requests->chassis_value,
+                requests->chassis_speed);
+        }
+        else if ((requests->flags & CONTROL_REQUEST_CHASSIS_TIMED) != 0U)
+        {
+            chassis_started = chassis_motion_start_timed(
+                requests->chassis_speed,
+                requests->chassis_duration_ms);
+        }
+        else if ((requests->flags & CONTROL_REQUEST_CHASSIS_TURN) != 0U)
+        {
+            chassis_started = chassis_motion_start_turn_relative(
+                requests->chassis_value,
+                requests->chassis_speed);
+        }
+
+        if (chassis_started != 0U)
+        {
+            control_clear_manual_target();
+            control_status.mode = CONTROL_MODE_CHASSIS_MOTION;
+        }
+    }
 }
 
 /**
@@ -324,11 +393,19 @@ static void control_update_manual_timeout(void)
 
 /**
  * @brief Select one target pair from the current scheduler mode.
+ * @param odometry Latest odometry state.
+ * @param yaw_deg Latest IMU yaw in degrees.
+ * @param left_count Latest signed left encoder delta.
+ * @param right_count Latest signed right encoder delta.
  * @param left_target Destination left target.
  * @param right_target Destination right target.
  */
 static void control_select_targets(
     const gray_sensor_result_struct *gray,
+    const odometry_state_struct *odometry,
+    float yaw_deg,
+    int16 left_count,
+    int16 right_count,
     line_tracker_output_struct *line_output,
     float *left_target,
     float *right_target)
@@ -340,6 +417,20 @@ static void control_select_targets(
     {
         *left_target = control_status.manual_left_target_mm_s;
         *right_target = control_status.manual_right_target_mm_s;
+    }
+    else if (control_status.mode == CONTROL_MODE_CHASSIS_MOTION)
+    {
+        chassis_motion_update_10ms(
+            odometry,
+            yaw_deg,
+            left_count,
+            right_count,
+            left_target,
+            right_target);
+        if (chassis_motion_is_busy() == 0U)
+        {
+            control_status.mode = CONTROL_MODE_MANUAL_ARMED;
+        }
     }
     else if (control_status.mode == CONTROL_MODE_LINE_FOLLOW)
     {
@@ -362,13 +453,16 @@ static void control_select_targets(
 static void control_publish_status(void)
 {
     line_tracker_status_struct line_status;
+    chassis_motion_status_struct chassis_status;
     speed_pid_status_struct speed_status;
     odometry_state_struct odometry_status;
 
     line_tracker_get_status(&line_status);
+    chassis_motion_get_status(&chassis_status);
     speed_pid_get_status(&speed_status);
     odometry_get_state(&odometry_status);
     control_status.line_status = line_status;
+    control_status.chassis_motion = chassis_status;
     control_status.speed = speed_status;
     control_status.odometry = odometry_status;
     control_status.initialized = control_initialized;
@@ -418,8 +512,14 @@ uint8 control_scheduler_init(void)
     control_mailbox.flags = 0U;
     control_mailbox.left_target_mm_s = 0.0F;
     control_mailbox.right_target_mm_s = 0.0F;
+    control_mailbox.chassis_value = 0.0F;
+    control_mailbox.chassis_speed = 0.0F;
+    control_mailbox.chassis_duration_ms = 0U;
+    control_mailbox.chassis_profile_id =
+        CHASSIS_MOTION_PID_PROFILE_INVALID;
 
     speed_pid_init();
+    chassis_motion_init();
     my_encoder_init();
     gray_ready = gray_sensor_init();
     imu_uart_init();
@@ -477,6 +577,7 @@ void control_scheduler_update_10ms(void)
     float right_target = 0.0F;
     uint32 yaw_frame_count = 0U;
     float yaw_deg = 0.0F;
+    odometry_state_struct odometry;
     int16 left_count;
     int16 right_count;
     uint8 emergency_active;
@@ -590,12 +691,17 @@ void control_scheduler_update_10ms(void)
             yaw_deg,
             yaw_frame_count);
     }
+    odometry_get_state(&odometry);
 
     control_update_manual_timeout();
     line_output.left_target_mm_s = 0.0F;
     line_output.right_target_mm_s = 0.0F;
     control_select_targets(
         &gray,
+        &odometry,
+        yaw_deg,
+        left_count,
+        right_count,
         &line_output,
         &left_target,
         &right_target);
@@ -729,6 +835,126 @@ uint8 control_scheduler_request_manual_target(
     control_mailbox.left_target_mm_s = left_mm_s;
     control_mailbox.right_target_mm_s = right_mm_s;
     control_mailbox.flags |= CONTROL_REQUEST_MANUAL_TARGET;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Submit a high-level signed distance command.
+ * @param distance_mm Positive for forward and negative for reverse distance.
+ * @param max_speed_mm_s Positive maximum center speed.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_distance(
+    float distance_mm,
+    float max_speed_mm_s)
+{
+    uint32 primask;
+
+    if ((control_value_is_valid(distance_mm) == 0U)
+        || (control_target_is_valid(max_speed_mm_s) == 0U)
+        || (distance_mm == 0.0F)
+        || (max_speed_mm_s <= 0.0F))
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    control_mailbox.chassis_value = distance_mm;
+    control_mailbox.chassis_speed = max_speed_mm_s;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_DISTANCE;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Submit a high-level timed signed-speed command.
+ * @param speed_mm_s Positive for forward and negative for reverse speed.
+ * @param duration_ms Command duration.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_timed(
+    float speed_mm_s,
+    uint32 duration_ms)
+{
+    uint32 primask;
+
+    if ((control_target_is_valid(speed_mm_s) == 0U)
+        || (speed_mm_s == 0.0F)
+        || (duration_ms == 0U))
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    control_mailbox.chassis_speed = speed_mm_s;
+    control_mailbox.chassis_duration_ms = duration_ms;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_TIMED;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Submit a high-level relative heading-turn command.
+ * @param angle_deg Positive for left and negative for right rotation.
+ * @param max_angular_speed_deg_s Positive maximum angular speed.
+ * @return ZF_TRUE when request values are valid.
+ */
+uint8 control_scheduler_request_chassis_motion_turn_relative(
+    float angle_deg,
+    float max_angular_speed_deg_s)
+{
+    uint32 primask;
+
+    if ((control_value_is_valid(angle_deg) == 0U)
+        || (control_value_is_valid(max_angular_speed_deg_s) == 0U)
+        || (angle_deg == 0.0F)
+        || (max_angular_speed_deg_s <= 0.0F))
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    control_mailbox.chassis_value = angle_deg;
+    control_mailbox.chassis_speed = max_angular_speed_deg_s;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_TURN;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Submit a request to smoothly cancel the active chassis command.
+ */
+void control_scheduler_request_chassis_motion_cancel(void)
+{
+    uint32 primask = interrupt_global_disable();
+
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_CANCEL;
+
+    interrupt_global_enable(primask);
+}
+
+/**
+ * @brief Submit a request to select one configured chassis PID parameter group.
+ * @param profile_id Profile identifier from 0 to 3.
+ * @return ZF_TRUE when the profile identifier is valid.
+ */
+uint8 control_scheduler_request_chassis_motion_pid_profile(uint8 profile_id)
+{
+    uint32 primask;
+
+    if (profile_id >= CHASSIS_MOTION_PID_PROFILE_COUNT)
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    control_mailbox.chassis_profile_id = profile_id;
+    control_mailbox.flags |= CONTROL_REQUEST_CHASSIS_PID_PROFILE;
     interrupt_global_enable(primask);
 
     return ZF_TRUE;

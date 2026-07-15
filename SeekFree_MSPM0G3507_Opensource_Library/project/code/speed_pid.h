@@ -41,6 +41,16 @@ void speed_pid_init(void);
 void speed_pid_set_target(float left_mm_s, float right_mm_s);
 
 /**
+ * @brief Apply one shared PID gain set to both wheel controllers.
+ * @param kp Proportional gain.
+ * @param ki Integral gain.
+ * @param kd Derivative gain.
+ * @return ZF_TRUE when the gains were accepted.
+ * @note Runtime state and current output are preserved during the update.
+ */
+uint8 speed_pid_set_shared_gains(float kp, float ki, float kd);
+
+/**
  * @brief Execute one fixed-period speed control update.
  * @note Call from exactly one 10 ms periodic context.
  */
