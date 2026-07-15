@@ -17,14 +17,14 @@
 #define ENCODER_TEST_UPDATE_TIME_MS    (100U)
 
 /**
- * @brief Display one GPIO direction level as H or L.
+ * @brief Display one GPIO phase level as H or L.
  * @param x Horizontal coordinate.
  * @param y Vertical coordinate.
  * @param level GPIO direction level.
  */
-static void test_encoder_show_direction(uint16 x, uint16 y, uint8 level)
+static void test_encoder_show_level(uint16 x, uint16 y, uint8 level)
 {
-    if(level == GPIO_HIGH)
+    if (level == GPIO_HIGH)
     {
         ili9341_show_char(x, y, 'H');
     }
@@ -66,6 +66,8 @@ void test_encoder_run(void)
 {
     int32 left_total = 0;
     int32 right_total = 0;
+    int16 left_step;
+    int16 right_step;
 
     ili9341_init();
     my_encoder_init();
@@ -78,16 +80,14 @@ void test_encoder_run(void)
     ili9341_show_string(8U, 72U, "R TOTAL:");
     ili9341_show_string(8U, 104U, "L STEP :");
     ili9341_show_string(8U, 136U, "R STEP :");
-    ili9341_show_string(8U, 168U, "L DIR  :");
-    ili9341_show_string(8U, 200U, "R DIR  :");
-    ili9341_show_string(8U, 240U, "TURN WHEELS");
-    ili9341_show_string(8U, 264U, "FORWARD THEN BACK");
+    ili9341_show_string(8U, 168U, "L A/B  :");
+    ili9341_show_string(8U, 200U, "R A/B  :");
+    ili9341_show_string(8U, 240U, "TURN ONE WHEEL");
+    ili9341_show_string(8U, 264U, "ONE REV ~= 10250");
+    ili9341_show_string(8U, 288U, "CHECK FORWARD SIGN");
 
-    while(true)
+    while (true)
     {
-        int16 left_step;
-        int16 right_step;
-
         my_encoder_get_delta(&left_step, &right_step);
         left_total += left_step;
         right_total += right_step;
@@ -104,14 +104,22 @@ void test_encoder_run(void)
             8U);
         test_encoder_show_count(96U, 104U, left_step, 6U);
         test_encoder_show_count(96U, 136U, right_step, 6U);
-        test_encoder_show_direction(
+        test_encoder_show_level(
             96U,
             168U,
-            my_encoder_get_left_direction());
-        test_encoder_show_direction(
+            my_encoder_get_left_phase_a());
+        test_encoder_show_level(
+            120U,
+            168U,
+            my_encoder_get_left_phase_b());
+        test_encoder_show_level(
             96U,
             200U,
-            my_encoder_get_right_direction());
+            my_encoder_get_right_phase_a());
+        test_encoder_show_level(
+            120U,
+            200U,
+            my_encoder_get_right_phase_b());
         system_delay_ms(ENCODER_TEST_UPDATE_TIME_MS);
     }
 }

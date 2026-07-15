@@ -484,6 +484,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\servo.h</FilePath>
             </File>
+            <File>
+              <FileName>chassis_motion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\chassis_motion.c</FilePath>
+            </File>
+            <File>
+              <FileName>chassis_motion.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\chassis_motion.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1323,6 +1333,16 @@
               <FileName>test_servo.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_servo.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_chassis_motion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_chassis_motion.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_chassis_motion.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_chassis_motion.h</FilePath>
             </File>
           </Files>
         </Group>

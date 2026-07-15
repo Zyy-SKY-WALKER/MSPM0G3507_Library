@@ -1,149 +1,220 @@
 /**
  * @file    my_lib_encoder.c
- * @brief   Dual single-edge motor encoder driver for MSPM0G3507.
- * @note    Left encoder uses the extended TIMG8 CCP1 wrapper. Right encoder
- *          uses the existing TIMG6 CCP0 wrapper.
+ * @brief   Dual single-edge quadrature encoder driver for MSPM0G3507.
+ * @note    Each phase-A rising edge samples phase B to determine direction.
  */
 
 #include "my_lib_encoder.h"
 
 #include "zf_common_interrupt.h"
-#include "zf_driver_encoder.h"
-#include "zf_driver_timer.h"
+#include "zf_driver_exti.h"
 
-#define MY_ENCODER_LEFT_TIMER             (TIM_G8)
-#define MY_ENCODER_LEFT_CHANNEL           (TIMG8_ENCODER1_CH2_B22)
+#define MY_ENCODER_DELTA_MAX              (32767)
+#define MY_ENCODER_DELTA_MIN              (-32768)
 
-#define MY_ENCODER_RIGHT_TIMER            (TIM_G6)
-#define MY_ENCODER_RIGHT_CHANNEL          (TIMG6_ENCODER1_CH1_B26)
-
-static uint16 my_encoder_left_previous;
-static uint16 my_encoder_right_previous;
+static volatile int32 my_encoder_left_count;
+static volatile int32 my_encoder_right_count;
 
 /**
- * @brief Apply a sampled direction level to an interval count.
- * @param count Unsigned interval pulse count.
- * @param direction GPIO direction level sampled with the counter.
- * @return Signed interval count. High direction level is positive.
- * @note Each sample interval must contain fewer than 32768 pulses.
+ * @brief Clamp one interval count to the public signed 16-bit range.
+ * @param count Signed software count accumulated since the last sample.
+ * @return Clamped signed interval count.
  */
-static int16 my_encoder_apply_direction(uint16 count, uint8 direction)
+static int16 my_encoder_clamp_delta(int32 count)
 {
-    int16 signed_count = (int16)count;
-
-    if(direction == GPIO_LOW)
+    if (count > MY_ENCODER_DELTA_MAX)
     {
-        signed_count = -signed_count;
+        count = MY_ENCODER_DELTA_MAX;
+    }
+    else if (count < MY_ENCODER_DELTA_MIN)
+    {
+        count = MY_ENCODER_DELTA_MIN;
     }
 
-    return signed_count;
+    return (int16)count;
 }
 
 /**
- * @brief Initialize left and right hardware single-edge encoder counters.
+ * @brief Accumulate one phase-A rising edge using the sampled phase B.
+ * @param count Destination interval accumulator.
+ * @param phase_b_pin Encoder phase-B GPIO pin.
+ * @param positive_level Phase-B level representing positive rotation.
+ */
+static void my_encoder_accumulate_edge(
+    volatile int32 *count,
+    gpio_pin_enum phase_b_pin,
+    uint8 positive_level)
+{
+    if (gpio_get_level(phase_b_pin) == positive_level)
+    {
+        (*count)++;
+    }
+    else
+    {
+        (*count)--;
+    }
+}
+
+/**
+ * @brief Decode one left encoder phase-A rising edge.
+ * @param event EXTI trigger event.
+ * @param user_data Optional callback context.
+ */
+static void my_encoder_left_callback(uint32 event, void *user_data)
+{
+    (void)event;
+    (void)user_data;
+
+    my_encoder_accumulate_edge(
+        &my_encoder_left_count,
+        MY_ENCODER_LEFT_PHASE_B_PIN,
+        MY_ENCODER_LEFT_POSITIVE_B_LEVEL);
+}
+
+/**
+ * @brief Decode one right encoder phase-A rising edge.
+ * @param event EXTI trigger event.
+ * @param user_data Optional callback context.
+ */
+static void my_encoder_right_callback(uint32 event, void *user_data)
+{
+    (void)event;
+    (void)user_data;
+
+    my_encoder_accumulate_edge(
+        &my_encoder_right_count,
+        MY_ENCODER_RIGHT_PHASE_B_PIN,
+        MY_ENCODER_RIGHT_POSITIVE_B_LEVEL);
+}
+
+/**
+ * @brief Initialize both single-edge quadrature encoder inputs.
  */
 void my_encoder_init(void)
 {
-    encoder_dir_timg8_ch2_init(
-        MY_ENCODER_LEFT_CHANNEL,
-        MY_ENCODER_LEFT_DIRECTION_PIN);
-    encoder_dir_init(
-        MY_ENCODER_RIGHT_TIMER,
-        MY_ENCODER_RIGHT_CHANNEL,
-        MY_ENCODER_RIGHT_DIRECTION_PIN);
+    gpio_init(
+        MY_ENCODER_LEFT_PHASE_B_PIN,
+        GPI,
+        GPIO_HIGH,
+        GPI_PULL_UP);
+    gpio_init(
+        MY_ENCODER_RIGHT_PHASE_B_PIN,
+        GPI,
+        GPIO_HIGH,
+        GPI_PULL_UP);
+
     my_encoder_clear_count();
+    exti_init(
+        MY_ENCODER_LEFT_PHASE_A_PIN,
+        EXTI_TRIGGER_RISING,
+        my_encoder_left_callback,
+        NULL);
+    exti_init(
+        MY_ENCODER_RIGHT_PHASE_A_PIN,
+        EXTI_TRIGGER_RISING,
+        my_encoder_right_callback,
+        NULL);
 }
 
 /**
- * @brief Take a near-synchronous snapshot of both encoder counters.
+ * @brief Take and clear a near-synchronous interval count snapshot.
  * @param left_count Destination for the signed left interval count.
  * @param right_count Destination for the signed right interval count.
- * @note Hardware counters continue running while the snapshot is taken.
+ * @note Call exactly once per sampling interval in closed-loop control.
  */
 void my_encoder_get_delta(int16 *left_count, int16 *right_count)
 {
     uint32 primask;
-    uint16 left_current;
-    uint16 right_current;
-    uint16 left_delta;
-    uint16 right_delta;
-    uint8 left_direction;
-    uint8 right_direction;
+    int32 left_delta;
+    int32 right_delta;
 
-    if((left_count == NULL) || (right_count == NULL))
+    if ((left_count == NULL) || (right_count == NULL))
     {
         return;
     }
 
     primask = interrupt_global_disable();
 
-    left_current = timer_get(MY_ENCODER_LEFT_TIMER);
-    right_current = timer_get(MY_ENCODER_RIGHT_TIMER);
-    left_direction = gpio_get_level(MY_ENCODER_LEFT_DIRECTION_PIN);
-    right_direction = gpio_get_level(MY_ENCODER_RIGHT_DIRECTION_PIN);
-
-    left_delta = (uint16)(left_current - my_encoder_left_previous);
-    right_delta = (uint16)(right_current - my_encoder_right_previous);
-    my_encoder_left_previous = left_current;
-    my_encoder_right_previous = right_current;
+    left_delta = my_encoder_left_count;
+    right_delta = my_encoder_right_count;
+    my_encoder_left_count = 0;
+    my_encoder_right_count = 0;
 
     interrupt_global_enable(primask);
 
-    *left_count = my_encoder_apply_direction(left_delta, left_direction);
-    *right_count = my_encoder_apply_direction(right_delta, right_direction);
+    *left_count = my_encoder_clamp_delta(left_delta);
+    *right_count = my_encoder_clamp_delta(right_delta);
 }
 
 /**
- * @brief Read the left encoder direction input level.
+ * @brief Read the left encoder phase-A input level.
  * @return GPIO_HIGH or GPIO_LOW.
  */
-uint8 my_encoder_get_left_direction(void)
+uint8 my_encoder_get_left_phase_a(void)
 {
-    return gpio_get_level(MY_ENCODER_LEFT_DIRECTION_PIN);
+    return gpio_get_level(MY_ENCODER_LEFT_PHASE_A_PIN);
 }
 
 /**
- * @brief Read the right encoder direction input level.
+ * @brief Read the left encoder phase-B input level.
  * @return GPIO_HIGH or GPIO_LOW.
  */
-uint8 my_encoder_get_right_direction(void)
+uint8 my_encoder_get_left_phase_b(void)
 {
-    return gpio_get_level(MY_ENCODER_RIGHT_DIRECTION_PIN);
+    return gpio_get_level(MY_ENCODER_LEFT_PHASE_B_PIN);
 }
 
 /**
- * @brief Reset the left software sampling baseline.
+ * @brief Read the right encoder phase-A input level.
+ * @return GPIO_HIGH or GPIO_LOW.
+ */
+uint8 my_encoder_get_right_phase_a(void)
+{
+    return gpio_get_level(MY_ENCODER_RIGHT_PHASE_A_PIN);
+}
+
+/**
+ * @brief Read the right encoder phase-B input level.
+ * @return GPIO_HIGH or GPIO_LOW.
+ */
+uint8 my_encoder_get_right_phase_b(void)
+{
+    return gpio_get_level(MY_ENCODER_RIGHT_PHASE_B_PIN);
+}
+
+/**
+ * @brief Clear the left software interval accumulator.
  */
 void my_encoder_clear_left_count(void)
 {
     uint32 primask = interrupt_global_disable();
 
-    my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
+    my_encoder_left_count = 0;
 
     interrupt_global_enable(primask);
 }
 
 /**
- * @brief Reset the right software sampling baseline.
+ * @brief Clear the right software interval accumulator.
  */
 void my_encoder_clear_right_count(void)
 {
     uint32 primask = interrupt_global_disable();
 
-    my_encoder_right_previous = timer_get(MY_ENCODER_RIGHT_TIMER);
+    my_encoder_right_count = 0;
 
     interrupt_global_enable(primask);
 }
 
 /**
- * @brief Reset both software sampling baselines near-synchronously.
+ * @brief Clear both software interval accumulators near-synchronously.
  */
 void my_encoder_clear_count(void)
 {
     uint32 primask = interrupt_global_disable();
 
-    my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
-    my_encoder_right_previous = timer_get(MY_ENCODER_RIGHT_TIMER);
+    my_encoder_left_count = 0;
+    my_encoder_right_count = 0;
 
     interrupt_global_enable(primask);
 }

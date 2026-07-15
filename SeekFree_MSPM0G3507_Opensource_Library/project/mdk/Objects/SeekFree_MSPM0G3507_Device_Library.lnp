@@ -8,6 +8,7 @@
 ".\objects\vofa.o"
 ".\objects\control_scheduler.o"
 ".\objects\servo.o"
+".\objects\chassis_motion.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
@@ -103,6 +104,7 @@
 ".\objects\test_gpio_input.o"
 ".\objects\test_control_scheduler.o"
 ".\objects\test_servo.o"
+".\objects\test_chassis_motion.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
