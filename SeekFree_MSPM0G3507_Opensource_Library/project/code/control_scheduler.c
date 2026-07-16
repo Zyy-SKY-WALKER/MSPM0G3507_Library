@@ -34,23 +34,37 @@
 #define CONTROL_REQUEST_CHASSIS_CANCEL               (0x0080U)
 #define CONTROL_REQUEST_CHASSIS_PID_PROFILE          (0x0100U)
 
+/** @brief Deferred high-level chassis command encoded in the mailbox. */
 typedef enum
 {
+    /** No chassis command is pending. */
     CONTROL_CHASSIS_REQUEST_NONE = 0,
+    /** Signed distance command with a positive speed limit. */
     CONTROL_CHASSIS_REQUEST_DISTANCE,
+    /** Signed speed command with a finite duration. */
     CONTROL_CHASSIS_REQUEST_TIMED,
+    /** Relative heading command with a positive angular-speed limit. */
     CONTROL_CHASSIS_REQUEST_TURN,
 } control_chassis_request_enum;
 
+/** @brief Foreground-to-scheduler request payload consumed once per tick. */
 typedef struct
 {
+    /** OR of CONTROL_REQUEST_* bits identifying pending fields. */
     uint16 flags;
+    /** Manual left-wheel target associated with its request bit. */
     float left_target_mm_s;
+    /** Manual right-wheel target associated with its request bit. */
     float right_target_mm_s;
+    /** Distance or relative angle selected by chassis_command. */
     float chassis_value;
+    /** Linear or angular speed selected by chassis_command. */
     float chassis_speed;
+    /** Duration used only by a timed chassis command. */
     uint32 chassis_duration_ms;
+    /** Interpretation of the chassis command payload. */
     control_chassis_request_enum chassis_command;
+    /** PID profile selected by the profile request bit. */
     uint8 chassis_profile_id;
 } control_request_mailbox_struct;
 
@@ -649,6 +663,7 @@ void control_scheduler_update_10ms(void)
     control_update_busy = 1U;
     control_status.tick_count++;
 
+    /* Phase 1: latch safety input and apply one request snapshot. */
     emergency_active = (uint8)(
         gpio_get_level(CONTROL_EMERGENCY_KEY_PIN) == GPIO_LOW);
     if (emergency_active != 0U)
@@ -661,6 +676,7 @@ void control_scheduler_update_10ms(void)
     control_add_key_requests(&requests);
     control_apply_requests(&requests, emergency_active);
 
+    /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
     yaw_valid = imu_uart_get_yaw(&yaw_deg, &yaw_frame_count);
     gray = control_status.gray;
@@ -691,6 +707,7 @@ void control_scheduler_update_10ms(void)
             && (control_status.imu_age_ticks
                 <= CONTROL_IMU_FRESH_LIMIT_TICKS));
 
+    /* Phase 3: validate inputs and gate IMU use across yaw rebasing. */
     if (gray_valid == ZF_FALSE)
     {
         control_latch_fault(CONTROL_FAULT_GRAY_SAMPLE);
@@ -722,6 +739,7 @@ void control_scheduler_update_10ms(void)
         }
     }
 
+    /* Phase 4: integrate pose, substituting zero for invalid encoders. */
     if (encoder_valid != 0U)
     {
         odometry_update(
@@ -742,6 +760,7 @@ void control_scheduler_update_10ms(void)
     }
     odometry_get_state(&odometry);
 
+    /* Phase 5: update mode timeouts and select the owning target source. */
     control_update_manual_timeout();
     line_output.left_target_mm_s = 0.0F;
     line_output.right_target_mm_s = 0.0F;
@@ -762,6 +781,7 @@ void control_scheduler_update_10ms(void)
         right_target = 0.0F;
     }
 
+    /* Phase 6: drive wheel control, then publish coherent status. */
     speed_pid_set_target(left_target, right_target);
     speed_pid_update_10ms(
         left_count,

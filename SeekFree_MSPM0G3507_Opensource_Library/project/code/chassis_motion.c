@@ -13,39 +13,60 @@
 
 #define CHASSIS_MOTION_GAIN_LIMIT           (1000.0F)
 
+/** @brief Reason retained while a controlled stop is in progress. */
 typedef enum
 {
+    /** No controlled stop is active. */
     CHASSIS_MOTION_STOP_REASON_NONE = 0,
+    /** The active command reached its completion condition. */
     CHASSIS_MOTION_STOP_REASON_COMPLETE,
+    /** The caller cancelled the active command. */
     CHASSIS_MOTION_STOP_REASON_CANCEL,
+    /** A pending command requires opposite wheel polarity. */
     CHASSIS_MOTION_STOP_REASON_REVERSE,
 } chassis_motion_stop_reason_enum;
 
+/** @brief Validated private representation of one motion request. */
 typedef struct
 {
+    /** Command interpretation. */
     chassis_motion_command_enum command;
+    /** Signed distance or relative angle. */
     float value;
+    /** Signed linear speed or positive linear/angular speed limit. */
     float speed;
+    /** Duration used only by a timed command. */
     uint32 duration_ms;
 } chassis_motion_command_struct;
 
+/** @brief Runtime state for one Smoothstep base-speed transition. */
 typedef struct
 {
+    /** Base speed captured at transition start. */
     float start;
+    /** Requested base speed at transition end. */
     float target;
+    /** Current interpolated base speed. */
     float value;
+    /** Configured transition length in scheduler ticks. */
     uint16 total_ticks;
+    /** Number of completed transition ticks. */
     uint16 elapsed_ticks;
+    /** Nonzero until the target endpoint is reached. */
     uint8 active;
 } chassis_motion_transition_struct;
 
+/** @brief Private heading PID gains and dynamic state. */
 typedef struct
 {
     float kp;
     float ki;
     float kd;
+    /** Bounded accumulated integral contribution. */
     float integral;
+    /** Error retained for the discrete derivative. */
     float previous_error;
+    /** Latest wheel-speed correction. */
     float output;
 } chassis_motion_heading_pid_struct;
 
@@ -651,6 +672,7 @@ static void chassis_motion_finish_stop(void)
     if ((chassis_motion_stop_reason == CHASSIS_MOTION_STOP_REASON_REVERSE)
         && (chassis_motion_pending_valid != 0U))
     {
+        /* A confirmed reversal stop transfers ownership to the new command. */
         chassis_motion_command = chassis_motion_pending_command;
         chassis_motion_pending_valid = 0U;
         chassis_motion_activation_pending = 1U;
@@ -721,6 +743,7 @@ static uint8 chassis_motion_submit_command(
     if ((chassis_motion_status.active != 0U)
         && (chassis_motion_command_requires_stop(command) != 0U))
     {
+        /* Opposite wheel polarity must decelerate to a confirmed stop first. */
         chassis_motion_pending_command = *command;
         chassis_motion_pending_valid = 1U;
         chassis_motion_status.reversing = 1U;
@@ -1080,6 +1103,8 @@ void chassis_motion_update_10ms(
 
     if (chassis_motion_activation_pending != 0U)
     {
+        /* Activation snapshots the latest pose before execution timing
+         * starts. */
         chassis_motion_activate_command(odometry, yaw_deg);
     }
 
@@ -1095,6 +1120,7 @@ void chassis_motion_update_10ms(
 
         if (chassis_motion_command_is_complete() != 0U)
         {
+            /* Command completion enters the same controlled-stop path. */
             chassis_motion_start_stop(CHASSIS_MOTION_STOP_REASON_COMPLETE);
         }
     }
@@ -1113,18 +1139,21 @@ void chassis_motion_update_10ms(
                 == CHASSIS_MOTION_PHASE_TRANSITION)
             && (chassis_motion_speed_transition.active == 0U))
         {
+            /* Ramp-up completion advances normal command execution. */
             chassis_motion_status.phase = CHASSIS_MOTION_PHASE_EXECUTING;
         }
         else if ((chassis_motion_status.phase
                 == CHASSIS_MOTION_PHASE_DECELERATING)
             && (chassis_motion_speed_transition.active == 0U))
         {
+            /* Ramp-down completion begins encoder-based stop confirmation. */
             chassis_motion_status.phase = CHASSIS_MOTION_PHASE_WAIT_STOPPED;
         }
     }
 
     if (chassis_motion_status.phase == CHASSIS_MOTION_PHASE_WAIT_STOPPED)
     {
+        /* Hold zero until both encoder deltas remain below the threshold. */
         left_target = 0.0F;
         right_target = 0.0F;
         chassis_motion_update_stop_confirmation(left_count, right_count);

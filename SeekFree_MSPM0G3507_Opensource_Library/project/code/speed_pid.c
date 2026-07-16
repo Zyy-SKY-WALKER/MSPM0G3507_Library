@@ -13,18 +13,27 @@
     ((float)SPEED_PID_SAMPLE_PERIOD_MS / 1000.0F)
 #define SPEED_PID_GAIN_LIMIT                (1000.0F)
 
+/** @brief Dynamic state and calibration for one incremental wheel PID. */
 typedef struct
 {
+    /** Requested wheel speed in millimeters per second. */
     float target_mm_s;
+    /** Requested encoder counts per 10 ms sample. */
     float target_count;
+    /** Error history ordered as current, previous and two samples old. */
     float error[3];
+    /** Accumulated incremental duty output. */
     float output;
     float kp;
     float ki;
     float kd;
+    /** Conversion factor from mm/s to counts per sample. */
     float counts_per_sample_mm_s;
+    /** Conversion factor from counts per sample to mm/s. */
     float mm_s_per_count;
+    /** Nonzero when the candidate output was clamped to the duty limit. */
     uint8 saturated;
+    /** Nonzero while output is held at zero for a direction reversal. */
     uint8 reversing;
 } speed_pid_controller_struct;
 
@@ -147,6 +156,7 @@ static void speed_pid_controller_set_target(
     if ((previous_sign != 0) && (new_sign != 0)
         && (previous_sign != new_sign))
     {
+        /* Drop accumulated duty before waiting for the wheel to stop. */
         speed_pid_reset_runtime(controller);
         controller->reversing = 1U;
     }
@@ -182,6 +192,7 @@ static int16 speed_pid_controller_update(
 
     if (controller->reversing != 0U)
     {
+        /* Keep PWM disabled until measured motion reaches the stop band. */
         speed_pid_reset_runtime(controller);
 
         if ((measured_count >= -SPEED_PID_REVERSE_STOP_COUNT)
@@ -195,6 +206,7 @@ static int16 speed_pid_controller_update(
 
     controller->error[0] =
         controller->target_count - (float)measured_count;
+    /* du = Kp(e0-e1) + Ki(e0) + Kd(e0-2e1+e2). */
     delta_output = controller->kp
         * (controller->error[0] - controller->error[1]);
     delta_output += controller->ki * controller->error[0];

@@ -42,6 +42,7 @@ static uint32 servo_angle_tenth_deg_to_duty(uint16 angle_tenth_deg)
     minimum_duty = servo_pulse_to_duty(SERVO_MIN_PULSE_US);
     maximum_duty = servo_pulse_to_duty(SERVO_MAX_PULSE_US);
     duty_range = maximum_duty - minimum_duty;
+    /* Round the linear angle-to-duty interpolation to the nearest unit. */
     scaled_duty = ((uint32)angle_tenth_deg * duty_range)
         + (SERVO_MAX_ANGLE_TENTH_DEG / 2U);
 

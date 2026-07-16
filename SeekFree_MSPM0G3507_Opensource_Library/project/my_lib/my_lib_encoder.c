@@ -116,6 +116,8 @@ void my_encoder_get_delta(int16 *left_count, int16 *right_count)
     primask = interrupt_global_disable();
 
     left_current = timer_get(MY_ENCODER_LEFT_TIMER);
+    /* Subtract QEI modulo 2^16, divide x4 to x2, and carry the signed
+     * odd remainder. */
     left_raw_delta = (int32)(int16)(uint16)(
         left_current - my_encoder_left_previous);
     my_encoder_left_previous = left_current;

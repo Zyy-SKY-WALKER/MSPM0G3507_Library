@@ -121,6 +121,7 @@ void gray_sensor_calculate(
     result->position = 0.0F;
     result->deviation = 0.0F;
 
+    /* The mean active channel index is the line-detection centroid. */
     for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
     {
         if ((active_mask & (uint8)(1U << index)) != 0U)
@@ -174,6 +175,7 @@ uint8 gray_sensor_sample(gray_sensor_result_struct *result)
         }
     }
 
+    /* Normalize polarity so set bits always represent active sensors. */
     if (GRAY_SENSOR_ACTIVE_LEVEL == GPIO_HIGH)
     {
         active_mask = raw_mask;

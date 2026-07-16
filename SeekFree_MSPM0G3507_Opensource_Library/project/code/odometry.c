@@ -14,6 +14,7 @@
 #define ODOMETRY_TWO_PI                 (2.0F * DRIVE_PI)
 
 static volatile odometry_state_struct odometry_state;
+/** @brief Wrapped-yaw history used to maintain a continuous IMU heading. */
 static volatile float odometry_last_imu_yaw_rad;
 static volatile float odometry_continuous_imu_theta_rad;
 static volatile uint32 odometry_last_imu_frame_count;
@@ -72,6 +73,7 @@ static uint8 odometry_update_imu_heading(
     yaw_rad = yaw_deg * ODOMETRY_DEG_TO_RAD;
     if (odometry_imu_reference_valid == 0U)
     {
+        /* Anchor the first wrapped yaw to the encoder-predicted heading. */
         odometry_last_imu_yaw_rad = yaw_rad;
         odometry_continuous_imu_theta_rad = predicted_theta;
         odometry_last_imu_frame_count = yaw_frame_count;
@@ -79,6 +81,7 @@ static uint8 odometry_update_imu_heading(
         return ZF_FALSE;
     }
 
+    /* Accumulate the shortest signed delta to unwrap successive yaw frames. */
     yaw_delta = odometry_wrap_angle(
         yaw_rad - odometry_last_imu_yaw_rad);
     odometry_continuous_imu_theta_rad += yaw_delta;
@@ -126,6 +129,7 @@ void odometry_update(
     float imu_theta;
     float theta_mid;
 
+    /* Correct the encoder prediction only when a fresh IMU frame arrives. */
     if (odometry_update_imu_heading(
             yaw_valid,
             yaw_deg,
@@ -140,6 +144,7 @@ void odometry_update(
             + (DRIVE_ODOMETRY_IMU_WEIGHT * heading_error);
     }
 
+    /* Integrate translation at the midpoint of the fused heading change. */
     theta_mid = theta_before + ((theta_fused - theta_before) * 0.5F);
     odometry_state.x_mm += center_delta_mm * cosf(theta_mid);
     odometry_state.y_mm += center_delta_mm * sinf(theta_mid);

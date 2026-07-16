@@ -17,72 +17,120 @@
 #define CHASSIS_MOTION_PID_PROFILE_COUNT              (4U)
 #define CHASSIS_MOTION_PID_PROFILE_INVALID            (0xFFU)
 
+/** @brief Identifiers for reusable speed and heading PID gain groups. */
 typedef enum
 {
+    /** Straight-distance motion gains. */
     CHASSIS_MOTION_PID_PROFILE_STRAIGHT = 0,
+    /** In-place heading-turn gains. */
     CHASSIS_MOTION_PID_PROFILE_TURN,
+    /** Line-following support gains. */
     CHASSIS_MOTION_PID_PROFILE_LINE,
+    /** Application-defined gain group. */
     CHASSIS_MOTION_PID_PROFILE_CUSTOM,
 } chassis_motion_pid_profile_id_enum;
 
+/** @brief High-level command interpreted by the chassis state machine. */
 typedef enum
 {
+    /** No motion command is selected. */
     CHASSIS_MOTION_COMMAND_NONE = 0,
+    /** Travel a signed center distance. */
     CHASSIS_MOTION_COMMAND_DISTANCE,
+    /** Hold a signed center speed for a duration. */
     CHASSIS_MOTION_COMMAND_TIMED,
+    /** Turn through a signed relative IMU heading. */
     CHASSIS_MOTION_COMMAND_TURN_RELATIVE,
 } chassis_motion_command_enum;
 
+/** @brief Observable phases of the non-blocking motion state machine. */
 typedef enum
 {
+    /** No command owns wheel targets. */
     CHASSIS_MOTION_PHASE_IDLE = 0,
+    /** Base speed is ramping toward the command target. */
     CHASSIS_MOTION_PHASE_TRANSITION,
+    /** The command is running at its generated target. */
     CHASSIS_MOTION_PHASE_EXECUTING,
+    /** Base speed is ramping down to zero. */
     CHASSIS_MOTION_PHASE_DECELERATING,
+    /** Zero target is held while encoder stop is confirmed. */
     CHASSIS_MOTION_PHASE_WAIT_STOPPED,
+    /** The command and controlled stop completed. */
     CHASSIS_MOTION_PHASE_COMPLETED,
+    /** A cancellation and controlled stop completed. */
     CHASSIS_MOTION_PHASE_CANCELLED,
 } chassis_motion_phase_enum;
 
+/** @brief Terminal outcome retained after motion ownership ends. */
 typedef enum
 {
+    /** No terminal result is available. */
     CHASSIS_MOTION_RESULT_NONE = 0,
+    /** The command reached its completion condition. */
     CHASSIS_MOTION_RESULT_COMPLETED,
+    /** The command was cancelled before completion. */
     CHASSIS_MOTION_RESULT_CANCELLED,
 } chassis_motion_result_enum;
 
+/** @brief Reusable wheel-speed and heading-controller gains. */
 typedef struct
 {
+    /** Shared wheel-speed proportional gain. */
     float speed_kp;
+    /** Shared wheel-speed integral gain. */
     float speed_ki;
+    /** Shared wheel-speed derivative gain. */
     float speed_kd;
+    /** Heading-correction proportional gain. */
     float heading_kp;
+    /** Heading-correction integral gain. */
     float heading_ki;
+    /** Heading-correction derivative gain. */
     float heading_kd;
 } chassis_motion_pid_profile_struct;
 
+/** @brief Runtime configuration for command speed transitions. */
 typedef struct
 {
+    /** Duration of each Smoothstep speed ramp in milliseconds. */
     uint16 speed_transition_ms;
 } chassis_motion_config_struct;
 
+/** @brief Observable command, phase, target and pose state. */
 typedef struct
 {
+    /** Current or most recently completed high-level command kind. */
     chassis_motion_command_enum command;
+    /** Current state-machine phase. */
     chassis_motion_phase_enum phase;
+    /** Retained terminal command outcome. */
     chassis_motion_result_enum result;
+    /** Signed distance in mm or turn angle in degrees; zero for timed speed. */
     float command_value;
+    /** Linear speed in mm/s or angular speed limit in degrees per second. */
     float command_speed;
+    /** Center displacement captured when the command activates. */
     float start_center_displacement_mm;
+    /** Latest center displacement from odometry. */
     float current_center_displacement_mm;
+    /** IMU heading captured when the command activates. */
     float start_heading_deg;
+    /** Latest IMU heading. */
     float current_heading_deg;
+    /** Heading held by straight motion or targeted by a turn. */
     float target_heading_deg;
+    /** Latest generated left-wheel speed target. */
     float left_target_mm_s;
+    /** Latest generated right-wheel speed target. */
     float right_target_mm_s;
+    /** Command execution time accumulated in 10 ms periods. */
     uint32 elapsed_ms;
+    /** Currently selected configured PID profile. */
     uint8 active_profile_id;
+    /** Nonzero while this module owns wheel targets. */
     uint8 active;
+    /** Nonzero while stopping before an opposite-direction command. */
     uint8 reversing;
 } chassis_motion_status_struct;
 

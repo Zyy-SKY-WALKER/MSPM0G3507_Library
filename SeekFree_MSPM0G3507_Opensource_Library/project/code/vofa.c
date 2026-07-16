@@ -22,6 +22,7 @@
 #define VOFA_GAIN_LIMIT                (1000.0F)
 #define VOFA_TARGET_LIMIT_MM_S         (600.0F)
 
+/** @brief Cached PID gains for one wheel controller. */
 typedef struct
 {
     float kp;
@@ -29,11 +30,15 @@ typedef struct
     float kd;
 } vofa_gain_struct;
 
+/** @brief Partial receive line owned by the UART interrupt context. */
 static char vofa_rx_current_line[VOFA_RX_LINE_LENGTH];
+/** @brief SPSC line queue written by the ISR and read in foreground. */
 static char vofa_rx_queue[VOFA_RX_QUEUE_LENGTH][VOFA_RX_LINE_LENGTH];
 static uint8 vofa_rx_current_length;
 static uint8 vofa_rx_discarding;
+/** @brief Producer index advanced by the UART ISR after publication. */
 static volatile uint8 vofa_rx_write_index;
+/** @brief Consumer index advanced after a foreground line copy. */
 static volatile uint8 vofa_rx_read_index;
 
 static volatile uint32 vofa_uptime_ms;
@@ -465,6 +470,7 @@ static uint8 vofa_process_line(char line[])
         vofa_uppercase(tokens[1]);
     }
 
+    /* Safety commands control whether motion targets may be accepted. */
     if ((strcmp(tokens[0], "ARM") == 0) && (token_count == 1U))
     {
         vofa_arm();
@@ -479,6 +485,7 @@ static uint8 vofa_process_line(char line[])
         return ZF_TRUE;
     }
 
+    /* Motion commands update both wheel targets only while armed. */
     if ((strcmp(tokens[0], "TARGET") == 0)
         && (token_count == 3U)
         && (vofa_parse_float(tokens[1], &first_value) != 0U)
@@ -491,6 +498,7 @@ static uint8 vofa_process_line(char line[])
         return vofa_apply_target_if_armed(first_value, second_value);
     }
 
+    /* Tuning commands select one gain for left, right or both wheels. */
     if (((strcmp(tokens[0], "KP") == 0)
             || (strcmp(tokens[0], "KI") == 0)
             || (strcmp(tokens[0], "KD") == 0))
@@ -507,6 +515,7 @@ static uint8 vofa_process_line(char line[])
         return ZF_TRUE;
     }
 
+    /* Telemetry commands control stream enablement and periodic rate. */
     if ((strcmp(tokens[0], "STREAM") == 0)
         && (token_count == 2U)
         && (vofa_parse_uint(tokens[1], &uint_value) != 0U)
@@ -673,6 +682,7 @@ static void vofa_send_channels(
     const float channels[],
     uint8 channel_count)
 {
+    /* JustFloat appends little-endian 0x7F800000 after the float payload. */
     static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
     uint8 frame[VOFA_FRAME_SIZE];
     uint8 channel;

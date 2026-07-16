@@ -41,11 +41,16 @@ static volatile line_tracker_config_struct line_tracker_config;
 static volatile line_tracker_status_struct line_tracker_status;
 static volatile uint8 line_tracker_initialized;
 
+/** @brief Private history required by the lateral PID controller. */
 typedef struct
 {
+    /** Bounded integral contribution, already scaled to mm/s. */
     float integral_mm_s;
+    /** Previous normalized error used by the discrete derivative. */
     float previous_error;
+    /** Low-pass-filtered normalized-error derivative per second. */
     float filtered_derivative;
+    /** Nonzero after the first valid tracking sample. */
     uint8 initialized;
 } line_tracker_pid_state_struct;
 
@@ -187,6 +192,7 @@ static float line_tracker_pid_update(float error, uint8 band)
     float effective_limit;
     uint8 drives_further_into_saturation;
 
+    /* Seed the derivative history to prevent a kick on reacquisition. */
     if (line_tracker_pid_state.initialized == 0U)
     {
         line_tracker_pid_state.previous_error = error;
@@ -195,6 +201,7 @@ static float line_tracker_pid_update(float error, uint8 band)
     }
     else
     {
+        /* Filter the discrete derivative before applying derivative gain. */
         raw_derivative =
             (error - line_tracker_pid_state.previous_error)
             / LINE_TRACKER_UPDATE_PERIOD_S;
@@ -207,6 +214,8 @@ static float line_tracker_pid_update(float error, uint8 band)
     proportional = line_tracker_config.pid_kp[band] * error;
     derivative = line_tracker_config.pid_kd
         * line_tracker_pid_state.filtered_derivative;
+
+    /* Build and clamp a candidate integral contribution first. */
     integral_candidate = line_tracker_pid_state.integral_mm_s
         + (line_tracker_config.pid_ki
             * error
@@ -228,12 +237,15 @@ static float line_tracker_pid_update(float error, uint8 band)
     correction_candidate = proportional
         + integral_candidate
         + derivative;
+
+    /* Wheel limits can be tighter than the configured correction limit. */
     effective_limit = line_tracker_pid_get_effective_limit(
         line_tracker_config.base_speed_mm_s[band]);
     drives_further_into_saturation = (uint8)(
         ((correction_candidate > effective_limit) && (error > 0.0F))
         || ((correction_candidate < -effective_limit) && (error < 0.0F)));
 
+    /* Freeze only integration that would push farther into saturation. */
     if (drives_further_into_saturation != 0U)
     {
         line_tracker_status.output_limited = 1U;
@@ -490,6 +502,7 @@ static void line_tracker_update_search(line_tracker_output_struct *output)
     float right_target;
 
     line_tracker_status.output_limited = 0U;
+    /* Search timeout transitions to the terminal fault state. */
     if (line_tracker_status.search_samples
         >= (uint16)(line_tracker_config.search_timeout_samples - 1U))
     {
@@ -497,6 +510,7 @@ static void line_tracker_update_search(line_tracker_output_struct *output)
         return;
     }
 
+    /* Lost-line search transitions from a forward arc to a pivot. */
     if (line_tracker_status.search_samples
         < line_tracker_config.arc_duration_samples)
     {
@@ -634,6 +648,7 @@ uint8 line_tracker_update(
     line_tracker_status.sensor_status = sensor->status;
     line_tracker_status.deviation = sensor->deviation;
 
+    /* Nontracking sensor states discard PID history before state handling. */
     if (sensor->status != GRAY_SENSOR_STATUS_VALID)
     {
         line_tracker_pid_reset();
@@ -641,6 +656,7 @@ uint8 line_tracker_update(
 
     if (sensor->status == GRAY_SENSOR_STATUS_ALL_ACTIVE)
     {
+        /* All-active is a stopped state until valid samples reacquire line. */
         line_tracker_status.state = LINE_TRACKER_STATE_ALL_ACTIVE;
         if (line_tracker_status.all_active_samples
             < LINE_TRACKER_COUNTER_MAX)
@@ -658,6 +674,7 @@ uint8 line_tracker_update(
 
     if (sensor->status == GRAY_SENSOR_STATUS_LOST)
     {
+        /* Debounce line loss before entering the directed search states. */
         line_tracker_status.valid_samples = 0U;
         line_tracker_status.all_active_samples = 0U;
         if (line_tracker_status.lost_samples
@@ -696,6 +713,7 @@ uint8 line_tracker_update(
     }
     line_tracker_status.last_valid_deviation = sensor->deviation;
 
+    /* Leaving a nontracking state requires consecutive valid samples. */
     if ((line_tracker_status.state != LINE_TRACKER_STATE_TRACKING)
         && (line_tracker_status.valid_samples
             < line_tracker_config.reacquire_samples))
@@ -706,6 +724,7 @@ uint8 line_tracker_update(
         return ZF_TRUE;
     }
 
+    /* Confirmed reacquisition returns ownership to normal tracking. */
     line_tracker_status.state = LINE_TRACKER_STATE_TRACKING;
     line_tracker_status.search_samples = 0U;
     line_tracker_update_tracking(sensor, output);

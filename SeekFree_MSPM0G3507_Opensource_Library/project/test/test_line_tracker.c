@@ -214,6 +214,7 @@ static uint32 line_tracker_test_pid_self_check(void)
     uint32 failures = 0U;
     uint16 index;
 
+    /* Integral limiting alone must not report output saturation. */
     line_tracker_test_prepare_pid_config(&config);
     config.max_target_mm_s = 1000.0F;
     config.max_correction_mm_s = 140.0F;
@@ -232,6 +233,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Saturation freezes same-direction integration but permits unwind. */
     line_tracker_test_prepare_pid_config(&config);
     line_tracker_init(&config);
     gray_sensor_calculate(0x80U, &sensor);
@@ -257,6 +259,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* The first D sample is kick-free; later samples follow the filter. */
     line_tracker_test_prepare_pid_config(&config);
     for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
     {
@@ -296,6 +299,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* All-active input must clear every PID state value. */
     line_tracker_test_prepare_pid_config(&config);
     config.pid_kd = 1.0F;
     config.max_correction_mm_s = 140.0F;
@@ -308,6 +312,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Explicit tracker reset must clear every PID state value. */
     line_tracker_test_prime_pid(&config, &sensor, &output);
     line_tracker_reset();
     line_tracker_get_status(&status);
@@ -316,6 +321,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Lost-line debounce retains wheel targets while clearing PID history. */
     line_tracker_test_prime_pid(&config, &sensor, &output);
     held_output = output;
     gray_sensor_calculate(0x00U, &sensor);
@@ -332,6 +338,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Search and pivot outputs remain independent of the tracking PID. */
     line_tracker_update(&sensor, &output);
     line_tracker_update(&sensor, &output);
     line_tracker_get_status(&status);
@@ -351,6 +358,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Reacquisition waits for valid samples and starts D without a kick. */
     gray_sensor_calculate(0x18U, &sensor);
     line_tracker_update(&sensor, &output);
     line_tracker_update(&sensor, &output);
@@ -369,6 +377,7 @@ static uint32 line_tracker_test_pid_self_check(void)
         failures++;
     }
 
+    /* Invalid sensor data latches fault and clears all controller history. */
     line_tracker_test_prime_pid(&config, &sensor, &output);
     sensor.active_count++;
     if (line_tracker_update(&sensor, &output) != ZF_FALSE)

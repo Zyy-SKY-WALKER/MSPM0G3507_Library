@@ -27,14 +27,18 @@
 #define SERVO_B4_PWM_PIN                   (PWM_TIM_A1_CH0_B4)
 #define SERVO_B5_PWM_PIN                   (PWM_TIM_A1_CH1_B5)
 
+/** @brief PWM output selection for one physical servo connector. */
 typedef enum
 {
+    /** Servo connected to the timer output on pin B4. */
     SERVO_CHANNEL_B4 = 0,
+    /** Servo connected to the timer output on pin B5. */
     SERVO_CHANNEL_B5
 } servo_channel_enum;
 
 /**
  * @brief Initialize both servo PWM channels at the middle position.
+ * @note Configures both outputs for 50 Hz PWM and commands 135 degrees.
  */
 void servo_init(void);
 
@@ -43,6 +47,7 @@ void servo_init(void);
  * @param channel Servo PWM channel.
  * @param angle_deg Requested angle from 0 to 270 degrees.
  * @return 1 when accepted; otherwise 0.
+ * @note servo_init() must complete before setting an angle.
  */
 uint8 servo_set_angle(
     servo_channel_enum channel,
@@ -52,6 +57,7 @@ uint8 servo_set_angle(
  * @brief Set both servo angles in whole degrees.
  * @param angle_deg Requested angle from 0 to 270 degrees.
  * @return 1 when accepted; otherwise 0.
+ * @note servo_init() must complete before setting an angle.
  */
 uint8 servo_set_all_angle(uint16 angle_deg);
 
@@ -60,6 +66,7 @@ uint8 servo_set_all_angle(uint16 angle_deg);
  * @param channel Servo PWM channel.
  * @param angle_tenth_deg Requested angle from 0 to 2700 tenths of a degree.
  * @return 1 when accepted; otherwise 0.
+ * @note servo_init() must complete before setting an angle.
  */
 uint8 servo_set_angle_tenth_deg(
     servo_channel_enum channel,
@@ -69,6 +76,7 @@ uint8 servo_set_angle_tenth_deg(
  * @brief Set both servo angles in tenths of a degree.
  * @param angle_tenth_deg Requested angle from 0 to 2700 tenths of a degree.
  * @return 1 when accepted; otherwise 0.
+ * @note servo_init() must complete before setting an angle.
  */
 uint8 servo_set_all_angle_tenth_deg(uint16 angle_tenth_deg);
 

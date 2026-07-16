@@ -70,6 +70,7 @@ static void motor_set_duty(
     gpio_pin_enum in2_pin,
     int16 duty)
 {
+    /* Remove drive before changing bridge polarity, then restore magnitude. */
     pwm_set_duty(pwm_pin, 0U);
     motor_set_direction(in1_pin, in2_pin, duty);
     pwm_set_duty(pwm_pin, motor_get_duty_magnitude(duty));

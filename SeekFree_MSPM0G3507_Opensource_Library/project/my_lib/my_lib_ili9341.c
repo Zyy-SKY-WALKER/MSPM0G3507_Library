@@ -226,6 +226,8 @@ static uint8 ili9341_get_font_height(void)
  * @param buffer Destination buffer. It must hold digits plus a terminator.
  * @param value Value to convert.
  * @param digits Number of displayed digits.
+ * @note Leading positions are space-padded; values wider than the field use
+ *       '#' in every position.
  */
 static void ili9341_format_uint(char buffer[], uint32 value, uint8 digits)
 {
