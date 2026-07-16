@@ -14,11 +14,17 @@
 #define LINE_TRACKER_DIRECTION_EPSILON  (0.05F)
 #define LINE_TRACKER_FLOAT_EPSILON      (0.001F)
 #define LINE_TRACKER_COUNTER_MAX        (0xFFFFU)
+#define LINE_TRACKER_UPDATE_PERIOD_S    \
+    ((float)LINE_TRACKER_UPDATE_PERIOD_MS * 0.001F)
 
 static const line_tracker_config_struct line_tracker_default_config =
 {
     .base_speed_mm_s = {250.0F, 230.0F, 210.0F, 180.0F, 150.0F},
-    .turn_gain = {30.0F, 35.0F, 40.0F, 45.0F, 50.0F},
+    .pid_kp = {30.0F, 35.0F, 40.0F, 45.0F, 50.0F},
+    .pid_ki = 0.0F,
+    .pid_kd = 0.0F,
+    .pid_integral_limit_mm_s = 40.0F,
+    .pid_derivative_filter_alpha = 0.2F,
     .max_target_mm_s = 300.0F,
     .max_correction_mm_s = 140.0F,
     .arc_outer_speed_mm_s = 160.0F,
@@ -34,6 +40,16 @@ static const line_tracker_config_struct line_tracker_default_config =
 static volatile line_tracker_config_struct line_tracker_config;
 static volatile line_tracker_status_struct line_tracker_status;
 static volatile uint8 line_tracker_initialized;
+
+typedef struct
+{
+    float integral_mm_s;
+    float previous_error;
+    float filtered_derivative;
+    uint8 initialized;
+} line_tracker_pid_state_struct;
+
+static volatile line_tracker_pid_state_struct line_tracker_pid_state;
 
 /**
  * @brief Check that a float is finite and nonnegative.
@@ -66,6 +82,13 @@ static uint8 line_tracker_config_is_valid(
         || (config->max_target_mm_s <= 0.0F)
         || (line_tracker_float_is_nonnegative(
                 config->max_correction_mm_s) == 0U)
+        || (line_tracker_float_is_nonnegative(config->pid_ki) == 0U)
+        || (line_tracker_float_is_nonnegative(config->pid_kd) == 0U)
+        || (line_tracker_float_is_nonnegative(
+                config->pid_integral_limit_mm_s) == 0U)
+        || (line_tracker_float_is_nonnegative(
+                config->pid_derivative_filter_alpha) == 0U)
+        || (config->pid_derivative_filter_alpha > 1.0F)
         || (line_tracker_float_is_nonnegative(
                 config->arc_outer_speed_mm_s) == 0U)
         || (line_tracker_float_is_nonnegative(
@@ -99,7 +122,7 @@ static uint8 line_tracker_config_is_valid(
         if ((line_tracker_float_is_nonnegative(
                 config->base_speed_mm_s[index]) == 0U)
             || (line_tracker_float_is_nonnegative(
-                config->turn_gain[index]) == 0U)
+                config->pid_kp[index]) == 0U)
             || (config->base_speed_mm_s[index]
                 > config->max_target_mm_s))
         {
@@ -108,6 +131,128 @@ static uint8 line_tracker_config_is_valid(
     }
 
     return ZF_TRUE;
+}
+
+/**
+ * @brief Clear lateral PID history without changing tracker state.
+ */
+static void line_tracker_pid_reset(void)
+{
+    line_tracker_pid_state.integral_mm_s = 0.0F;
+    line_tracker_pid_state.previous_error = 0.0F;
+    line_tracker_pid_state.filtered_derivative = 0.0F;
+    line_tracker_pid_state.initialized = 0U;
+    line_tracker_status.correction_mm_s = 0.0F;
+    line_tracker_status.pid_integral_mm_s = 0.0F;
+    line_tracker_status.pid_filtered_derivative = 0.0F;
+}
+
+/**
+ * @brief Calculate the usable correction before either wheel clips.
+ * @param base_speed Base wheel speed for the selected band.
+ * @return Symmetric effective correction limit in mm/s.
+ */
+static float line_tracker_pid_get_effective_limit(float base_speed)
+{
+    float target_margin =
+        line_tracker_config.max_target_mm_s - base_speed;
+    float effective_limit = line_tracker_config.max_correction_mm_s;
+
+    if (target_margin < effective_limit)
+    {
+        effective_limit = target_margin;
+    }
+    if (base_speed < effective_limit)
+    {
+        effective_limit = base_speed;
+    }
+
+    return effective_limit;
+}
+
+/**
+ * @brief Calculate one filtered PID correction with anti-windup.
+ * @param error Normalized lateral error.
+ * @param band Active base-speed and proportional-gain band.
+ * @return Signed differential speed correction in millimeters per second.
+ */
+static float line_tracker_pid_update(float error, uint8 band)
+{
+    float proportional;
+    float derivative;
+    float raw_derivative = 0.0F;
+    float integral_candidate;
+    float correction_candidate;
+    float correction;
+    float effective_limit;
+    uint8 drives_further_into_saturation;
+
+    if (line_tracker_pid_state.initialized == 0U)
+    {
+        line_tracker_pid_state.previous_error = error;
+        line_tracker_pid_state.filtered_derivative = 0.0F;
+        line_tracker_pid_state.initialized = 1U;
+    }
+    else
+    {
+        raw_derivative =
+            (error - line_tracker_pid_state.previous_error)
+            / LINE_TRACKER_UPDATE_PERIOD_S;
+        line_tracker_pid_state.filtered_derivative +=
+            line_tracker_config.pid_derivative_filter_alpha
+            * (raw_derivative
+                - line_tracker_pid_state.filtered_derivative);
+    }
+
+    proportional = line_tracker_config.pid_kp[band] * error;
+    derivative = line_tracker_config.pid_kd
+        * line_tracker_pid_state.filtered_derivative;
+    integral_candidate = line_tracker_pid_state.integral_mm_s
+        + (line_tracker_config.pid_ki
+            * error
+            * LINE_TRACKER_UPDATE_PERIOD_S);
+
+    if (integral_candidate
+        > line_tracker_config.pid_integral_limit_mm_s)
+    {
+        integral_candidate =
+            line_tracker_config.pid_integral_limit_mm_s;
+    }
+    else if (integral_candidate
+        < -line_tracker_config.pid_integral_limit_mm_s)
+    {
+        integral_candidate =
+            -line_tracker_config.pid_integral_limit_mm_s;
+    }
+
+    correction_candidate = proportional
+        + integral_candidate
+        + derivative;
+    effective_limit = line_tracker_pid_get_effective_limit(
+        line_tracker_config.base_speed_mm_s[band]);
+    drives_further_into_saturation = (uint8)(
+        ((correction_candidate > effective_limit) && (error > 0.0F))
+        || ((correction_candidate < -effective_limit) && (error < 0.0F)));
+
+    if (drives_further_into_saturation != 0U)
+    {
+        line_tracker_status.output_limited = 1U;
+    }
+    else
+    {
+        line_tracker_pid_state.integral_mm_s = integral_candidate;
+    }
+
+    correction = proportional
+        + line_tracker_pid_state.integral_mm_s
+        + derivative;
+    line_tracker_pid_state.previous_error = error;
+    line_tracker_status.pid_integral_mm_s =
+        line_tracker_pid_state.integral_mm_s;
+    line_tracker_status.pid_filtered_derivative =
+        line_tracker_pid_state.filtered_derivative;
+
+    return correction;
 }
 
 /**
@@ -133,6 +278,7 @@ static void line_tracker_set_output(
  */
 static void line_tracker_enter_fault(line_tracker_output_struct *output)
 {
+    line_tracker_pid_reset();
     line_tracker_status.state = LINE_TRACKER_STATE_FAULT;
     line_tracker_status.output_limited = 0U;
 
@@ -286,8 +432,8 @@ static void line_tracker_update_tracking(
     float right_target;
     uint8 band = line_tracker_get_speed_band(absolute);
 
-    correction = normalized * line_tracker_config.turn_gain[band];
     line_tracker_status.output_limited = 0U;
+    correction = line_tracker_pid_update(normalized, band);
     if (correction > line_tracker_config.max_correction_mm_s)
     {
         correction = line_tracker_config.max_correction_mm_s;
@@ -306,6 +452,7 @@ static void line_tracker_update_tracking(
 
     line_tracker_status.speed_band = band;
     line_tracker_status.normalized_deviation = normalized;
+    line_tracker_status.correction_mm_s = correction;
     line_tracker_set_output(output, left_target, right_target);
 }
 
@@ -425,6 +572,7 @@ void line_tracker_reset(void)
     line_tracker_status.deviation = 0.0F;
     line_tracker_status.normalized_deviation = 0.0F;
     line_tracker_status.last_valid_deviation = 0.0F;
+    line_tracker_pid_reset();
     line_tracker_status.left_target_mm_s = 0.0F;
     line_tracker_status.right_target_mm_s = 0.0F;
     line_tracker_status.lost_samples = 0U;
@@ -454,6 +602,7 @@ uint8 line_tracker_set_config(
 
     primask = interrupt_global_disable();
     line_tracker_config = *config;
+    line_tracker_pid_reset();
     interrupt_global_enable(primask);
 
     return ZF_TRUE;
@@ -484,6 +633,11 @@ uint8 line_tracker_update(
 
     line_tracker_status.sensor_status = sensor->status;
     line_tracker_status.deviation = sensor->deviation;
+
+    if (sensor->status != GRAY_SENSOR_STATUS_VALID)
+    {
+        line_tracker_pid_reset();
+    }
 
     if (sensor->status == GRAY_SENSOR_STATUS_ALL_ACTIVE)
     {
@@ -546,6 +700,7 @@ uint8 line_tracker_update(
         && (line_tracker_status.valid_samples
             < line_tracker_config.reacquire_samples))
     {
+        line_tracker_pid_reset();
         line_tracker_status.output_limited = 0U;
         line_tracker_set_output(output, 0.0F, 0.0F);
         return ZF_TRUE;

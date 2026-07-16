@@ -31,7 +31,16 @@ typedef enum
 typedef struct
 {
     float base_speed_mm_s[LINE_TRACKER_SPEED_BAND_COUNT];
-    float turn_gain[LINE_TRACKER_SPEED_BAND_COUNT];
+    /** Proportional correction gain in mm/s per normalized error. */
+    float pid_kp[LINE_TRACKER_SPEED_BAND_COUNT];
+    /** Integral-output gain applied with the 10 ms update period. */
+    float pid_ki;
+    /** Derivative-output gain applied to normalized error per second. */
+    float pid_kd;
+    /** Absolute integral-output limit in mm/s. */
+    float pid_integral_limit_mm_s;
+    /** Derivative low-pass coefficient in the range 0 through 1. */
+    float pid_derivative_filter_alpha;
     float max_target_mm_s;
     float max_correction_mm_s;
     float arc_outer_speed_mm_s;
@@ -58,6 +67,12 @@ typedef struct
     float deviation;
     float normalized_deviation;
     float last_valid_deviation;
+    /** Applied signed differential correction before wheel clamping. */
+    float correction_mm_s;
+    /** Current bounded integral contribution in mm/s. */
+    float pid_integral_mm_s;
+    /** Current filtered normalized-error derivative per second. */
+    float pid_filtered_derivative;
     float left_target_mm_s;
     float right_target_mm_s;
     uint16 lost_samples;

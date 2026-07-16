@@ -30,6 +30,63 @@ static const uint8 line_tracker_test_masks[] =
     0xFFU,
 };
 
+static const float line_tracker_test_default_base_speed[] =
+{
+    250.0F,
+    230.0F,
+    210.0F,
+    180.0F,
+    150.0F,
+};
+
+static const float line_tracker_test_default_kp[] =
+{
+    30.0F,
+    35.0F,
+    40.0F,
+    45.0F,
+    50.0F,
+};
+
+/**
+ * @brief Compare two floats with the test tolerance.
+ * @param actual Actual value.
+ * @param expected Expected value.
+ * @return Nonzero when the values are sufficiently close.
+ */
+static uint8 line_tracker_test_float_is_near(
+    float actual,
+    float expected)
+{
+    float difference = actual - expected;
+
+    if (difference < 0.0F)
+    {
+        difference = -difference;
+    }
+
+    return (uint8)(difference <= LINE_TRACKER_TEST_FLOAT_EPSILON);
+}
+
+/**
+ * @brief Clamp one expected forward wheel target.
+ * @param value Unbounded target value.
+ * @return Target limited to the default zero-to-maximum range.
+ */
+static float line_tracker_test_clamp_target(float value)
+{
+    if (value > LINE_TRACKER_TEST_MAX_TARGET)
+    {
+        return LINE_TRACKER_TEST_MAX_TARGET;
+    }
+    if (value < 0.0F)
+    {
+        return 0.0F;
+    }
+
+    return value;
+}
+
 /**
  * @brief Check that one output is finite and in configured bounds.
  * @param output Tracker output to validate.
@@ -81,6 +138,255 @@ static uint8 line_tracker_test_expected_band(float deviation)
 }
 
 /**
+ * @brief Fill a deterministic configuration for PID behavior checks.
+ * @param config Destination configuration.
+ */
+static void line_tracker_test_prepare_pid_config(
+    line_tracker_config_struct *config)
+{
+    uint8 index;
+
+    for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
+    {
+        config->base_speed_mm_s[index] = 100.0F;
+        config->pid_kp[index] = 0.0F;
+    }
+
+    config->pid_ki = 100.0F;
+    config->pid_kd = 0.0F;
+    config->pid_integral_limit_mm_s = 50.0F;
+    config->pid_derivative_filter_alpha = 0.25F;
+    config->max_target_mm_s = 300.0F;
+    config->max_correction_mm_s = 20.0F;
+    config->arc_outer_speed_mm_s = 160.0F;
+    config->arc_inner_speed_mm_s = 60.0F;
+    config->pivot_speed_mm_s = 100.0F;
+    config->lost_debounce_samples = 3U;
+    config->reacquire_samples = 3U;
+    config->arc_duration_samples = 50U;
+    config->search_timeout_samples = 500U;
+    config->default_search_direction = LINE_TRACKER_DIRECTION_RIGHT;
+}
+
+/**
+ * @brief Check whether every exposed PID state value is reset.
+ * @param status Tracker status snapshot.
+ * @return Nonzero when PID state is fully cleared.
+ */
+static uint8 line_tracker_test_pid_is_reset(
+    const line_tracker_status_struct *status)
+{
+    return (uint8)(
+        (status->pid_integral_mm_s == 0.0F)
+        && (status->pid_filtered_derivative == 0.0F)
+        && (status->correction_mm_s == 0.0F));
+}
+
+/**
+ * @brief Create nonzero integral and derivative state.
+ * @param config PID test configuration.
+ * @param sensor Working sensor value.
+ * @param output Working tracker output.
+ */
+static void line_tracker_test_prime_pid(
+    const line_tracker_config_struct *config,
+    gray_sensor_result_struct *sensor,
+    line_tracker_output_struct *output)
+{
+    line_tracker_init(config);
+    gray_sensor_calculate(0x80U, sensor);
+    line_tracker_update(sensor, output);
+    gray_sensor_calculate(0x18U, sensor);
+    line_tracker_update(sensor, output);
+}
+
+/**
+ * @brief Check PID math, anti-windup, filtering, and reset paths.
+ * @return Failure count.
+ */
+static uint32 line_tracker_test_pid_self_check(void)
+{
+    gray_sensor_result_struct sensor;
+    line_tracker_config_struct config;
+    line_tracker_output_struct held_output;
+    line_tracker_output_struct output;
+    line_tracker_status_struct status;
+    uint32 failures = 0U;
+    uint16 index;
+
+    line_tracker_test_prepare_pid_config(&config);
+    config.max_target_mm_s = 1000.0F;
+    config.max_correction_mm_s = 140.0F;
+    line_tracker_init(&config);
+    gray_sensor_calculate(0x80U, &sensor);
+    for (index = 0U; index < 20U; index++)
+    {
+        line_tracker_update(&sensor, &output);
+    }
+    line_tracker_get_status(&status);
+    if ((line_tracker_test_float_is_near(
+            status.pid_integral_mm_s,
+            50.0F) == 0U)
+        || (status.output_limited != 0U))
+    {
+        failures++;
+    }
+
+    line_tracker_test_prepare_pid_config(&config);
+    line_tracker_init(&config);
+    gray_sensor_calculate(0x80U, &sensor);
+    for (index = 0U; index < 10U; index++)
+    {
+        line_tracker_update(&sensor, &output);
+    }
+    line_tracker_get_status(&status);
+    if ((line_tracker_test_float_is_near(
+            status.pid_integral_mm_s,
+            20.0F) == 0U)
+        || (status.output_limited == 0U))
+    {
+        failures++;
+    }
+    gray_sensor_calculate(0x01U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if (line_tracker_test_float_is_near(
+            status.pid_integral_mm_s,
+            15.0F) == 0U)
+    {
+        failures++;
+    }
+
+    line_tracker_test_prepare_pid_config(&config);
+    for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
+    {
+        config.base_speed_mm_s[index] = 500.0F;
+    }
+    config.pid_ki = 0.0F;
+    config.pid_kd = 1.0F;
+    config.max_target_mm_s = 1000.0F;
+    config.max_correction_mm_s = 500.0F;
+    line_tracker_init(&config);
+    gray_sensor_calculate(0x80U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((status.pid_filtered_derivative != 0.0F)
+        || (status.correction_mm_s != 0.0F))
+    {
+        failures++;
+    }
+    gray_sensor_calculate(0x18U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((line_tracker_test_float_is_near(
+            status.pid_filtered_derivative,
+            -125.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            status.correction_mm_s,
+            -125.0F) == 0U))
+    {
+        failures++;
+    }
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if (line_tracker_test_float_is_near(
+            status.pid_filtered_derivative,
+            -93.75F) == 0U)
+    {
+        failures++;
+    }
+
+    line_tracker_test_prepare_pid_config(&config);
+    config.pid_kd = 1.0F;
+    config.max_correction_mm_s = 140.0F;
+    line_tracker_test_prime_pid(&config, &sensor, &output);
+    gray_sensor_calculate(0xFFU, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if (line_tracker_test_pid_is_reset(&status) == 0U)
+    {
+        failures++;
+    }
+
+    line_tracker_test_prime_pid(&config, &sensor, &output);
+    line_tracker_reset();
+    line_tracker_get_status(&status);
+    if (line_tracker_test_pid_is_reset(&status) == 0U)
+    {
+        failures++;
+    }
+
+    line_tracker_test_prime_pid(&config, &sensor, &output);
+    held_output = output;
+    gray_sensor_calculate(0x00U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((line_tracker_test_pid_is_reset(&status) == 0U)
+        || (line_tracker_test_float_is_near(
+                output.left_target_mm_s,
+                held_output.left_target_mm_s) == 0U)
+        || (line_tracker_test_float_is_near(
+                output.right_target_mm_s,
+                held_output.right_target_mm_s) == 0U))
+    {
+        failures++;
+    }
+
+    line_tracker_update(&sensor, &output);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((status.state != LINE_TRACKER_STATE_LOST_ARC)
+        || (line_tracker_test_pid_is_reset(&status) == 0U))
+    {
+        failures++;
+    }
+    for (index = 0U; index < 50U; index++)
+    {
+        line_tracker_update(&sensor, &output);
+    }
+    line_tracker_get_status(&status);
+    if ((status.state != LINE_TRACKER_STATE_LOST_PIVOT)
+        || (line_tracker_test_pid_is_reset(&status) == 0U))
+    {
+        failures++;
+    }
+
+    gray_sensor_calculate(0x18U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((output.left_target_mm_s != 0.0F)
+        || (output.right_target_mm_s != 0.0F)
+        || (line_tracker_test_pid_is_reset(&status) == 0U))
+    {
+        failures++;
+    }
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((status.state != LINE_TRACKER_STATE_TRACKING)
+        || (status.pid_filtered_derivative != 0.0F))
+    {
+        failures++;
+    }
+
+    line_tracker_test_prime_pid(&config, &sensor, &output);
+    sensor.active_count++;
+    if (line_tracker_update(&sensor, &output) != ZF_FALSE)
+    {
+        failures++;
+    }
+    line_tracker_get_status(&status);
+    if ((status.state != LINE_TRACKER_STATE_FAULT)
+        || (line_tracker_test_pid_is_reset(&status) == 0U))
+    {
+        failures++;
+    }
+
+    line_tracker_init(NULL);
+    return failures;
+}
+
+/**
  * @brief Run all 256 masks and representative state transitions.
  * @return Failure count.
  */
@@ -95,8 +401,12 @@ static uint32 line_tracker_test_self_check(void)
 
     for (mask = 0U; mask <= 0xFFU; mask++)
     {
+        float expected_correction;
+        float expected_left;
         float expected_normalized;
+        float expected_right;
         float normalized_error;
+        uint8 expected_band;
 
         gray_sensor_calculate((uint8)mask, &sensor);
         line_tracker_reset();
@@ -111,6 +421,24 @@ static uint32 line_tracker_test_self_check(void)
         {
             expected_normalized =
                 sensor.deviation * LINE_TRACKER_TEST_NORMALIZE_SCALE;
+            expected_band =
+                line_tracker_test_expected_band(expected_normalized);
+            expected_correction = expected_normalized
+                * line_tracker_test_default_kp[expected_band];
+            if (expected_correction > 140.0F)
+            {
+                expected_correction = 140.0F;
+            }
+            else if (expected_correction < -140.0F)
+            {
+                expected_correction = -140.0F;
+            }
+            expected_left = line_tracker_test_clamp_target(
+                line_tracker_test_default_base_speed[expected_band]
+                + expected_correction);
+            expected_right = line_tracker_test_clamp_target(
+                line_tracker_test_default_base_speed[expected_band]
+                - expected_correction);
             normalized_error =
                 status.normalized_deviation - expected_normalized;
             if (normalized_error < 0.0F)
@@ -124,8 +452,16 @@ static uint32 line_tracker_test_self_check(void)
                 || (output.left_target_mm_s < 0.0F)
                 || (output.right_target_mm_s < 0.0F)
                 || (normalized_error > LINE_TRACKER_TEST_FLOAT_EPSILON)
-                || (status.speed_band
-                    != line_tracker_test_expected_band(expected_normalized)))
+                || (status.speed_band != expected_band)
+                || (line_tracker_test_float_is_near(
+                        status.correction_mm_s,
+                        expected_correction) == 0U)
+                || (line_tracker_test_float_is_near(
+                        output.left_target_mm_s,
+                        expected_left) == 0U)
+                || (line_tracker_test_float_is_near(
+                        output.right_target_mm_s,
+                        expected_right) == 0U))
             {
                 failures++;
             }
@@ -307,6 +643,7 @@ void test_line_tracker_run(void)
 
     line_tracker_init(NULL);
     failures = line_tracker_test_self_check();
+    failures += line_tracker_test_pid_self_check();
     ili9341_show_uint(104U, 40U, failures, 4U);
 
     while (true)
