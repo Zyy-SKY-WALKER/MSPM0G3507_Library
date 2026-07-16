@@ -41,8 +41,8 @@ typedef struct
  * 0 left target, 1 left speed, 2 right target, 3 right speed,
  * 4 left duty, 5 right duty, 6 left count, 7 right count.
  *
- * VOFA left-wheel test channel order:
- * 0 left target, 1 left speed, 2 left duty.
+ * VOFA right-wheel test channel order:
+ * 0 right target, 1 right speed, 2 right duty.
  */
 
 uint8 vofa_init(void);
@@ -50,7 +50,7 @@ uint8 vofa_init_tx_only(void);
 void vofa_tick_10ms(void);
 void vofa_process(void);
 void vofa_send_speed(const speed_pid_status_struct *status);
-void vofa_send_left_speed(const speed_pid_status_struct *status);
+void vofa_send_right_speed(const speed_pid_status_struct *status);
 void vofa_set_stream_enabled(uint8 enabled);
 void vofa_get_stats(vofa_stats_struct *stats);
 

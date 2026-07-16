@@ -20,7 +20,7 @@ static const gpio_pin_enum gpio_input_test_pins[
     GPIO_INPUT_TEST_PIN_COUNT] =
 {
     B26,
-    B19,
+    B23,
     A29,
     A28,
     B27,
@@ -33,7 +33,7 @@ static const char *const gpio_input_test_labels[
     GPIO_INPUT_TEST_PIN_COUNT] =
 {
     "D1 B26 :",
-    "D2 B19 :",
+    "D2 B23 :",
     "D3 A29 :",
     "D4 A28 :",
     "D5 B27 :",

@@ -13,13 +13,13 @@
 #define SPEED_PID_OUTPUT_LIMIT            (8000)
 #define SPEED_PID_REVERSE_STOP_COUNT      (3)
 
-#define SPEED_PID_LEFT_KP                 (1.5F)
-#define SPEED_PID_LEFT_KI                 (0.2F)
-#define SPEED_PID_LEFT_KD                 (0.0F)
+#define SPEED_PID_LEFT_KP                 (9.0F)
+#define SPEED_PID_LEFT_KI                 (1.3F)
+#define SPEED_PID_LEFT_KD                 (0.5F)
 
-#define SPEED_PID_RIGHT_KP                (1.5F)
-#define SPEED_PID_RIGHT_KI                (0.2F)
-#define SPEED_PID_RIGHT_KD                (0.0F)
+#define SPEED_PID_RIGHT_KP                (9.0F)
+#define SPEED_PID_RIGHT_KI                (1.5F)
+#define SPEED_PID_RIGHT_KD                (0.8F)
 
 typedef struct
 {

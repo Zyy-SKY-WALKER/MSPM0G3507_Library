@@ -15,7 +15,7 @@
 #define VOFA_RX_QUEUE_LENGTH           (4U)
 #define VOFA_MAX_TOKENS                (4U)
 #define VOFA_FLOAT_CHANNEL_COUNT       (8U)
-#define VOFA_LEFT_CHANNEL_COUNT        (3U)
+#define VOFA_RIGHT_CHANNEL_COUNT       (3U)
 #define VOFA_FLOAT_SIZE                (4U)
 #define VOFA_FRAME_SIZE                \
     ((VOFA_FLOAT_CHANNEL_COUNT * VOFA_FLOAT_SIZE) + 4U)
@@ -729,23 +729,23 @@ void vofa_send_speed(const speed_pid_status_struct *status)
 }
 
 /**
- * @brief Send left target, measured speed and duty as three channels.
+ * @brief Send right target, measured speed and duty as three channels.
  * @param status Coherent speed PID status snapshot.
  */
-void vofa_send_left_speed(const speed_pid_status_struct *status)
+void vofa_send_right_speed(const speed_pid_status_struct *status)
 {
-    float channels[VOFA_LEFT_CHANNEL_COUNT];
+    float channels[VOFA_RIGHT_CHANNEL_COUNT];
 
     if (status == NULL)
     {
         return;
     }
 
-    channels[0] = status->left_target_mm_s;
-    channels[1] = status->left_speed_mm_s;
-    channels[2] = (float)status->left_duty;
+    channels[0] = status->right_target_mm_s;
+    channels[1] = status->right_speed_mm_s;
+    channels[2] = (float)status->right_duty;
 
-    vofa_send_channels(channels, VOFA_LEFT_CHANNEL_COUNT);
+    vofa_send_channels(channels, VOFA_RIGHT_CHANNEL_COUNT);
 }
 
 /**

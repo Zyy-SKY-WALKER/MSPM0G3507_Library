@@ -74,7 +74,7 @@ static void speed_pid_test_process_vofa(void)
     if (send_due != 0U)
     {
         speed_pid_get_status(&status);
-        vofa_send_left_speed(&status);
+        vofa_send_right_speed(&status);
     }
 }
 
