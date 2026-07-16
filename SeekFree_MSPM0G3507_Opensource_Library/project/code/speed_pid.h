@@ -14,11 +14,11 @@
 #define SPEED_PID_REVERSE_STOP_COUNT      (3)
 
 #define SPEED_PID_LEFT_KP                 (1.5F)
-#define SPEED_PID_LEFT_KI                 (0.0F)
+#define SPEED_PID_LEFT_KI                 (0.2F)
 #define SPEED_PID_LEFT_KD                 (0.0F)
 
 #define SPEED_PID_RIGHT_KP                (1.5F)
-#define SPEED_PID_RIGHT_KI                (0.0F)
+#define SPEED_PID_RIGHT_KI                (0.2F)
 #define SPEED_PID_RIGHT_KD                (0.0F)
 
 typedef struct

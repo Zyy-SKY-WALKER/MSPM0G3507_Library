@@ -536,14 +536,11 @@ static uint8 vofa_process_line(char line[])
 }
 
 /**
- * @brief Initialize VOFA UART, parser and safety state.
- * @return ZF_TRUE when UART configuration is enabled and valid.
+ * @brief Validate the configured VOFA UART and float representation.
+ * @return ZF_TRUE when the configuration is valid.
  */
-uint8 vofa_init(void)
+static uint8 vofa_configuration_is_valid(void)
 {
-    uint32 primask;
-
-    vofa_initialized = 0U;
     if (VOFA_UART_CONFIGURED == 0U)
     {
         return ZF_FALSE;
@@ -557,6 +554,23 @@ uint8 vofa_init(void)
         || ((VOFA_UART_TX_PIN & UART_PIN_INDEX_MASK)
             == (VOFA_UART_RX_PIN & UART_PIN_INDEX_MASK))
         || (sizeof(float) != VOFA_FLOAT_SIZE))
+    {
+        return ZF_FALSE;
+    }
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Initialize VOFA UART, parser and safety state.
+ * @return ZF_TRUE when UART configuration is enabled and valid.
+ */
+uint8 vofa_init(void)
+{
+    uint32 primask;
+
+    vofa_initialized = 0U;
+    if (vofa_configuration_is_valid() == ZF_FALSE)
     {
         return ZF_FALSE;
     }
@@ -597,6 +611,31 @@ uint8 vofa_init(void)
     uart_set_interrupt_config(
         VOFA_UART_INDEX,
         UART_INTERRUPT_CONFIG_RX_ENABLE);
+    vofa_initialized = 1U;
+
+    return ZF_TRUE;
+}
+
+/**
+ * @brief Initialize VOFA UART for polling transmission only.
+ * @return ZF_TRUE when UART configuration is enabled and valid.
+ */
+uint8 vofa_init_tx_only(void)
+{
+    vofa_initialized = 0U;
+    if (vofa_configuration_is_valid() == ZF_FALSE)
+    {
+        return ZF_FALSE;
+    }
+
+    uart_init(
+        VOFA_UART_INDEX,
+        VOFA_UART_BAUD_RATE,
+        VOFA_UART_TX_PIN,
+        VOFA_UART_RX_PIN);
+    uart_set_interrupt_config(
+        VOFA_UART_INDEX,
+        UART_INTERRUPT_CONFIG_ALL_DISABLE);
     vofa_initialized = 1U;
 
     return ZF_TRUE;

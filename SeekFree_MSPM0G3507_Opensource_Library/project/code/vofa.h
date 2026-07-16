@@ -46,6 +46,7 @@ typedef struct
  */
 
 uint8 vofa_init(void);
+uint8 vofa_init_tx_only(void);
 void vofa_tick_10ms(void);
 void vofa_process(void);
 void vofa_send_speed(const speed_pid_status_struct *status);

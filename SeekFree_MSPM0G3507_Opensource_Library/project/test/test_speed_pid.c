@@ -79,15 +79,25 @@ static void speed_pid_test_process_vofa(void)
 }
 
 /**
- * @brief Discard a pending frame before changing test state.
+ * @brief Start one step atomically against the 10 ms control callback.
+ * @param step Test sequence step.
+ * @return Step start time from the 10 ms control clock.
  */
-static void speed_pid_test_clear_vofa_due(void)
+static uint32 speed_pid_test_start_step(
+    const speed_pid_test_step_struct *step)
 {
     uint32 primask;
+    uint32 start_ms;
 
     primask = interrupt_global_disable();
+    start_ms = speed_pid_test_elapsed_ms;
+    speed_pid_set_target(
+        step->left_target_mm_s,
+        step->right_target_mm_s);
     speed_pid_test_vofa_due = 0U;
     interrupt_global_enable(primask);
+
+    return start_ms;
 }
 
 /**
@@ -113,12 +123,8 @@ static void speed_pid_test_run_foreground(
 static void speed_pid_test_run_step(
     const speed_pid_test_step_struct *step)
 {
-    uint32 start_ms = speed_pid_test_elapsed_ms;
+    uint32 start_ms = speed_pid_test_start_step(step);
 
-    speed_pid_set_target(
-        step->left_target_mm_s,
-        step->right_target_mm_s);
-    speed_pid_test_clear_vofa_due();
     speed_pid_test_run_foreground(start_ms, step->duration_ms);
 }
 
@@ -132,17 +138,13 @@ void test_speed_pid_run(void)
 
     my_encoder_init();
     speed_pid_init();
-    if (vofa_init() == ZF_FALSE)
+    if (vofa_init_tx_only() == ZF_FALSE)
     {
         speed_pid_stop();
         while (true)
         {
         }
     }
-    uart_set_interrupt_config(
-        VOFA_UART_INDEX,
-        UART_INTERRUPT_CONFIG_RX_DISABLE);
-
     speed_pid_test_elapsed_ms = 0U;
     speed_pid_test_vofa_due = 0U;
     pit_ms_init(
