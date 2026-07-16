@@ -3,9 +3,9 @@
 <title>Static Call Graph - [.\Objects\SeekFree_MSPM0G3507_Device_Library.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\SeekFree_MSPM0G3507_Device_Library.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Wed Jul 15 20:56:27 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Wed Jul 15 21:13:27 2026
 <BR><P>
-<H3>Maximum Stack Usage =       1536 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =       1568 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
 __rt_entry_main &rArr; main &rArr; test_encoder_run &rArr; test_encoder_show_count &rArr; ili9341_show_int &rArr; ili9341_show_uint &rArr; ili9341_show_string &rArr; ili9341_show_char &rArr; ili9341_set_window &rArr; ili9341_write_command_data &rArr; spi_write_8bit_array &rArr; debug_assert_handler &rArr; debug_output &rArr; sprintf &rArr; _printf_char_common &rArr; __printf
 <P>
@@ -427,7 +427,7 @@ Global Symbols
 <P><STRONG><a name="[171]"></a>__rt_entry_postsh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000009))
 
 <P><STRONG><a name="[5d]"></a>__rt_entry_main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000D))
-<BR><BR>[Stack]<UL><LI>Max Depth = 1536 + Unknown Stack Size
+<BR><BR>[Stack]<UL><LI>Max Depth = 1568 + Unknown Stack Size
 <LI>Call Chain = __rt_entry_main &rArr; main &rArr; test_encoder_run &rArr; test_encoder_show_count &rArr; ili9341_show_int &rArr; ili9341_show_uint &rArr; ili9341_show_string &rArr; ili9341_show_char &rArr; ili9341_set_window &rArr; ili9341_write_command_data &rArr; spi_write_8bit_array &rArr; debug_assert_handler &rArr; debug_output &rArr; sprintf &rArr; _printf_char_common &rArr; __printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[5e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -1688,7 +1688,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[5e]"></a>main</STRONG> (Thumb, 28 bytes, Stack size 16 bytes, main.o(.text.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 1536 + Unknown Stack Size
+<BR><BR>[Stack]<UL><LI>Max Depth = 1568 + Unknown Stack Size
 <LI>Call Chain = main &rArr; test_encoder_run &rArr; test_encoder_show_count &rArr; ili9341_show_int &rArr; ili9341_show_uint &rArr; ili9341_show_string &rArr; ili9341_show_char &rArr; ili9341_set_window &rArr; ili9341_write_command_data &rArr; spi_write_8bit_array &rArr; debug_assert_handler &rArr; debug_output &rArr; sprintf &rArr; _printf_char_common &rArr; __printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[12b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;test_encoder_run
@@ -1704,7 +1704,8 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[12f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_enable
 <LI><a href="#[f8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_disable
 </UL>
-<BR>[Called By]<UL><LI><a href="#[136]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_encoder_init
+<BR>[Called By]<UL><LI><a href="#[12b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;test_encoder_run
+<LI><a href="#[136]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_encoder_init
 </UL>
 
 <P><STRONG><a name="[130]"></a>my_encoder_get_delta</STRONG> (Thumb, 84 bytes, Stack size 32 bytes, my_lib_encoder.o(.text.my_encoder_get_delta))
@@ -1818,11 +1819,12 @@ Global Symbols
 <LI><a href="#[117]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ili9341_hardware_reset
 </UL>
 
-<P><STRONG><a name="[12b]"></a>test_encoder_run</STRONG> (Thumb, 316 bytes, Stack size 72 bytes, test_encoder.o(.text.test_encoder_run))
-<BR><BR>[Stack]<UL><LI>Max Depth = 1520 + Unknown Stack Size
+<P><STRONG><a name="[12b]"></a>test_encoder_run</STRONG> (Thumb, 352 bytes, Stack size 104 bytes, test_encoder.o(.text.test_encoder_run))
+<BR><BR>[Stack]<UL><LI>Max Depth = 1552 + Unknown Stack Size
 <LI>Call Chain = test_encoder_run &rArr; test_encoder_show_count &rArr; ili9341_show_int &rArr; ili9341_show_uint &rArr; ili9341_show_string &rArr; ili9341_show_char &rArr; ili9341_set_window &rArr; ili9341_write_command_data &rArr; spi_write_8bit_array &rArr; debug_assert_handler &rArr; debug_output &rArr; sprintf &rArr; _printf_char_common &rArr; __printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[130]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_encoder_get_delta
+<LI><a href="#[12e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_encoder_clear_count
 <LI><a href="#[136]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_encoder_init
 <LI><a href="#[118]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;system_delay_ms
 <LI><a href="#[13c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;test_encoder_show_level
