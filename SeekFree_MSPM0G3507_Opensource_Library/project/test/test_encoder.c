@@ -87,7 +87,7 @@ void test_encoder_run(void)
     ili9341_show_string(8U, 168U, "L A/B  :");
     ili9341_show_string(8U, 200U, "R A/B  :");
     ili9341_show_string(8U, 240U, "TURN ONE WHEEL");
-    ili9341_show_string(8U, 264U, "ONE REV ~= 10250");
+    ili9341_show_string(8U, 264U, "ONE REV ~= 20500");
     ili9341_show_string(8U, 288U, "CHECK FORWARD SIGN");
 
     my_encoder_clear_count();

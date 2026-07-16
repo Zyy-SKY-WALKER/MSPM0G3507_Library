@@ -7,7 +7,7 @@
 #define DRIVE_GEOMETRY_H
 
 #define DRIVE_PI                           (3.14159265F)
-#define DRIVE_ENCODER_COUNTS_PER_REV       (10250U)
+#define DRIVE_ENCODER_COUNTS_PER_REV       (20500U)
 
 #define DRIVE_LEFT_WHEEL_DIAMETER_MM       (48.0F)
 #define DRIVE_RIGHT_WHEEL_DIAMETER_MM      (48.0F)

@@ -1,6 +1,6 @@
 /**
  * @file    my_lib_encoder.h
- * @brief   Dual single-edge quadrature encoder driver for MSPM0G3507.
+ * @brief   Hybrid hardware/software x2 quadrature encoder driver.
  */
 
 #ifndef MY_LIB_ENCODER_H
@@ -9,13 +9,13 @@
 #include "zf_common_typedef.h"
 #include "zf_driver_gpio.h"
 
-#define MY_ENCODER_LEFT_PHASE_A_PIN        (B22)
-#define MY_ENCODER_LEFT_PHASE_B_PIN        (B23)
-#define MY_ENCODER_LEFT_POSITIVE_B_LEVEL   (GPIO_HIGH)
+#define MY_ENCODER_LEFT_PHASE_A_PIN        (B21)
+#define MY_ENCODER_LEFT_PHASE_B_PIN        (B22)
+#define MY_ENCODER_LEFT_COUNT_SIGN         (1)
 
-#define MY_ENCODER_RIGHT_PHASE_A_PIN       (B26)
-#define MY_ENCODER_RIGHT_PHASE_B_PIN       (B21)
-#define MY_ENCODER_RIGHT_POSITIVE_B_LEVEL  (GPIO_HIGH)
+#define MY_ENCODER_RIGHT_PHASE_A_PIN       (B17)
+#define MY_ENCODER_RIGHT_PHASE_B_PIN       (B18)
+#define MY_ENCODER_RIGHT_POSITIVE_AB_EQUAL (1U)
 
 void my_encoder_init(void);
 

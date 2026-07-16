@@ -9,16 +9,16 @@
 #include "zf_common_typedef.h"
 
 #define SPEED_PID_SAMPLE_PERIOD_MS        (10U)
-#define SPEED_PID_TARGET_LIMIT_MM_S       (600.0F)
-#define SPEED_PID_OUTPUT_LIMIT            (3000)
+#define SPEED_PID_TARGET_LIMIT_MM_S       (800.0F)
+#define SPEED_PID_OUTPUT_LIMIT            (8000)
 #define SPEED_PID_REVERSE_STOP_COUNT      (3)
 
-#define SPEED_PID_LEFT_KP                 (1.0F)
-#define SPEED_PID_LEFT_KI                 (0.2F)
+#define SPEED_PID_LEFT_KP                 (1.5F)
+#define SPEED_PID_LEFT_KI                 (0.0F)
 #define SPEED_PID_LEFT_KD                 (0.0F)
 
-#define SPEED_PID_RIGHT_KP                (1.0F)
-#define SPEED_PID_RIGHT_KI                (0.2F)
+#define SPEED_PID_RIGHT_KP                (1.5F)
+#define SPEED_PID_RIGHT_KI                (0.0F)
 #define SPEED_PID_RIGHT_KD                (0.0F)
 
 typedef struct

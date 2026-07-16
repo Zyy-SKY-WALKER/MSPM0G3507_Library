@@ -15,6 +15,7 @@
 #define VOFA_RX_QUEUE_LENGTH           (4U)
 #define VOFA_MAX_TOKENS                (4U)
 #define VOFA_FLOAT_CHANNEL_COUNT       (8U)
+#define VOFA_LEFT_CHANNEL_COUNT        (3U)
 #define VOFA_FLOAT_SIZE                (4U)
 #define VOFA_FRAME_SIZE                \
     ((VOFA_FLOAT_CHANNEL_COUNT * VOFA_FLOAT_SIZE) + 4U)
@@ -625,17 +626,53 @@ void vofa_tick_10ms(void)
 }
 
 /**
+ * @brief Send one JustFloat frame with a validated channel count.
+ * @param channels Float channel array.
+ * @param channel_count Number of channels to send.
+ */
+static void vofa_send_channels(
+    const float channels[],
+    uint8 channel_count)
+{
+    static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
+    uint8 frame[VOFA_FRAME_SIZE];
+    uint8 channel;
+    uint8 frame_size;
+
+    if ((channels == NULL)
+        || (channel_count == 0U)
+        || (channel_count > VOFA_FLOAT_CHANNEL_COUNT)
+        || (vofa_initialized == 0U))
+    {
+        return;
+    }
+
+    for (channel = 0U; channel < channel_count; channel++)
+    {
+        memcpy(
+            &frame[channel * VOFA_FLOAT_SIZE],
+            &channels[channel],
+            VOFA_FLOAT_SIZE);
+    }
+
+    memcpy(
+        &frame[channel_count * VOFA_FLOAT_SIZE],
+        tail,
+        sizeof(tail));
+    frame_size = (uint8)((channel_count * VOFA_FLOAT_SIZE) + sizeof(tail));
+
+    uart_write_buffer(VOFA_UART_INDEX, frame, frame_size);
+}
+
+/**
  * @brief Send one fixed eight-channel speed JustFloat frame.
  * @param status Coherent speed PID status snapshot.
  */
 void vofa_send_speed(const speed_pid_status_struct *status)
 {
-    static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
     float channels[VOFA_FLOAT_CHANNEL_COUNT];
-    uint8 frame[VOFA_FRAME_SIZE];
-    uint8 channel;
 
-    if ((status == NULL) || (vofa_initialized == 0U))
+    if (status == NULL)
     {
         return;
     }
@@ -649,20 +686,27 @@ void vofa_send_speed(const speed_pid_status_struct *status)
     channels[6] = (float)status->left_count;
     channels[7] = (float)status->right_count;
 
-    for (channel = 0U; channel < VOFA_FLOAT_CHANNEL_COUNT; channel++)
+    vofa_send_channels(channels, VOFA_FLOAT_CHANNEL_COUNT);
+}
+
+/**
+ * @brief Send left target, measured speed and duty as three channels.
+ * @param status Coherent speed PID status snapshot.
+ */
+void vofa_send_left_speed(const speed_pid_status_struct *status)
+{
+    float channels[VOFA_LEFT_CHANNEL_COUNT];
+
+    if (status == NULL)
     {
-        memcpy(
-            &frame[channel * VOFA_FLOAT_SIZE],
-            &channels[channel],
-            VOFA_FLOAT_SIZE);
+        return;
     }
 
-    memcpy(
-        &frame[VOFA_FLOAT_CHANNEL_COUNT * VOFA_FLOAT_SIZE],
-        tail,
-        sizeof(tail));
+    channels[0] = status->left_target_mm_s;
+    channels[1] = status->left_speed_mm_s;
+    channels[2] = (float)status->left_duty;
 
-    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+    vofa_send_channels(channels, VOFA_LEFT_CHANNEL_COUNT);
 }
 
 /**
