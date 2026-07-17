@@ -16,7 +16,7 @@
 /** Calibrated right wheel diameter in millimeters. */
 #define DRIVE_RIGHT_WHEEL_DIAMETER_MM      (48.0F)
 /** Distance between wheel contact-line centers in millimeters. */
-#define DRIVE_TRACK_WIDTH_MM               (130.0F)
+#define DRIVE_TRACK_WIDTH_MM               (129.0F)
 
 /** Left wheel travel in millimeters per encoder count. */
 #define DRIVE_LEFT_MM_PER_COUNT            \

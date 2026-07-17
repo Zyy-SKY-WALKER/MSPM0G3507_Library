@@ -14,8 +14,8 @@
 
 #define GRAY_SENSOR_PINS_CONFIGURED     (1U)
 
-#define GRAY_SENSOR_D1_PIN              (B26)
-#define GRAY_SENSOR_D2_PIN              (B23)
+#define GRAY_SENSOR_D1_PIN              (A25)
+#define GRAY_SENSOR_D2_PIN              (A24)
 #define GRAY_SENSOR_D3_PIN              (A29)
 #define GRAY_SENSOR_D4_PIN              (A28)
 #define GRAY_SENSOR_D5_PIN              (B27)

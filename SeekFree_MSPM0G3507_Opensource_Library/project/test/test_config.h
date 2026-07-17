@@ -22,6 +22,6 @@
 #define TEST_MODE_SERVO              (13)
 #define TEST_MODE_CHASSIS_MOTION     (14)
 
-#define TEST_MODE                    TEST_MODE_CHASSIS_MOTION
+#define TEST_MODE                    TEST_MODE_ODOMETRY
 
 #endif
