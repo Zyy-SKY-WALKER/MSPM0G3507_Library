@@ -21,7 +21,8 @@
 #define TEST_MODE_CONTROL_SCHEDULER  (12)
 #define TEST_MODE_SERVO              (13)
 #define TEST_MODE_CHASSIS_MOTION     (14)
+#define TEST_MODE_LINE_FOLLOW_REAL   (15)
 
-#define TEST_MODE                    TEST_MODE_ODOMETRY
+#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_REAL
 
 #endif

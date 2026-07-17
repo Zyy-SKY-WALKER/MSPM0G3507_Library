@@ -76,12 +76,18 @@ typedef enum
 /** @brief Reusable wheel-speed and heading-controller gains. */
 typedef struct
 {
-    /** Shared wheel-speed proportional gain. */
-    float speed_kp;
-    /** Shared wheel-speed integral gain. */
-    float speed_ki;
-    /** Shared wheel-speed derivative gain. */
-    float speed_kd;
+    /** Left wheel-speed proportional gain. */
+    float left_speed_kp;
+    /** Left wheel-speed integral gain. */
+    float left_speed_ki;
+    /** Left wheel-speed derivative gain. */
+    float left_speed_kd;
+    /** Right wheel-speed proportional gain. */
+    float right_speed_kp;
+    /** Right wheel-speed integral gain. */
+    float right_speed_ki;
+    /** Right wheel-speed derivative gain. */
+    float right_speed_kd;
     /** Heading-correction proportional gain. */
     float heading_kp;
     /** Heading-correction integral gain. */
@@ -143,7 +149,7 @@ void chassis_motion_init(void);
 /**
  * @brief Configure one reusable speed and heading PID parameter group.
  * @param profile_id Profile identifier from 0 to 3.
- * @param profile Shared wheel-speed and heading PID gains.
+ * @param profile Independent wheel-speed and heading PID gains.
  * @return ZF_TRUE when the profile was accepted.
  */
 uint8 chassis_motion_pid_profile_configure(

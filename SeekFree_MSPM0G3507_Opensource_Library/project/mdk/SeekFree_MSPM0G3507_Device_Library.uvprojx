@@ -1344,6 +1344,16 @@
               <FileType>5</FileType>
               <FilePath>..\test\test_chassis_motion.h</FilePath>
             </File>
+            <File>
+              <FileName>test_line_follow_real.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_line_follow_real.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_line_follow_real.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_line_follow_real.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

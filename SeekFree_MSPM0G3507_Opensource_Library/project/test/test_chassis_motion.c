@@ -14,6 +14,80 @@
 #include "zf_driver_delay.h"
 
 #define CHASSIS_MOTION_TEST_DISPLAY_PERIOD_MS    (100U)
+#define CHASSIS_MOTION_TEST_PAUSE_MS             (1000U)
+#define CHASSIS_MOTION_TEST_REQUEST_TIMEOUT_MS   (500U)
+#define CHASSIS_MOTION_TEST_DIRECTION_LIMIT_MM   (20.0F)
+
+typedef enum
+{
+    CHASSIS_MOTION_TEST_WAIT_ARM = 0,
+    CHASSIS_MOTION_TEST_WAIT_PROFILE,
+    CHASSIS_MOTION_TEST_WAIT_ACTIVE,
+    CHASSIS_MOTION_TEST_WAIT_COMPLETE,
+    CHASSIS_MOTION_TEST_PAUSE,
+    CHASSIS_MOTION_TEST_DONE,
+    CHASSIS_MOTION_TEST_FAILED,
+} chassis_motion_test_state_enum;
+
+typedef enum
+{
+    CHASSIS_MOTION_TEST_ERROR_NONE = 0,
+    CHASSIS_MOTION_TEST_ERROR_PROFILE,
+    CHASSIS_MOTION_TEST_ERROR_COMMAND,
+    CHASSIS_MOTION_TEST_ERROR_START_TIMEOUT,
+    CHASSIS_MOTION_TEST_ERROR_COMMAND_TIMEOUT,
+    CHASSIS_MOTION_TEST_ERROR_IMU,
+    CHASSIS_MOTION_TEST_ERROR_DIRECTION,
+    CHASSIS_MOTION_TEST_ERROR_RESULT,
+    CHASSIS_MOTION_TEST_ERROR_FAULT,
+} chassis_motion_test_error_enum;
+
+typedef struct
+{
+    chassis_motion_command_enum command;
+    float value;
+    float speed;
+    uint32 duration_ms;
+    uint32 timeout_ms;
+    uint8 profile_id;
+} chassis_motion_test_step_struct;
+
+static const chassis_motion_test_step_struct chassis_motion_test_steps[] =
+{
+    {CHASSIS_MOTION_COMMAND_TIMED, 100.0F, 0.0F, 500U, 2000U,
+        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
+    {CHASSIS_MOTION_COMMAND_DISTANCE, 200.0F, 100.0F, 0U, 5000U,
+        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
+    {CHASSIS_MOTION_COMMAND_DISTANCE, -200.0F, 100.0F, 0U, 5000U,
+        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
+    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, 90.0F, 30.0F, 0U, 7000U,
+        CHASSIS_MOTION_PID_PROFILE_TURN},
+    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, -90.0F, 30.0F, 0U, 7000U,
+        CHASSIS_MOTION_PID_PROFILE_TURN},
+    {CHASSIS_MOTION_COMMAND_TIMED, 150.0F, 0.0F, 1000U, 3000U,
+        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
+    {CHASSIS_MOTION_COMMAND_TIMED, -150.0F, 0.0F, 1000U, 3000U,
+        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
+};
+
+static volatile chassis_motion_test_state_enum chassis_motion_test_state;
+static volatile chassis_motion_test_error_enum chassis_motion_test_error;
+static volatile uint8 chassis_motion_test_step_index;
+static uint32 chassis_motion_test_state_tick;
+
+/**
+ * @brief Return elapsed scheduler time from a retained tick.
+ * @param status Scheduler status snapshot.
+ * @param start_tick Retained scheduler tick.
+ * @return Elapsed time in milliseconds.
+ */
+static uint32 chassis_motion_test_elapsed_ms(
+    const control_scheduler_status_struct *status,
+    uint32 start_tick)
+{
+    return (status->tick_count - start_tick)
+        * CONTROL_SCHEDULER_PERIOD_MS;
+}
 
 /**
  * @brief Clear and display one signed status value.

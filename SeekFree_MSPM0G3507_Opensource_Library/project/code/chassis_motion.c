@@ -374,9 +374,13 @@ static uint8 chassis_motion_pid_profile_is_valid(
         return 0U;
     }
 
-    return (uint8)((chassis_motion_gain_is_valid(profile->speed_kp) != 0U)
-        && (chassis_motion_gain_is_valid(profile->speed_ki) != 0U)
-        && (chassis_motion_gain_is_valid(profile->speed_kd) != 0U)
+    return (uint8)(
+        (chassis_motion_gain_is_valid(profile->left_speed_kp) != 0U)
+        && (chassis_motion_gain_is_valid(profile->left_speed_ki) != 0U)
+        && (chassis_motion_gain_is_valid(profile->left_speed_kd) != 0U)
+        && (chassis_motion_gain_is_valid(profile->right_speed_kp) != 0U)
+        && (chassis_motion_gain_is_valid(profile->right_speed_ki) != 0U)
+        && (chassis_motion_gain_is_valid(profile->right_speed_kd) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_kp) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_ki) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_kd) != 0U));
@@ -540,8 +544,13 @@ static uint8 chassis_motion_command_is_complete(void)
     {
         distance = chassis_motion_status.current_center_displacement_mm
             - chassis_motion_status.start_center_displacement_mm;
-        return (uint8)(chassis_motion_abs(distance)
-            >= chassis_motion_abs(chassis_motion_status.command_value));
+        if (chassis_motion_status.command_value > 0.0F)
+        {
+            return (uint8)(distance
+                >= chassis_motion_status.command_value);
+        }
+
+        return (uint8)(distance <= chassis_motion_status.command_value);
     }
 
     if (chassis_motion_status.command == CHASSIS_MOTION_COMMAND_TIMED)
@@ -772,9 +781,12 @@ void chassis_motion_init(void)
         index < CHASSIS_MOTION_PID_PROFILE_COUNT;
         index++)
     {
-        chassis_motion_pid_profiles[index].speed_kp = 0.0F;
-        chassis_motion_pid_profiles[index].speed_ki = 0.0F;
-        chassis_motion_pid_profiles[index].speed_kd = 0.0F;
+        chassis_motion_pid_profiles[index].left_speed_kp = 0.0F;
+        chassis_motion_pid_profiles[index].left_speed_ki = 0.0F;
+        chassis_motion_pid_profiles[index].left_speed_kd = 0.0F;
+        chassis_motion_pid_profiles[index].right_speed_kp = 0.0F;
+        chassis_motion_pid_profiles[index].right_speed_ki = 0.0F;
+        chassis_motion_pid_profiles[index].right_speed_kd = 0.0F;
         chassis_motion_pid_profiles[index].heading_kp = 0.0F;
         chassis_motion_pid_profiles[index].heading_ki = 0.0F;
         chassis_motion_pid_profiles[index].heading_kd = 0.0F;
@@ -825,7 +837,7 @@ void chassis_motion_init(void)
 /**
  * @brief Configure one reusable speed and heading PID parameter group.
  * @param profile_id Profile identifier from 0 to 3.
- * @param profile Shared wheel-speed and heading PID gains.
+ * @param profile Independent wheel-speed and heading PID gains.
  * @return ZF_TRUE when the profile was accepted.
  */
 uint8 chassis_motion_pid_profile_configure(
@@ -864,10 +876,17 @@ uint8 chassis_motion_pid_profile_select(uint8 profile_id)
     }
 
     profile = chassis_motion_pid_profiles[profile_id];
-    if (speed_pid_set_shared_gains(
-            profile.speed_kp,
-            profile.speed_ki,
-            profile.speed_kd) == ZF_FALSE)
+    if (speed_pid_set_left_gains(
+            profile.left_speed_kp,
+            profile.left_speed_ki,
+            profile.left_speed_kd) == ZF_FALSE)
+    {
+        return ZF_FALSE;
+    }
+    if (speed_pid_set_right_gains(
+            profile.right_speed_kp,
+            profile.right_speed_ki,
+            profile.right_speed_kd) == ZF_FALSE)
     {
         return ZF_FALSE;
     }

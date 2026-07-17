@@ -13,6 +13,7 @@
 #define LINE_TRACKER_DEVIATION_LIMIT    (3.5F)
 #define LINE_TRACKER_DIRECTION_EPSILON  (0.05F)
 #define LINE_TRACKER_FLOAT_EPSILON      (0.001F)
+#define LINE_TRACKER_PID_LIMIT_EPSILON  (0.001F)
 #define LINE_TRACKER_COUNTER_MAX        (0xFFFFU)
 #define LINE_TRACKER_UPDATE_PERIOD_S    \
     ((float)LINE_TRACKER_UPDATE_PERIOD_MS * 0.001F)
@@ -23,7 +24,7 @@ static const line_tracker_config_struct line_tracker_default_config =
     .pid_kp = {30.0F, 35.0F, 40.0F, 45.0F, 50.0F},
     .pid_ki = 0.0F,
     .pid_kd = 0.0F,
-    .pid_integral_limit_mm_s = 40.0F,
+    .pid_integral_limit_mm_s = 50.0F,
     .pid_derivative_filter_alpha = 0.2F,
     .max_target_mm_s = 300.0F,
     .max_correction_mm_s = 140.0F,
@@ -242,8 +243,12 @@ static float line_tracker_pid_update(float error, uint8 band)
     effective_limit = line_tracker_pid_get_effective_limit(
         line_tracker_config.base_speed_mm_s[band]);
     drives_further_into_saturation = (uint8)(
-        ((correction_candidate > effective_limit) && (error > 0.0F))
-        || ((correction_candidate < -effective_limit) && (error < 0.0F)));
+        ((correction_candidate
+                > (effective_limit + LINE_TRACKER_PID_LIMIT_EPSILON))
+            && (error > 0.0F))
+        || ((correction_candidate
+                < (-effective_limit - LINE_TRACKER_PID_LIMIT_EPSILON))
+            && (error < 0.0F)));
 
     /* Freeze only integration that would push farther into saturation. */
     if (drives_further_into_saturation != 0U)
