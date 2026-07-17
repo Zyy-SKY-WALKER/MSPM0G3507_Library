@@ -50,6 +50,8 @@ typedef enum
     CONTROL_FAULT_LINE_TRACKER = 0x00000010U,
     /** The 10 ms update was entered before its prior call completed. */
     CONTROL_FAULT_REENTRY = 0x00000020U,
+    /** A chassis command started or continued without fresh IMU yaw. */
+    CONTROL_FAULT_IMU_STALE = 0x00000040U,
 } control_fault_enum;
 
 /** @brief Coherent scheduler and control-module telemetry snapshot. */

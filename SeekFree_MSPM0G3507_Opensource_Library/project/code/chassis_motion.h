@@ -13,6 +13,7 @@
 #define CHASSIS_MOTION_DEFAULT_SPEED_TRANSITION_MS    (300U)
 #define CHASSIS_MOTION_STOPPED_COUNT_LIMIT            (3)
 #define CHASSIS_MOTION_STOPPED_CONFIRM_TICKS          (3U)
+#define CHASSIS_MOTION_STOP_TIMEOUT_TICKS             (100U)
 #define CHASSIS_MOTION_TURN_TOLERANCE_DEG             (2.0F)
 #define CHASSIS_MOTION_PID_PROFILE_COUNT              (4U)
 #define CHASSIS_MOTION_PID_PROFILE_INVALID            (0xFFU)
@@ -157,7 +158,7 @@ uint8 chassis_motion_pid_profile_configure(
     const chassis_motion_pid_profile_struct *profile);
 
 /**
- * @brief Apply one configured PID parameter group without resetting runtime state.
+ * @brief Apply one configured PID parameter group and reset wheel PID runtime.
  * @param profile_id Profile identifier from 0 to 3.
  * @return ZF_TRUE when the configured profile was selected.
  * @note Call from the unique 10 ms scheduler context.

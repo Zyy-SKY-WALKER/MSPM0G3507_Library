@@ -400,7 +400,11 @@ static void control_apply_requests(
     {
         if ((requests->flags & CONTROL_REQUEST_CHASSIS_COMMAND) != 0U)
         {
-            if (requests->chassis_command
+            if (control_status.imu_fresh == 0U)
+            {
+                control_latch_fault(CONTROL_FAULT_IMU_STALE);
+            }
+            else if (requests->chassis_command
                 == CONTROL_CHASSIS_REQUEST_DISTANCE)
             {
                 chassis_started = chassis_motion_start_distance(
@@ -737,6 +741,11 @@ void control_scheduler_update_10ms(void)
             odometry_yaw_valid = ZF_FALSE;
             control_status.imu_fresh = 0U;
         }
+    }
+    if ((control_status.mode == CONTROL_MODE_CHASSIS_MOTION)
+        && (control_status.imu_fresh == 0U))
+    {
+        control_latch_fault(CONTROL_FAULT_IMU_STALE);
     }
 
     /* Phase 4: integrate pose, substituting zero for invalid encoders. */

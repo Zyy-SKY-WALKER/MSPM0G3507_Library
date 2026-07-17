@@ -82,6 +82,7 @@ static chassis_motion_heading_pid_struct chassis_motion_heading_pid;
 static chassis_motion_config_struct chassis_motion_config;
 static chassis_motion_stop_reason_enum chassis_motion_stop_reason;
 static uint16 chassis_motion_stopped_ticks;
+static uint16 chassis_motion_stop_wait_ticks;
 static uint8 chassis_motion_pending_valid;
 static uint8 chassis_motion_activation_pending;
 
@@ -471,6 +472,7 @@ static void chassis_motion_start_stop(
 {
     chassis_motion_stop_reason = reason;
     chassis_motion_stopped_ticks = 0U;
+    chassis_motion_stop_wait_ticks = 0U;
     chassis_motion_status.phase = CHASSIS_MOTION_PHASE_DECELERATING;
     chassis_motion_start_speed_transition(0.0F);
 }
@@ -714,6 +716,11 @@ static void chassis_motion_update_stop_confirmation(
     int16 left_count,
     int16 right_count)
 {
+    if (chassis_motion_stop_wait_ticks < 0xFFFFU)
+    {
+        chassis_motion_stop_wait_ticks++;
+    }
+
     if (chassis_motion_wheels_are_stopped(left_count, right_count) != 0U)
     {
         if (chassis_motion_stopped_ticks < 0xFFFFU)
@@ -729,6 +736,16 @@ static void chassis_motion_update_stop_confirmation(
     if (chassis_motion_stopped_ticks
         >= CHASSIS_MOTION_STOPPED_CONFIRM_TICKS)
     {
+        chassis_motion_finish_stop();
+    }
+    else if (chassis_motion_stop_wait_ticks
+        >= CHASSIS_MOTION_STOP_TIMEOUT_TICKS)
+    {
+        if (chassis_motion_stop_reason == CHASSIS_MOTION_STOP_REASON_REVERSE)
+        {
+            chassis_motion_pending_valid = 0U;
+            chassis_motion_stop_reason = CHASSIS_MOTION_STOP_REASON_CANCEL;
+        }
         chassis_motion_finish_stop();
     }
 }
@@ -830,6 +847,7 @@ void chassis_motion_init(void)
     chassis_motion_reset_heading_pid();
     chassis_motion_stop_reason = CHASSIS_MOTION_STOP_REASON_NONE;
     chassis_motion_stopped_ticks = 0U;
+    chassis_motion_stop_wait_ticks = 0U;
     chassis_motion_pending_valid = 0U;
     chassis_motion_activation_pending = 0U;
 }
@@ -876,20 +894,14 @@ uint8 chassis_motion_pid_profile_select(uint8 profile_id)
     }
 
     profile = chassis_motion_pid_profiles[profile_id];
-    if (speed_pid_set_left_gains(
-            profile.left_speed_kp,
-            profile.left_speed_ki,
-            profile.left_speed_kd) == ZF_FALSE)
-    {
-        return ZF_FALSE;
-    }
-    if (speed_pid_set_right_gains(
-            profile.right_speed_kp,
-            profile.right_speed_ki,
-            profile.right_speed_kd) == ZF_FALSE)
-    {
-        return ZF_FALSE;
-    }
+    speed_pid_set_left_gains(
+        profile.left_speed_kp,
+        profile.left_speed_ki,
+        profile.left_speed_kd);
+    speed_pid_set_right_gains(
+        profile.right_speed_kp,
+        profile.right_speed_ki,
+        profile.right_speed_kd);
 
     chassis_motion_heading_pid.kp = profile.heading_kp;
     chassis_motion_heading_pid.ki = profile.heading_ki;
@@ -1061,6 +1073,7 @@ void chassis_motion_reset(void)
     chassis_motion_activation_pending = 0U;
     chassis_motion_stop_reason = CHASSIS_MOTION_STOP_REASON_NONE;
     chassis_motion_stopped_ticks = 0U;
+    chassis_motion_stop_wait_ticks = 0U;
     chassis_motion_speed_transition.start = 0.0F;
     chassis_motion_speed_transition.target = 0.0F;
     chassis_motion_speed_transition.value = 0.0F;
@@ -1127,8 +1140,10 @@ void chassis_motion_update_10ms(
         chassis_motion_activate_command(odometry, yaw_deg);
     }
 
-    if ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_TRANSITION)
-        || (chassis_motion_status.phase == CHASSIS_MOTION_PHASE_EXECUTING))
+    if ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_EXECUTING)
+        || ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_TRANSITION)
+            && (chassis_motion_status.command
+                != CHASSIS_MOTION_COMMAND_TIMED)))
     {
         if (chassis_motion_status.elapsed_ms
             <= (0xFFFFFFFFU - CHASSIS_MOTION_UPDATE_PERIOD_MS))
@@ -1137,11 +1152,15 @@ void chassis_motion_update_10ms(
                 CHASSIS_MOTION_UPDATE_PERIOD_MS;
         }
 
-        if (chassis_motion_command_is_complete() != 0U)
-        {
-            /* Command completion enters the same controlled-stop path. */
-            chassis_motion_start_stop(CHASSIS_MOTION_STOP_REASON_COMPLETE);
-        }
+    }
+
+    if (((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_TRANSITION)
+            || (chassis_motion_status.phase
+                == CHASSIS_MOTION_PHASE_EXECUTING))
+        && (chassis_motion_command_is_complete() != 0U))
+    {
+        /* Command completion enters the same controlled-stop path. */
+        chassis_motion_start_stop(CHASSIS_MOTION_STOP_REASON_COMPLETE);
     }
 
     if ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_TRANSITION)

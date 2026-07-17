@@ -23,6 +23,6 @@
 #define TEST_MODE_CHASSIS_MOTION     (14)
 #define TEST_MODE_LINE_FOLLOW_REAL   (15)
 
-#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_REAL
+#define TEST_MODE                    TEST_MODE_CHASSIS_MOTION
 
 #endif
