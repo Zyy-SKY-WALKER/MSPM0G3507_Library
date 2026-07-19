@@ -92,6 +92,8 @@
 ".\objects\ml_oled.o"
 ".\objects\my_lib_encoder.o"
 ".\objects\ml_stepper_debug.o"
+".\objects\my_lib_xpt2046.o"
+".\objects\tjpgd.o"
 ".\objects\test_ili9341.o"
 ".\objects\test_motor.o"
 ".\objects\test_encoder.o"
@@ -108,6 +110,7 @@
 ".\objects\test_chassis_motion.o"
 ".\objects\test_line_follow_real.o"
 ".\objects\test_stepper.o"
+".\objects\test_xpt2046.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

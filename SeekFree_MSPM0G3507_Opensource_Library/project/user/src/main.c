@@ -34,6 +34,8 @@
 
 #if (TEST_MODE == TEST_MODE_ILI9341)
 #include "test_ili9341.h"
+#elif (TEST_MODE == TEST_MODE_XPT2046)
+#include "test_xpt2046.h"
 #elif (TEST_MODE == TEST_MODE_MOTOR)
 #include "test_motor.h"
 #elif (TEST_MODE == TEST_MODE_ENCODER)
@@ -82,6 +84,8 @@ int main(void)
 
 #if (TEST_MODE == TEST_MODE_ILI9341)
     test_ili9341_run();
+#elif (TEST_MODE == TEST_MODE_XPT2046)
+    test_xpt2046_run();
 #elif (TEST_MODE == TEST_MODE_MOTOR)
     test_motor_run();
 #elif (TEST_MODE == TEST_MODE_ENCODER)

@@ -1,6 +1,6 @@
 /**
  * @file    test_ili9341.c
- * @brief   ILI9341 display verification test.
+ * @brief   Five-second JPEG startup-image display test.
  */
 
 #include "test_config.h"
@@ -9,68 +9,172 @@
 
 #include "test_ili9341.h"
 
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "my_lib_ili9341.h"
+#include "splash_image_jpg.h"
+#include "tjpgd.h"
 #include "zf_driver_delay.h"
 
-/**
- * @brief Show a full-screen RGB color sequence.
- */
-static void test_ili9341_color_sequence(void)
+#define SPLASH_ANIMATION_TIME_MS       (5000U)
+#define SPLASH_JPEG_WORK_SIZE          (4096U)
+
+typedef struct
 {
-    ili9341_full(ILI9341_COLOR_RED);
-    system_delay_ms(500U);
-    ili9341_full(ILI9341_COLOR_GREEN);
-    system_delay_ms(500U);
-    ili9341_full(ILI9341_COLOR_BLUE);
-    system_delay_ms(500U);
-    ili9341_full(ILI9341_COLOR_WHITE);
-    system_delay_ms(500U);
+    const uint8 *data;
+    uint32 size;
+    uint32 offset;
+    uint32 delay_remainder;
+} splash_jpeg_context_struct;
+
+static JDEC splash_jpeg_decoder;
+static uint32 splash_jpeg_work[
+    SPLASH_JPEG_WORK_SIZE / sizeof(uint32)];
+
+/**
+ * @brief Read or skip bytes from the embedded JPEG array.
+ * @param decoder Active JPEG decoder.
+ * @param buffer Destination buffer, or NULL to skip bytes.
+ * @param count Requested byte count.
+ * @return Number of bytes supplied or skipped.
+ */
+static size_t splash_jpeg_input(
+    JDEC *decoder,
+    uint8_t *buffer,
+    size_t count)
+{
+    splash_jpeg_context_struct *context =
+        (splash_jpeg_context_struct *)decoder->device;
+    uint32 remaining;
+    size_t available;
+
+    if ((context == NULL) || (context->offset > context->size))
+    {
+        return 0U;
+    }
+
+    remaining = context->size - context->offset;
+    available = count;
+    if (available > remaining)
+    {
+        available = remaining;
+    }
+
+    if ((buffer != NULL) && (available > 0U))
+    {
+        memcpy(
+            buffer,
+            &context->data[context->offset],
+            available);
+    }
+    context->offset += (uint32)available;
+
+    return available;
 }
 
 /**
- * @brief Show text, numbers, color blocks and diagonal lines.
+ * @brief Draw one decoded RGB565 block and pace the row reveal.
+ * @param decoder Active JPEG decoder.
+ * @param bitmap Contiguous RGB565 output block.
+ * @param rect Inclusive output rectangle.
+ * @return One to continue decoding, zero to abort.
  */
-static void test_ili9341_pattern(void)
+static int splash_jpeg_output(
+    JDEC *decoder,
+    void *bitmap,
+    JRECT *rect)
 {
-    uint16 width = ili9341_get_width();
-    uint16 height = ili9341_get_height();
+    splash_jpeg_context_struct *context =
+        (splash_jpeg_context_struct *)decoder->device;
+    uint16 width;
+    uint16 height;
+    uint32 delay_ms;
 
-    ili9341_full(ILI9341_COLOR_BLACK);
-    ili9341_set_font(ILI9341_FONT_8X16);
-    ili9341_set_color(ILI9341_COLOR_WHITE, ILI9341_COLOR_BLACK);
-    ili9341_show_string(8U, 8U, "MSPM0G3507");
-    ili9341_show_string(8U, 32U, "ILI9341 240x320");
-    ili9341_show_string(8U, 56U, "UINT:");
-    ili9341_show_uint(72U, 56U, 3507U, 4U);
-    ili9341_show_string(8U, 80U, "INT:");
-    ili9341_show_int(72U, 80U, -123, 3U);
+    if ((context == NULL) || (bitmap == NULL) || (rect == NULL)
+        || (rect->right < rect->left)
+        || (rect->bottom < rect->top))
+    {
+        return 0;
+    }
 
-    ili9341_fill_rect(8U, 112U, 68U, 151U, ILI9341_COLOR_RED);
-    ili9341_fill_rect(88U, 112U, 148U, 151U, ILI9341_COLOR_GREEN);
-    ili9341_fill_rect(168U, 112U, 228U, 151U, ILI9341_COLOR_BLUE);
+    width = (uint16)(rect->right - rect->left + 1U);
+    height = (uint16)(rect->bottom - rect->top + 1U);
+    ili9341_show_rgb565_image(
+        rect->left,
+        rect->top,
+        (const uint16 *)bitmap,
+        width,
+        height);
 
-    ili9341_draw_line(
-        0U,
-        176U,
-        (uint16)(width - 1U),
-        (uint16)(height - 1U),
-        ILI9341_COLOR_YELLOW);
-    ili9341_draw_line(
-        (uint16)(width - 1U),
-        176U,
-        0U,
-        (uint16)(height - 1U),
-        ILI9341_COLOR_CYAN);
+    if ((uint32)rect->right + 1U >= decoder->width)
+    {
+        context->delay_remainder +=
+            SPLASH_ANIMATION_TIME_MS * height;
+        delay_ms = context->delay_remainder / decoder->height;
+        context->delay_remainder %= decoder->height;
+        if (delay_ms > 0U)
+        {
+            system_delay_ms(delay_ms);
+        }
+    }
+
+    return 1;
 }
 
 /**
- * @brief Initialize and run the ILI9341 display verification test.
+ * @brief Decode and display the embedded full-screen startup image.
+ * @return TJpgDec result code.
+ */
+static JRESULT splash_image_show(void)
+{
+    splash_jpeg_context_struct context;
+    JRESULT result;
+
+    context.data = splash_image_jpg;
+    context.size = SPLASH_IMAGE_JPG_SIZE;
+    context.offset = 0U;
+    context.delay_remainder = 0U;
+
+    result = jd_prepare(
+        &splash_jpeg_decoder,
+        splash_jpeg_input,
+        splash_jpeg_work,
+        sizeof(splash_jpeg_work),
+        &context);
+    if (result != JDR_OK)
+    {
+        return result;
+    }
+    if ((splash_jpeg_decoder.width != SPLASH_IMAGE_WIDTH)
+        || (splash_jpeg_decoder.height != SPLASH_IMAGE_HEIGHT))
+    {
+        return JDR_PAR;
+    }
+
+    return jd_decomp(
+        &splash_jpeg_decoder,
+        splash_jpeg_output,
+        0U);
+}
+
+/**
+ * @brief Initialize the TFT and retain the decoded startup image.
  */
 void test_ili9341_run(void)
 {
+    JRESULT result;
+
     ili9341_init();
-    test_ili9341_color_sequence();
-    test_ili9341_pattern();
+    ili9341_set_dir(ILI9341_DIR_PORTRAIT);
+    ili9341_full(ILI9341_COLOR_WHITE);
+
+    result = splash_image_show();
+    if (result != JDR_OK)
+    {
+        printf("Splash JPEG failed: %u.\r\n", (unsigned int)result);
+    }
 }
 
 #endif

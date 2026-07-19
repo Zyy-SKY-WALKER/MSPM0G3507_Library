@@ -1204,6 +1204,31 @@
               <FileType>5</FileType>
               <FilePath>..\my_lib\ml_stepper_debug.h</FilePath>
             </File>
+            <File>
+              <FileName>my_lib_xpt2046.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\my_lib_xpt2046.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_xpt2046.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\my_lib_xpt2046.h</FilePath>
+            </File>
+            <File>
+              <FileName>tjpgd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\tjpgd.c</FilePath>
+            </File>
+            <File>
+              <FileName>tjpgd.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\tjpgd.h</FilePath>
+            </File>
+            <File>
+              <FileName>tjpgdcnf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\tjpgdcnf.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1373,6 +1398,16 @@
               <FileName>test_stepper.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_stepper.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_xpt2046.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_xpt2046.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_xpt2046.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_xpt2046.h</FilePath>
             </File>
           </Files>
         </Group>
