@@ -1,6 +1,6 @@
 /**
  * @file    test_imu_uart.c
- * @brief   UART attitude module TFT verification test.
+ * @brief   DMA UART angle-frame TFT verification test.
  */
 
 #include "test_config.h"
@@ -79,10 +79,13 @@ static void imu_uart_test_show_uint(
 }
 
 /**
- * @brief Refresh the latest converted IMU values.
+ * @brief Refresh the latest converted angle and DMA receive values.
  * @param data Latest IMU data snapshot.
+ * @param frame_delta Valid angle frames decoded since the prior refresh.
  */
-static void imu_uart_test_show_data(const imu_uart_data_struct *data)
+static void imu_uart_test_show_data(
+    const imu_uart_data_struct *data,
+    uint32 frame_delta)
 {
     imu_uart_test_show_value(
         112U,
@@ -102,18 +105,21 @@ static void imu_uart_test_show_data(const imu_uart_data_struct *data)
     imu_uart_test_show_value(
         112U,
         136U,
-        imu_uart_test_round(data->gyro_dps[2]),
-        5U);
-    imu_uart_test_show_value(
-        112U,
-        168U,
-        imu_uart_test_round(data->temperature_c),
-        3U);
-    imu_uart_test_show_value(112U, 200U, data->valid_flags, 3U);
-    imu_uart_test_show_uint(112U, 232U, data->frame_count, 8U);
+        data->angle_valid,
+        1U);
     imu_uart_test_show_uint(
         112U,
-        264U,
+        168U,
+        data->angle_frame_count,
+        8U);
+    imu_uart_test_show_uint(
+        112U,
+        200U,
+        frame_delta,
+        4U);
+    imu_uart_test_show_uint(
+        112U,
+        232U,
         data->checksum_error_count,
         8U);
 }
@@ -124,29 +130,35 @@ static void imu_uart_test_show_data(const imu_uart_data_struct *data)
 void test_imu_uart_run(void)
 {
     imu_uart_data_struct data;
+    uint32 previous_frame_count = 0U;
 
     ili9341_init();
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);
     ili9341_set_color(ILI9341_COLOR_WHITE, ILI9341_COLOR_BLACK);
-    ili9341_show_string(8U, 8U, "UART IMU TEST");
+    ili9341_show_string(8U, 8U, "UART IMU DMA TEST");
     ili9341_show_string(8U, 40U, "ROLL   :");
     ili9341_show_string(8U, 72U, "PITCH  :");
     ili9341_show_string(8U, 104U, "YAW    :");
-    ili9341_show_string(8U, 136U, "GYRO Z :");
-    ili9341_show_string(8U, 168U, "TEMP C :");
-    ili9341_show_string(8U, 200U, "VALID  :");
-    ili9341_show_string(8U, 232U, "FRAMES :");
-    ili9341_show_string(8U, 264U, "CRC ERR:");
+    ili9341_show_string(8U, 136U, "VALID  :");
+    ili9341_show_string(8U, 168U, "ANG FRM:");
+    ili9341_show_string(8U, 200U, "DELTA  :");
+    ili9341_show_string(8U, 232U, "CRC ERR:");
+    ili9341_show_string(8U, 264U, "DMA RX 0x55 0x53");
     ili9341_show_string(8U, 296U, "WAITING FOR DATA");
 
     imu_uart_init();
 
     while (true)
     {
-        uint8 data_valid = imu_uart_get_data(&data);
+        uint32 frame_delta;
+        uint8 data_valid;
 
-        imu_uart_test_show_data(&data);
+        imu_uart_update();
+        data_valid = imu_uart_get_data(&data);
+        frame_delta = data.angle_frame_count - previous_frame_count;
+        previous_frame_count = data.angle_frame_count;
+        imu_uart_test_show_data(&data, frame_delta);
         ili9341_fill_rect(
             8U,
             296U,

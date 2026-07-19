@@ -20,6 +20,8 @@
 #define CONTROL_ENCODER_COUNT_LIMIT          (5000)
 #define CONTROL_STOPPED_COUNT_LIMIT          (3)
 #define CONTROL_IMU_FRESH_LIMIT_TICKS        (50U)
+#define CONTROL_SCHEDULER_IRQ_PRIORITY       (1U)
+#define CONTROL_ENCODER_IRQ_PRIORITY         (0U)
 #define CONTROL_MANUAL_TIMEOUT_TICKS         \
     (CONTROL_SCHEDULER_MANUAL_TIMEOUT_MS \
         / CONTROL_SCHEDULER_PERIOD_MS)
@@ -152,8 +154,8 @@ static uint8 control_turn_request_is_valid(
     if ((control_value_is_valid(angle_deg) == 0U)
         || (control_value_is_valid(angular_speed_deg_s) == 0U)
         || (angle_deg == 0.0F)
-        || (angle_deg < -180.0F)
-        || (angle_deg > 180.0F)
+        || (angle_deg < -CHASSIS_MOTION_TURN_MAX_ANGLE_DEG)
+        || (angle_deg > CHASSIS_MOTION_TURN_MAX_ANGLE_DEG)
         || (angular_speed_deg_s <= 0.0F))
     {
         return 0U;
@@ -585,6 +587,13 @@ uint8 control_scheduler_init(void)
     control_mailbox.chassis_profile_id =
         CHASSIS_MOTION_PID_PROFILE_INVALID;
 
+    interrupt_set_priority(
+        TIMG12_INT_IRQn,
+        CONTROL_SCHEDULER_IRQ_PRIORITY);
+    interrupt_set_priority(
+        GPIOA_INT_IRQn,
+        CONTROL_ENCODER_IRQ_PRIORITY);
+
     speed_pid_init();
     chassis_motion_init();
     my_encoder_init();
@@ -682,6 +691,7 @@ void control_scheduler_update_10ms(void)
 
     /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
+    imu_uart_update();
     yaw_valid = imu_uart_get_yaw(&yaw_deg, &yaw_frame_count);
     gray = control_status.gray;
     gray_valid = gray_sensor_sample(&gray);
@@ -981,7 +991,7 @@ uint8 control_scheduler_request_chassis_motion_timed(
 
 /**
  * @brief Submit a high-level relative heading-turn command.
- * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ * @param angle_deg Relative angle from -360 to 360 degrees, excluding zero.
  *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive maximum angular speed.
  * @return ZF_TRUE when request values are valid.

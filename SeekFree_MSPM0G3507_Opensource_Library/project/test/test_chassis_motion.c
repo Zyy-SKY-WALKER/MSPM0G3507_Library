@@ -14,13 +14,23 @@
 #include "zf_driver_delay.h"
 
 #define CHASSIS_MOTION_TEST_DISPLAY_PERIOD_MS    (100U)
+#define CHASSIS_MOTION_TEST_LOOP_PERIOD_MS       (10U)
 #define CHASSIS_MOTION_TEST_PAUSE_MS             (1000U)
 #define CHASSIS_MOTION_TEST_REQUEST_TIMEOUT_MS   (500U)
+#define CHASSIS_MOTION_TEST_LINE_START_TIMEOUT_MS (2000U)
 #define CHASSIS_MOTION_TEST_DIRECTION_LIMIT_MM   (20.0F)
+#define CHASSIS_MOTION_TEST_TURN_DIRECTION_DEG   (20.0F)
+#define CHASSIS_MOTION_TEST_TURN_CHECK_MARGIN_DEG (30.0F)
+#define CHASSIS_MOTION_TEST_TURN_TARGET_MIN_MM_S (10.0F)
+#define CHASSIS_MOTION_TEST_LINE_DISTANCE_MM     (5000.0F)
+#define CHASSIS_MOTION_TEST_LINE_TIMEOUT_MS      (30000U)
 
 typedef enum
 {
     CHASSIS_MOTION_TEST_WAIT_ARM = 0,
+    CHASSIS_MOTION_TEST_WAIT_LINE_ACTIVE,
+    CHASSIS_MOTION_TEST_LINE_FOLLOW,
+    CHASSIS_MOTION_TEST_WAIT_LINE_STOP,
     CHASSIS_MOTION_TEST_WAIT_PROFILE,
     CHASSIS_MOTION_TEST_WAIT_ACTIVE,
     CHASSIS_MOTION_TEST_WAIT_COMPLETE,
@@ -32,6 +42,10 @@ typedef enum
 typedef enum
 {
     CHASSIS_MOTION_TEST_ERROR_NONE = 0,
+    CHASSIS_MOTION_TEST_ERROR_LINE_START,
+    CHASSIS_MOTION_TEST_ERROR_LINE_DIRECTION,
+    CHASSIS_MOTION_TEST_ERROR_LINE_TIMEOUT,
+    CHASSIS_MOTION_TEST_ERROR_LINE_STOP,
     CHASSIS_MOTION_TEST_ERROR_PROFILE,
     CHASSIS_MOTION_TEST_ERROR_COMMAND,
     CHASSIS_MOTION_TEST_ERROR_START_TIMEOUT,
@@ -54,26 +68,27 @@ typedef struct
 
 static const chassis_motion_test_step_struct chassis_motion_test_steps[] =
 {
-    {CHASSIS_MOTION_COMMAND_TIMED, 100.0F, 0.0F, 500U, 2000U,
+    {CHASSIS_MOTION_COMMAND_DISTANCE, 1000.0F, 500.0F, 0U, 5000U,
         CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
-    {CHASSIS_MOTION_COMMAND_DISTANCE, 200.0F, 100.0F, 0U, 5000U,
+    {CHASSIS_MOTION_COMMAND_DISTANCE, -1000.0F, 500.0F, 0U, 5000U,
         CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
-    {CHASSIS_MOTION_COMMAND_DISTANCE, -200.0F, 100.0F, 0U, 5000U,
-        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
-    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, 90.0F, 30.0F, 0U, 7000U,
+    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, 360.0F, 120.0F, 0U, 10000U,
         CHASSIS_MOTION_PID_PROFILE_TURN},
-    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, -90.0F, 30.0F, 0U, 7000U,
+    {CHASSIS_MOTION_COMMAND_TURN_RELATIVE, -360.0F, 120.0F, 0U, 10000U,
         CHASSIS_MOTION_PID_PROFILE_TURN},
-    {CHASSIS_MOTION_COMMAND_TIMED, 150.0F, 0.0F, 1000U, 3000U,
-        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
-    {CHASSIS_MOTION_COMMAND_TIMED, -150.0F, 0.0F, 1000U, 3000U,
-        CHASSIS_MOTION_PID_PROFILE_STRAIGHT},
 };
+
+#define CHASSIS_MOTION_TEST_STEP_COUNT \
+    (sizeof(chassis_motion_test_steps) \
+        / sizeof(chassis_motion_test_steps[0]))
 
 static volatile chassis_motion_test_state_enum chassis_motion_test_state;
 static volatile chassis_motion_test_error_enum chassis_motion_test_error;
 static volatile uint8 chassis_motion_test_step_index;
 static uint32 chassis_motion_test_state_tick;
+static float chassis_motion_test_line_start_displacement_mm;
+static float chassis_motion_test_line_start_path_mm;
+static uint8 chassis_motion_test_chassis_steps_started;
 
 /**
  * @brief Return elapsed scheduler time from a retained tick.
@@ -109,7 +124,7 @@ static uint8 chassis_motion_test_configure_profiles(void)
     straight_profile.heading_kd = 0.0F;
 
     turn_profile = straight_profile;
-    turn_profile.heading_kp = 1.0F;
+    turn_profile.heading_kp = 2.0F;
 
     if (chassis_motion_pid_profile_configure(
             CHASSIS_MOTION_PID_PROFILE_STRAIGHT,
@@ -139,6 +154,10 @@ static void chassis_motion_test_fail(
     if (status->mode == CONTROL_MODE_CHASSIS_MOTION)
     {
         control_scheduler_request_chassis_motion_cancel();
+    }
+    else if (status->mode == CONTROL_MODE_LINE_FOLLOW)
+    {
+        control_scheduler_request_line_stop();
     }
     chassis_motion_test_error = error;
     chassis_motion_test_state = CHASSIS_MOTION_TEST_FAILED;
@@ -222,7 +241,7 @@ static void chassis_motion_test_prepare_step(
 }
 
 /**
- * @brief Return whether a distance step is moving in the wrong direction.
+ * @brief Return whether a distance or turn step moves in the wrong direction.
  * @param status Latest scheduler status.
  * @param step Active sequence step.
  * @return Nonzero after meaningful opposite displacement.
@@ -232,6 +251,16 @@ static uint8 chassis_motion_test_direction_is_wrong(
     const chassis_motion_test_step_struct *step)
 {
     float progress;
+
+    if (step->command == CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
+    {
+        progress = status->chassis_motion.turn_progress_deg;
+        return (uint8)(
+            ((step->value > 0.0F)
+                && (progress < -CHASSIS_MOTION_TEST_TURN_DIRECTION_DEG))
+            || ((step->value < 0.0F)
+                && (progress > CHASSIS_MOTION_TEST_TURN_DIRECTION_DEG)));
+    }
 
     if (step->command != CHASSIS_MOTION_COMMAND_DISTANCE)
     {
@@ -245,6 +274,57 @@ static uint8 chassis_motion_test_direction_is_wrong(
             && (progress < -CHASSIS_MOTION_TEST_DIRECTION_LIMIT_MM))
         || ((step->value < 0.0F)
             && (progress > CHASSIS_MOTION_TEST_DIRECTION_LIMIT_MM)));
+}
+
+/**
+ * @brief Check that a continuous turn retains its commanded wheel polarity.
+ * @param status Latest scheduler status.
+ * @param step Active sequence step.
+ * @return Nonzero when a mid-turn target stops or reverses.
+ */
+static uint8 chassis_motion_test_turn_target_is_invalid(
+    const control_scheduler_status_struct *status,
+    const chassis_motion_test_step_struct *step)
+{
+    float progress;
+    float target;
+
+    if (step->command != CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
+    {
+        return 0U;
+    }
+
+    progress = status->chassis_motion.turn_progress_deg;
+    target = step->value;
+    if (progress < 0.0F)
+    {
+        progress = -progress;
+    }
+    if (target < 0.0F)
+    {
+        target = -target;
+    }
+    if ((progress <= CHASSIS_MOTION_TEST_TURN_CHECK_MARGIN_DEG)
+        || (progress >= (target
+            - CHASSIS_MOTION_TEST_TURN_CHECK_MARGIN_DEG)))
+    {
+        return 0U;
+    }
+
+    if (step->value > 0.0F)
+    {
+        return (uint8)(
+            (status->speed.left_target_mm_s
+                > -CHASSIS_MOTION_TEST_TURN_TARGET_MIN_MM_S)
+            || (status->speed.right_target_mm_s
+                < CHASSIS_MOTION_TEST_TURN_TARGET_MIN_MM_S));
+    }
+
+    return (uint8)(
+        (status->speed.left_target_mm_s
+            < CHASSIS_MOTION_TEST_TURN_TARGET_MIN_MM_S)
+        || (status->speed.right_target_mm_s
+            > -CHASSIS_MOTION_TEST_TURN_TARGET_MIN_MM_S));
 }
 
 /**
@@ -270,6 +350,9 @@ static void chassis_motion_test_update(
         chassis_motion_test_step_index = 0U;
         chassis_motion_test_error = CHASSIS_MOTION_TEST_ERROR_NONE;
         chassis_motion_test_state = CHASSIS_MOTION_TEST_WAIT_ARM;
+        chassis_motion_test_line_start_displacement_mm = 0.0F;
+        chassis_motion_test_line_start_path_mm = 0.0F;
+        chassis_motion_test_chassis_steps_started = 0U;
         return;
     }
 
@@ -277,7 +360,13 @@ static void chassis_motion_test_update(
     {
         if (status->mode == CONTROL_MODE_MANUAL_ARMED)
         {
-            chassis_motion_test_prepare_step(status);
+            chassis_motion_test_state_tick = status->tick_count;
+            chassis_motion_test_state =
+                CHASSIS_MOTION_TEST_WAIT_LINE_ACTIVE;
+            if (status->gray.status == GRAY_SENSOR_STATUS_VALID)
+            {
+                control_scheduler_request_line_start();
+            }
         }
         return;
     }
@@ -288,10 +377,96 @@ static void chassis_motion_test_update(
         return;
     }
 
-    step = &chassis_motion_test_steps[chassis_motion_test_step_index];
     elapsed_ms = chassis_motion_test_elapsed_ms(
         status,
         chassis_motion_test_state_tick);
+
+    if (chassis_motion_test_state
+        == CHASSIS_MOTION_TEST_WAIT_LINE_ACTIVE)
+    {
+        if (status->mode == CONTROL_MODE_LINE_FOLLOW)
+        {
+            chassis_motion_test_line_start_displacement_mm =
+                status->odometry.center_displacement_mm;
+            chassis_motion_test_line_start_path_mm =
+                status->odometry.path_length_mm;
+            chassis_motion_test_state_tick = status->tick_count;
+            chassis_motion_test_state =
+                CHASSIS_MOTION_TEST_LINE_FOLLOW;
+        }
+        else if (elapsed_ms
+            >= CHASSIS_MOTION_TEST_LINE_START_TIMEOUT_MS)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_LINE_START,
+                status);
+        }
+        else if ((status->mode == CONTROL_MODE_MANUAL_ARMED)
+            && (status->gray.status == GRAY_SENSOR_STATUS_VALID))
+        {
+            control_scheduler_request_line_start();
+        }
+        return;
+    }
+
+    if (chassis_motion_test_state == CHASSIS_MOTION_TEST_LINE_FOLLOW)
+    {
+        float line_displacement =
+            status->odometry.center_displacement_mm
+            - chassis_motion_test_line_start_displacement_mm;
+        float line_path = status->odometry.path_length_mm
+            - chassis_motion_test_line_start_path_mm;
+
+        if (status->mode != CONTROL_MODE_LINE_FOLLOW)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_LINE_STOP,
+                status);
+            return;
+        }
+        if (line_displacement
+            < -CHASSIS_MOTION_TEST_DIRECTION_LIMIT_MM)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_LINE_DIRECTION,
+                status);
+            return;
+        }
+        if (line_path >= CHASSIS_MOTION_TEST_LINE_DISTANCE_MM)
+        {
+            control_scheduler_request_line_stop();
+            chassis_motion_test_state_tick = status->tick_count;
+            chassis_motion_test_state =
+                CHASSIS_MOTION_TEST_WAIT_LINE_STOP;
+            return;
+        }
+        if (elapsed_ms >= CHASSIS_MOTION_TEST_LINE_TIMEOUT_MS)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_LINE_TIMEOUT,
+                status);
+        }
+        return;
+    }
+
+    if (chassis_motion_test_state
+        == CHASSIS_MOTION_TEST_WAIT_LINE_STOP)
+    {
+        if (status->mode == CONTROL_MODE_MANUAL_ARMED)
+        {
+            chassis_motion_test_state_tick = status->tick_count;
+            chassis_motion_test_state = CHASSIS_MOTION_TEST_PAUSE;
+        }
+        else if (elapsed_ms >= CHASSIS_MOTION_TEST_REQUEST_TIMEOUT_MS)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_LINE_STOP,
+                status);
+        }
+        return;
+    }
+
+    step = &chassis_motion_test_steps[chassis_motion_test_step_index];
 
     if (chassis_motion_test_state == CHASSIS_MOTION_TEST_WAIT_PROFILE)
     {
@@ -340,10 +515,10 @@ static void chassis_motion_test_update(
                 status);
             return;
         }
-        if (elapsed_ms >= step->timeout_ms)
+        if (chassis_motion_test_turn_target_is_invalid(status, step) != 0U)
         {
             chassis_motion_test_fail(
-                CHASSIS_MOTION_TEST_ERROR_COMMAND_TIMEOUT,
+                CHASSIS_MOTION_TEST_ERROR_DIRECTION,
                 status);
             return;
         }
@@ -359,6 +534,13 @@ static void chassis_motion_test_update(
             }
             chassis_motion_test_state_tick = status->tick_count;
             chassis_motion_test_state = CHASSIS_MOTION_TEST_PAUSE;
+            return;
+        }
+        if (elapsed_ms >= step->timeout_ms)
+        {
+            chassis_motion_test_fail(
+                CHASSIS_MOTION_TEST_ERROR_COMMAND_TIMEOUT,
+                status);
         }
         return;
     }
@@ -366,16 +548,24 @@ static void chassis_motion_test_update(
     if ((chassis_motion_test_state == CHASSIS_MOTION_TEST_PAUSE)
         && (elapsed_ms >= CHASSIS_MOTION_TEST_PAUSE_MS))
     {
-        chassis_motion_test_step_index++;
-        if (chassis_motion_test_step_index
-            >= (sizeof(chassis_motion_test_steps)
-                / sizeof(chassis_motion_test_steps[0])))
+        if (chassis_motion_test_chassis_steps_started == 0U)
         {
-            chassis_motion_test_state = CHASSIS_MOTION_TEST_DONE;
+            chassis_motion_test_chassis_steps_started = 1U;
+            chassis_motion_test_step_index = 0U;
+            chassis_motion_test_prepare_step(status);
         }
         else
         {
-            chassis_motion_test_prepare_step(status);
+            chassis_motion_test_step_index++;
+            if (chassis_motion_test_step_index
+                >= CHASSIS_MOTION_TEST_STEP_COUNT)
+            {
+                chassis_motion_test_state = CHASSIS_MOTION_TEST_DONE;
+            }
+            else
+            {
+                chassis_motion_test_prepare_step(status);
+            }
         }
     }
 }
@@ -435,6 +625,21 @@ static void chassis_motion_test_show_uint(
 static void chassis_motion_test_show_status(
     const control_scheduler_status_struct *status)
 {
+    uint8 display_step = 0U;
+
+    if (chassis_motion_test_chassis_steps_started != 0U)
+    {
+        if (chassis_motion_test_step_index
+            >= CHASSIS_MOTION_TEST_STEP_COUNT)
+        {
+            display_step = (uint8)CHASSIS_MOTION_TEST_STEP_COUNT;
+        }
+        else
+        {
+            display_step = (uint8)(chassis_motion_test_step_index + 1U);
+        }
+    }
+
     chassis_motion_test_show_uint(104U, 32U, status->mode, 2U);
     chassis_motion_test_show_uint(
         104U,
@@ -444,7 +649,7 @@ static void chassis_motion_test_show_status(
     chassis_motion_test_show_uint(
         104U,
         80U,
-        chassis_motion_test_step_index,
+        display_step,
         2U);
     chassis_motion_test_show_uint(
         168U,
@@ -472,24 +677,29 @@ static void chassis_motion_test_show_status(
         chassis_motion_test_error,
         2U);
     chassis_motion_test_show_uint(
-        104U,
+        96U,
         152U,
         status->chassis_motion.active_profile_id,
         3U);
     chassis_motion_test_show_uint(
-        168U,
+        136U,
         152U,
         status->imu_fresh,
         1U);
+    chassis_motion_test_show_uint(
+        160U,
+        152U,
+        status->imu_age_ticks,
+        4U);
     chassis_motion_test_show_int(
         104U,
         176U,
-        (int32)status->chassis_motion.left_target_mm_s,
+        (int32)status->speed.left_target_mm_s,
         4U);
     chassis_motion_test_show_int(
         168U,
         176U,
-        (int32)status->chassis_motion.right_target_mm_s,
+        (int32)status->speed.right_target_mm_s,
         4U);
     chassis_motion_test_show_int(
         104U,
@@ -504,12 +714,17 @@ static void chassis_motion_test_show_status(
     chassis_motion_test_show_int(
         104U,
         224U,
-        (int32)status->chassis_motion.current_center_displacement_mm,
+        (int32)status->odometry.path_length_mm,
         5U);
     chassis_motion_test_show_int(
         104U,
         248U,
-        (int32)status->chassis_motion.current_heading_deg,
+        (int32)status->imu_yaw_deg,
+        4U);
+    chassis_motion_test_show_int(
+        168U,
+        248U,
+        (int32)status->chassis_motion.turn_progress_deg,
         4U);
 }
 
@@ -520,22 +735,23 @@ static void chassis_motion_test_show_status(
 void test_chassis_motion_run(void)
 {
     control_scheduler_status_struct status;
+    uint32 last_display_tick = 0U;
 
     ili9341_init();
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);
     ili9341_set_color(ILI9341_COLOR_WHITE, ILI9341_COLOR_BLACK);
-    ili9341_show_string(8U, 8U, "CHASSIS MOTION");
+    ili9341_show_string(8U, 8U, "ROUTE MOTION TEST");
     ili9341_show_string(8U, 32U, "MODE    :");
     ili9341_show_string(8U, 56U, "FAULT   :");
     ili9341_show_string(8U, 80U, "STEP/ST :");
     ili9341_show_string(8U, 104U, "CMD/PH  :");
     ili9341_show_string(8U, 128U, "RES/ERR :");
-    ili9341_show_string(8U, 152U, "PROF/IM :");
+    ili9341_show_string(8U, 152U, "PF/IM/AGE:");
     ili9341_show_string(8U, 176U, "TGT L/R :");
     ili9341_show_string(8U, 200U, "SPD L/R :");
-    ili9341_show_string(8U, 224U, "DIST MM :");
-    ili9341_show_string(8U, 248U, "YAW DEG :");
+    ili9341_show_string(8U, 224U, "PATH MM :");
+    ili9341_show_string(8U, 248U, "YAW/PROG:");
     ili9341_show_string(8U, 280U, "A30 ARM/START");
     ili9341_show_string(8U, 296U, "A31 STOP B1 CLEAR");
 
@@ -544,6 +760,9 @@ void test_chassis_motion_run(void)
     chassis_motion_test_state = CHASSIS_MOTION_TEST_WAIT_ARM;
     chassis_motion_test_error = CHASSIS_MOTION_TEST_ERROR_NONE;
     chassis_motion_test_state_tick = 0U;
+    chassis_motion_test_line_start_displacement_mm = 0.0F;
+    chassis_motion_test_line_start_path_mm = 0.0F;
+    chassis_motion_test_chassis_steps_started = 0U;
     if (chassis_motion_test_configure_profiles() == ZF_FALSE)
     {
         chassis_motion_test_state = CHASSIS_MOTION_TEST_FAILED;
@@ -556,8 +775,14 @@ void test_chassis_motion_run(void)
         control_scheduler_process_foreground();
         control_scheduler_get_status(&status);
         chassis_motion_test_update(&status);
-        chassis_motion_test_show_status(&status);
-        system_delay_ms(CHASSIS_MOTION_TEST_DISPLAY_PERIOD_MS);
+        if ((status.tick_count - last_display_tick)
+            >= (CHASSIS_MOTION_TEST_DISPLAY_PERIOD_MS
+                / CONTROL_SCHEDULER_PERIOD_MS))
+        {
+            chassis_motion_test_show_status(&status);
+            last_display_tick = status.tick_count;
+        }
+        system_delay_ms(CHASSIS_MOTION_TEST_LOOP_PERIOD_MS);
     }
 }
 

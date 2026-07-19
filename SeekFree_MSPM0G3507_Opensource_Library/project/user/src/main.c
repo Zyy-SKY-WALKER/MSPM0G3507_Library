@@ -62,6 +62,8 @@
 #include "test_chassis_motion.h"
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_REAL)
 #include "test_line_follow_real.h"
+#elif (TEST_MODE == TEST_MODE_STEPPER)
+#include "test_stepper.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -108,6 +110,8 @@ int main(void)
     test_chassis_motion_run();
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_REAL)
     test_line_follow_real_run();
+#elif (TEST_MODE == TEST_MODE_STEPPER)
+    test_stepper_run();
 #endif
 
     while (true)

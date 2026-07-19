@@ -85,6 +85,7 @@ static uint16 chassis_motion_stopped_ticks;
 static uint16 chassis_motion_stop_wait_ticks;
 static uint8 chassis_motion_pending_valid;
 static uint8 chassis_motion_activation_pending;
+static float chassis_motion_turn_previous_heading_deg;
 
 /**
  * @brief Return the absolute magnitude of a floating-point value.
@@ -326,22 +327,15 @@ static void chassis_motion_reset_heading_pid(void)
 }
 
 /**
- * @brief Calculate the heading PID correction in wheel-speed units.
- * @param target_heading_deg Desired heading in degrees.
- * @param current_heading_deg Current heading in degrees.
+ * @brief Calculate heading PID correction from an explicit signed error.
+ * @param error Signed heading error in degrees.
  * @param output_limit Nonnegative correction limit in millimeters per second.
  * @return Signed left-turn correction in millimeters per second.
  */
-static float chassis_motion_update_heading_pid(
-    float target_heading_deg,
-    float current_heading_deg,
+static float chassis_motion_update_heading_pid_error(
+    float error,
     float output_limit)
 {
-    float error;
-
-    error = chassis_motion_get_heading_error(
-        target_heading_deg,
-        current_heading_deg);
     chassis_motion_heading_pid.integral +=
         chassis_motion_heading_pid.ki * error;
     if (chassis_motion_heading_pid.integral > output_limit)
@@ -360,6 +354,25 @@ static float chassis_motion_update_heading_pid(
     chassis_motion_heading_pid.previous_error = error;
 
     return chassis_motion_heading_pid.output;
+}
+
+/**
+ * @brief Calculate heading PID correction from wrapped headings.
+ * @param target_heading_deg Desired heading in degrees.
+ * @param current_heading_deg Current heading in degrees.
+ * @param output_limit Nonnegative correction limit in millimeters per second.
+ * @return Signed left-turn correction in millimeters per second.
+ */
+static float chassis_motion_update_heading_pid(
+    float target_heading_deg,
+    float current_heading_deg,
+    float output_limit)
+{
+    return chassis_motion_update_heading_pid_error(
+        chassis_motion_get_heading_error(
+            target_heading_deg,
+            current_heading_deg),
+        output_limit);
 }
 
 /**
@@ -498,6 +511,9 @@ static void chassis_motion_activate_command(
         odometry->center_displacement_mm;
     chassis_motion_status.start_heading_deg = yaw_deg;
     chassis_motion_status.current_heading_deg = yaw_deg;
+    chassis_motion_status.turn_progress_deg = 0.0F;
+    chassis_motion_status.turn_remaining_deg = 0.0F;
+    chassis_motion_turn_previous_heading_deg = yaw_deg;
     chassis_motion_status.elapsed_ms = 0U;
     chassis_motion_status.result = CHASSIS_MOTION_RESULT_NONE;
     chassis_motion_status.active = 1U;
@@ -524,6 +540,8 @@ static void chassis_motion_activate_command(
         chassis_motion_status.target_heading_deg =
             chassis_motion_wrap_angle_deg(
                 yaw_deg + chassis_motion_command.value);
+        chassis_motion_status.turn_remaining_deg =
+            chassis_motion_command.value;
         base_target = chassis_motion_command.speed
             * (DRIVE_PI / 180.0F)
             * (DRIVE_TRACK_WIDTH_MM * 0.5F);
@@ -534,13 +552,35 @@ static void chassis_motion_activate_command(
 }
 
 /**
+ * @brief Accumulate one wrapped IMU increment for a relative turn.
+ * @param yaw_deg Latest wrapped IMU yaw in degrees.
+ */
+static void chassis_motion_update_turn_progress(float yaw_deg)
+{
+    float heading_delta;
+
+    if (chassis_motion_status.command
+        != CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
+    {
+        return;
+    }
+
+    heading_delta = chassis_motion_wrap_angle_deg(
+        yaw_deg - chassis_motion_turn_previous_heading_deg);
+    chassis_motion_turn_previous_heading_deg = yaw_deg;
+    chassis_motion_status.turn_progress_deg += heading_delta;
+    chassis_motion_status.turn_remaining_deg =
+        chassis_motion_status.command_value
+        - chassis_motion_status.turn_progress_deg;
+}
+
+/**
  * @brief Check whether the current command has reached its completion condition.
  * @return Nonzero when complete.
  */
 static uint8 chassis_motion_command_is_complete(void)
 {
     float distance;
-    float heading_error;
 
     if (chassis_motion_status.command == CHASSIS_MOTION_COMMAND_DISTANCE)
     {
@@ -564,11 +604,16 @@ static uint8 chassis_motion_command_is_complete(void)
     if (chassis_motion_status.command
         == CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
     {
-        heading_error = chassis_motion_get_heading_error(
-            chassis_motion_status.target_heading_deg,
-            chassis_motion_status.current_heading_deg);
-        return (uint8)(chassis_motion_abs(heading_error)
-            <= CHASSIS_MOTION_TURN_TOLERANCE_DEG);
+        if (chassis_motion_status.command_value > 0.0F)
+        {
+            return (uint8)(chassis_motion_status.turn_progress_deg
+                >= (chassis_motion_status.command_value
+                    - CHASSIS_MOTION_TURN_TOLERANCE_DEG));
+        }
+
+        return (uint8)(chassis_motion_status.turn_progress_deg
+            <= (chassis_motion_status.command_value
+                + CHASSIS_MOTION_TURN_TOLERANCE_DEG));
     }
 
     return 1U;
@@ -588,6 +633,8 @@ static void chassis_motion_generate_targets(
     float base_speed;
     float correction;
     float correction_limit;
+    float heading_error;
+    float minimum_correction;
     float available_speed;
 
     base_speed = chassis_motion_update_speed_transition();
@@ -595,9 +642,9 @@ static void chassis_motion_generate_targets(
         == CHASSIS_MOTION_COMMAND_TURN_RELATIVE)
     {
         correction_limit = chassis_motion_abs(base_speed);
-        correction = chassis_motion_update_heading_pid(
-            chassis_motion_status.target_heading_deg,
-            yaw_deg,
+        heading_error = chassis_motion_status.turn_remaining_deg;
+        correction = chassis_motion_update_heading_pid_error(
+            heading_error,
             correction_limit);
         if (correction > correction_limit)
         {
@@ -606,6 +653,36 @@ static void chassis_motion_generate_targets(
         else if (correction < -correction_limit)
         {
             correction = -correction_limit;
+        }
+
+        minimum_correction = correction_limit;
+        if (minimum_correction
+            > CHASSIS_MOTION_TURN_MIN_WHEEL_SPEED_MM_S)
+        {
+            minimum_correction =
+                CHASSIS_MOTION_TURN_MIN_WHEEL_SPEED_MM_S;
+        }
+        if ((chassis_motion_abs(heading_error)
+                > CHASSIS_MOTION_TURN_TOLERANCE_DEG)
+            && (chassis_motion_abs(correction) < minimum_correction))
+        {
+            correction = heading_error > 0.0F
+                ? minimum_correction
+                : -minimum_correction;
+        }
+        if (chassis_motion_status.phase
+            == CHASSIS_MOTION_PHASE_DECELERATING)
+        {
+            if ((chassis_motion_status.command_value > 0.0F)
+                && (correction < 0.0F))
+            {
+                correction = 0.0F;
+            }
+            else if ((chassis_motion_status.command_value < 0.0F)
+                && (correction > 0.0F))
+            {
+                correction = 0.0F;
+            }
         }
 
         *left_target = -correction;
@@ -822,6 +899,8 @@ void chassis_motion_init(void)
     chassis_motion_status.start_heading_deg = 0.0F;
     chassis_motion_status.current_heading_deg = 0.0F;
     chassis_motion_status.target_heading_deg = 0.0F;
+    chassis_motion_status.turn_progress_deg = 0.0F;
+    chassis_motion_status.turn_remaining_deg = 0.0F;
     chassis_motion_status.left_target_mm_s = 0.0F;
     chassis_motion_status.right_target_mm_s = 0.0F;
     chassis_motion_status.elapsed_ms = 0U;
@@ -850,6 +929,7 @@ void chassis_motion_init(void)
     chassis_motion_stop_wait_ticks = 0U;
     chassis_motion_pending_valid = 0U;
     chassis_motion_activation_pending = 0U;
+    chassis_motion_turn_previous_heading_deg = 0.0F;
 }
 
 /**
@@ -1007,7 +1087,7 @@ uint8 chassis_motion_start_timed(
 
 /**
  * @brief Start or smoothly replan a relative IMU-heading turn.
- * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ * @param angle_deg Relative angle from -360 to 360 degrees, excluding zero.
  *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive angular-speed limit in degrees per second.
  * @return ZF_TRUE when the command was accepted.
@@ -1022,8 +1102,8 @@ uint8 chassis_motion_start_turn_relative(
     if ((chassis_motion_value_is_valid(angle_deg) == 0U)
         || (chassis_motion_value_is_valid(max_angular_speed_deg_s) == 0U)
         || (angle_deg == 0.0F)
-        || (angle_deg < -180.0F)
-        || (angle_deg > 180.0F)
+        || (angle_deg < -CHASSIS_MOTION_TURN_MAX_ANGLE_DEG)
+        || (angle_deg > CHASSIS_MOTION_TURN_MAX_ANGLE_DEG)
         || (max_angular_speed_deg_s <= 0.0F))
     {
         return ZF_FALSE;
@@ -1086,11 +1166,14 @@ void chassis_motion_reset(void)
     chassis_motion_status.result = CHASSIS_MOTION_RESULT_NONE;
     chassis_motion_status.command_value = 0.0F;
     chassis_motion_status.command_speed = 0.0F;
+    chassis_motion_status.turn_progress_deg = 0.0F;
+    chassis_motion_status.turn_remaining_deg = 0.0F;
     chassis_motion_status.left_target_mm_s = 0.0F;
     chassis_motion_status.right_target_mm_s = 0.0F;
     chassis_motion_status.elapsed_ms = 0U;
     chassis_motion_status.active = 0U;
     chassis_motion_status.reversing = 0U;
+    chassis_motion_turn_previous_heading_deg = 0.0F;
 }
 
 /**
@@ -1139,6 +1222,8 @@ void chassis_motion_update_10ms(
          * starts. */
         chassis_motion_activate_command(odometry, yaw_deg);
     }
+
+    chassis_motion_update_turn_progress(yaw_deg);
 
     if ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_EXECUTING)
         || ((chassis_motion_status.phase == CHASSIS_MOTION_PHASE_TRANSITION)

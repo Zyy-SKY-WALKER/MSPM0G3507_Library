@@ -10,11 +10,13 @@
 #include "zf_common_typedef.h"
 
 #define CHASSIS_MOTION_UPDATE_PERIOD_MS               (10U)
-#define CHASSIS_MOTION_DEFAULT_SPEED_TRANSITION_MS    (300U)
+#define CHASSIS_MOTION_DEFAULT_SPEED_TRANSITION_MS    (500U)
 #define CHASSIS_MOTION_STOPPED_COUNT_LIMIT            (3)
 #define CHASSIS_MOTION_STOPPED_CONFIRM_TICKS          (3U)
 #define CHASSIS_MOTION_STOP_TIMEOUT_TICKS             (100U)
 #define CHASSIS_MOTION_TURN_TOLERANCE_DEG             (2.0F)
+#define CHASSIS_MOTION_TURN_MIN_WHEEL_SPEED_MM_S      (20.0F)
+#define CHASSIS_MOTION_TURN_MAX_ANGLE_DEG              (360.0F)
 #define CHASSIS_MOTION_PID_PROFILE_COUNT              (4U)
 #define CHASSIS_MOTION_PID_PROFILE_INVALID            (0xFFU)
 
@@ -127,6 +129,10 @@ typedef struct
     float current_heading_deg;
     /** Heading held by straight motion or targeted by a turn. */
     float target_heading_deg;
+    /** Signed heading accumulated during the current relative turn. */
+    float turn_progress_deg;
+    /** Signed angle still required by the current relative turn. */
+    float turn_remaining_deg;
     /** Latest generated left-wheel speed target. */
     float left_target_mm_s;
     /** Latest generated right-wheel speed target. */
@@ -202,7 +208,7 @@ uint8 chassis_motion_start_timed(
 
 /**
  * @brief Start or smoothly replan a relative IMU-heading turn.
- * @param angle_deg Relative angle from -180 to 180 degrees, excluding zero.
+ * @param angle_deg Relative angle from -360 to 360 degrees, excluding zero.
  *                  Positive turns left and negative turns right.
  * @param max_angular_speed_deg_s Positive angular-speed limit in degrees per second.
  * @return ZF_TRUE when the command was accepted.

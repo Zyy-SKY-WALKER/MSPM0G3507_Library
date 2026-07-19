@@ -14,6 +14,7 @@
 #include "my_lib_encoder.h"
 #include "my_lib_ili9341.h"
 #include "odometry.h"
+#include "zf_common_interrupt.h"
 #include "zf_driver_delay.h"
 #include "zf_driver_pit.h"
 
@@ -21,6 +22,8 @@
 #define ODOMETRY_TEST_SAMPLE_TIME_MS     (10U)
 #define ODOMETRY_TEST_DISPLAY_TIME_MS    (100U)
 #define ODOMETRY_RAD_TO_DEG              (180.0F / DRIVE_PI)
+#define ODOMETRY_TEST_PIT_PRIORITY       (1U)
+#define ODOMETRY_TEST_ENCODER_PRIORITY   (0U)
 
 /**
  * @brief Sample both encoders and update fused odometry every 10 ms.
@@ -39,6 +42,7 @@ static void odometry_test_pit_callback(uint32 event, void *user_data)
     (void)user_data;
 
     my_encoder_get_delta(&left_count, &right_count);
+    imu_uart_update();
     yaw_valid = imu_uart_get_yaw(&yaw_deg, &yaw_frame_count);
     odometry_update(
         left_count,
@@ -161,6 +165,12 @@ void test_odometry_run(void)
     ili9341_show_string(8U, 264U, "IMU Y :");
     ili9341_show_string(8U, 288U, "IMU OK:");
 
+    interrupt_set_priority(
+        TIMG12_INT_IRQn,
+        ODOMETRY_TEST_PIT_PRIORITY);
+    interrupt_set_priority(
+        GPIOA_INT_IRQn,
+        ODOMETRY_TEST_ENCODER_PRIORITY);
     my_encoder_init();
     imu_uart_init();
     odometry_init();

@@ -49,6 +49,7 @@ void TIMG0_IRQHandler (void)
 
 void TIMG6_IRQHandler (void)
 {
+    DL_Timer_clearInterruptStatus(TIMG6, TIMG6->CPU_INT.RIS);
     pit_callback_list[3](0, pit_callback_ptr_list[3]);
 }
 

@@ -22,7 +22,8 @@
 #define TEST_MODE_SERVO              (13)
 #define TEST_MODE_CHASSIS_MOTION     (14)
 #define TEST_MODE_LINE_FOLLOW_REAL   (15)
+#define TEST_MODE_STEPPER            (16)
 
-#define TEST_MODE                    TEST_MODE_IMU_UART
+#define TEST_MODE                    TEST_MODE_STEPPER
 
 #endif

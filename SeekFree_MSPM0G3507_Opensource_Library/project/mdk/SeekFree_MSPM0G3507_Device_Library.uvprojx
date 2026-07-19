@@ -1194,6 +1194,16 @@
               <FileType>5</FileType>
               <FilePath>..\my_lib\my_lib_encoder.h</FilePath>
             </File>
+            <File>
+              <FileName>ml_stepper_debug.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\ml_stepper_debug.c</FilePath>
+            </File>
+            <File>
+              <FileName>ml_stepper_debug.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\ml_stepper_debug.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1353,6 +1363,16 @@
               <FileName>test_line_follow_real.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_line_follow_real.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_stepper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_stepper.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_stepper.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_stepper.h</FilePath>
             </File>
           </Files>
         </Group>
