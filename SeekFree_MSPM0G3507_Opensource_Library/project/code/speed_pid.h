@@ -18,8 +18,8 @@
 #define SPEED_PID_LEFT_KD                 (0.5F)
 
 #define SPEED_PID_RIGHT_KP                (9.0F)
-#define SPEED_PID_RIGHT_KI                (1.5F)
-#define SPEED_PID_RIGHT_KD                (0.8F)
+#define SPEED_PID_RIGHT_KI                (1.3F)
+#define SPEED_PID_RIGHT_KD                (0.5F)
 
 /** @brief Latest dual-wheel command, measurement and controller state. */
 typedef struct

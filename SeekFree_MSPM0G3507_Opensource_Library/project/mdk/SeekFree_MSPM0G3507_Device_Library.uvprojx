@@ -494,6 +494,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\chassis_motion.h</FilePath>
             </File>
+            <File>
+              <FileName>gimbal_stepper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\gimbal_stepper.c</FilePath>
+            </File>
+            <File>
+              <FileName>gimbal_stepper.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\gimbal_stepper.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1229,6 +1239,16 @@
               <FileType>5</FileType>
               <FilePath>..\my_lib\tjpgdcnf.h</FilePath>
             </File>
+            <File>
+              <FileName>splash_jpeg_player.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\splash_jpeg_player.h</FilePath>
+            </File>
+            <File>
+              <FileName>splash_jpeg_player.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\splash_jpeg_player.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1408,6 +1428,86 @@
               <FileName>test_xpt2046.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_xpt2046.h</FilePath>
+            </File>
+            <File>
+              <FileName>splash_image_jpg.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image_jpg.h</FilePath>
+            </File>
+            <File>
+              <FileName>splash_image_strips_jpg.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image_strips_jpg.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_dissolve.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_dissolve.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_dissolve.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_dissolve.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_fade.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_fade.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_fade.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_fade.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_mosaic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_mosaic.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_mosaic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_mosaic.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_neon.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_neon.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_neon.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_neon.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_radial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_radial.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_radial.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_radial.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_snow.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_ili9341_snow.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_ili9341_snow.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_ili9341_snow.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_touch_gimbal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_touch_gimbal.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_touch_gimbal.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_touch_gimbal.h</FilePath>
             </File>
           </Files>
         </Group>

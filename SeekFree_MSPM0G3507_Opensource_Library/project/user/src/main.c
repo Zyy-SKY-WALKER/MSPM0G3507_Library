@@ -36,6 +36,20 @@
 #include "test_ili9341.h"
 #elif (TEST_MODE == TEST_MODE_XPT2046)
 #include "test_xpt2046.h"
+#elif (TEST_MODE == TEST_MODE_TOUCH_GIMBAL)
+#include "test_touch_gimbal.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_SNOW)
+#include "test_ili9341_snow.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_DISSOLVE)
+#include "test_ili9341_dissolve.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_MOSAIC)
+#include "test_ili9341_mosaic.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_FADE)
+#include "test_ili9341_fade.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_NEON)
+#include "test_ili9341_neon.h"
+#elif (TEST_MODE == TEST_MODE_ILI9341_RADIAL)
+#include "test_ili9341_radial.h"
 #elif (TEST_MODE == TEST_MODE_MOTOR)
 #include "test_motor.h"
 #elif (TEST_MODE == TEST_MODE_ENCODER)
@@ -86,6 +100,20 @@ int main(void)
     test_ili9341_run();
 #elif (TEST_MODE == TEST_MODE_XPT2046)
     test_xpt2046_run();
+#elif (TEST_MODE == TEST_MODE_TOUCH_GIMBAL)
+    test_touch_gimbal_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_SNOW)
+    test_ili9341_snow_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_DISSOLVE)
+    test_ili9341_dissolve_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_MOSAIC)
+    test_ili9341_mosaic_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_FADE)
+    test_ili9341_fade_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_NEON)
+    test_ili9341_neon_run();
+#elif (TEST_MODE == TEST_MODE_ILI9341_RADIAL)
+    test_ili9341_radial_run();
 #elif (TEST_MODE == TEST_MODE_MOTOR)
     test_motor_run();
 #elif (TEST_MODE == TEST_MODE_ENCODER)

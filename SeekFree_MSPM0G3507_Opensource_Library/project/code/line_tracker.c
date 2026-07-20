@@ -20,7 +20,7 @@
 
 static const line_tracker_config_struct line_tracker_default_config =
 {
-    .base_speed_mm_s = {550.0F, 500.0F, 480.0F, 440.0F, 400.0F},
+    .base_speed_mm_s = {450.0F, 400.0F, 380.0F, 340.0F, 320.0F},
     .pid_kp = {30.0F, 38.0F, 43.0F, 55.0F, 68.0F},
     .pid_ki = 0.0F,
     .pid_kd = 0.0F,
@@ -28,12 +28,12 @@ static const line_tracker_config_struct line_tracker_default_config =
     .pid_derivative_filter_alpha = 0.2F,
     .max_target_mm_s = 800.0F,
     .max_correction_mm_s = 400.0F,
-    .arc_outer_speed_mm_s = 630.0F,
-    .arc_inner_speed_mm_s = 120.0F,
+    .arc_outer_speed_mm_s = 400.0F,
+    .arc_inner_speed_mm_s = 20.0F,
     .pivot_speed_mm_s = 300.0F,
     .lost_debounce_samples = 3U,
     .reacquire_samples = 3U,
-    .arc_duration_samples = 50U,
+    .arc_duration_samples = 300U,
     .search_timeout_samples = 500U,
     .default_search_direction = LINE_TRACKER_DIRECTION_RIGHT,
 };

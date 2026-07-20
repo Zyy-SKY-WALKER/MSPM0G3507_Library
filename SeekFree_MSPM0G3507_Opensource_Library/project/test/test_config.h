@@ -24,7 +24,15 @@
 #define TEST_MODE_LINE_FOLLOW_REAL   (15)
 #define TEST_MODE_STEPPER            (16)
 #define TEST_MODE_XPT2046            (17)
+#define TEST_MODE_TOUCH_GIMBAL       (18)
+#define TEST_MODE_ILI9341_SNOW       (19)
+#define TEST_MODE_ILI9341_DISSOLVE   (20)
+#define TEST_MODE_ILI9341_MOSAIC     (21)
+#define TEST_MODE_ILI9341_FADE       (22)
+#define TEST_MODE_ILI9341_NEON       (23)
+#define TEST_MODE_ILI9341_RADIAL     (24)
 
-#define TEST_MODE                    TEST_MODE_ILI9341
+#define TEST_MODE                    TEST_MODE_ILI9341_NEON
+
 
 #endif
