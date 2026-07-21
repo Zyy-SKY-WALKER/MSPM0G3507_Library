@@ -29,7 +29,7 @@ static const line_tracker_config_struct line_tracker_default_config =
     .max_target_mm_s = 800.0F,
     .max_correction_mm_s = 400.0F,
     .arc_outer_speed_mm_s = 400.0F,
-    .arc_inner_speed_mm_s = 20.0F,
+    .arc_inner_speed_mm_s = -100.0F,
     .pivot_speed_mm_s = 300.0F,
     .lost_debounce_samples = 3U,
     .reacquire_samples = 3U,
@@ -58,15 +58,26 @@ typedef struct
 static volatile line_tracker_pid_state_struct line_tracker_pid_state;
 
 /**
+ * @brief Check that a float is finite.
+ * @param value Value to validate.
+ * @return Nonzero when valid.
+ */
+static uint8 line_tracker_float_is_finite(float value)
+{
+    return (uint8)((value == value)
+        && (value >= -FLT_MAX)
+        && (value <= FLT_MAX));
+}
+
+/**
  * @brief Check that a float is finite and nonnegative.
  * @param value Value to validate.
  * @return Nonzero when valid.
  */
 static uint8 line_tracker_float_is_nonnegative(float value)
 {
-    return (uint8)((value == value)
-        && (value >= 0.0F)
-        && (value <= FLT_MAX));
+    return (uint8)((line_tracker_float_is_finite(value) != 0U)
+        && (value >= 0.0F));
 }
 
 /**
@@ -97,7 +108,7 @@ static uint8 line_tracker_config_is_valid(
         || (config->pid_derivative_filter_alpha > 1.0F)
         || (line_tracker_float_is_nonnegative(
                 config->arc_outer_speed_mm_s) == 0U)
-        || (line_tracker_float_is_nonnegative(
+        || (line_tracker_float_is_finite(
                 config->arc_inner_speed_mm_s) == 0U)
         || (line_tracker_float_is_nonnegative(
                 config->pivot_speed_mm_s) == 0U))
@@ -107,6 +118,8 @@ static uint8 line_tracker_config_is_valid(
 
     if ((config->arc_outer_speed_mm_s > config->max_target_mm_s)
         || (config->arc_inner_speed_mm_s > config->max_target_mm_s)
+        || (config->arc_inner_speed_mm_s
+            < -config->max_target_mm_s)
         || (config->pivot_speed_mm_s > config->max_target_mm_s)
         || (config->arc_outer_speed_mm_s
             <= config->arc_inner_speed_mm_s)

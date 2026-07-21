@@ -1509,6 +1509,26 @@
               <FileType>5</FileType>
               <FilePath>..\test\test_touch_gimbal.h</FilePath>
             </File>
+            <File>
+              <FileName>splash_image_tiles_exact.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image_tiles_exact.h</FilePath>
+            </File>
+            <File>
+              <FileName>splash_image_tiles_rgb565.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image_tiles_rgb565.h</FilePath>
+            </File>
+            <File>
+              <FileName>snow_image_select.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\snow_image_select.h</FilePath>
+            </File>
+            <File>
+              <FileName>splash_image2_tiles_quant5.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image2_tiles_quant5.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

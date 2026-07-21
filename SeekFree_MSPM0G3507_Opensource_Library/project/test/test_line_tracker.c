@@ -14,7 +14,9 @@
 #include "my_lib_ili9341.h"
 #include "zf_driver_delay.h"
 
-#define LINE_TRACKER_TEST_MAX_TARGET   (300.0F)
+#define LINE_TRACKER_TEST_MAX_TARGET   (800.0F)
+#define LINE_TRACKER_TEST_MAX_CORRECTION (400.0F)
+#define LINE_TRACKER_TEST_DEFAULT_ARC_SAMPLES (300U)
 #define LINE_TRACKER_TEST_STEP_TIME_MS (1000U)
 #define LINE_TRACKER_TEST_FLOAT_EPSILON (0.01F)
 #define LINE_TRACKER_TEST_NORMALIZE_SCALE (5.0F / 3.5F)
@@ -32,20 +34,20 @@ static const uint8 line_tracker_test_masks[] =
 
 static const float line_tracker_test_default_base_speed[] =
 {
-    250.0F,
-    230.0F,
-    210.0F,
-    180.0F,
-    150.0F,
+    450.0F,
+    400.0F,
+    380.0F,
+    340.0F,
+    320.0F,
 };
 
 static const float line_tracker_test_default_kp[] =
 {
     30.0F,
-    35.0F,
-    40.0F,
-    45.0F,
-    50.0F,
+    38.0F,
+    43.0F,
+    55.0F,
+    68.0F,
 };
 
 /**
@@ -159,7 +161,7 @@ static void line_tracker_test_prepare_pid_config(
     config->max_target_mm_s = 300.0F;
     config->max_correction_mm_s = 20.0F;
     config->arc_outer_speed_mm_s = 160.0F;
-    config->arc_inner_speed_mm_s = 60.0F;
+    config->arc_inner_speed_mm_s = -60.0F;
     config->pivot_speed_mm_s = 100.0F;
     config->lost_debounce_samples = 3U;
     config->reacquire_samples = 3U;
@@ -347,13 +349,28 @@ static uint32 line_tracker_test_pid_self_check(void)
     {
         failures++;
     }
+    if ((line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            160.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            -60.0F) == 0U))
+    {
+        failures++;
+    }
     for (index = 0U; index < 50U; index++)
     {
         line_tracker_update(&sensor, &output);
     }
     line_tracker_get_status(&status);
     if ((status.state != LINE_TRACKER_STATE_LOST_PIVOT)
-        || (line_tracker_test_pid_is_reset(&status) == 0U))
+        || (line_tracker_test_pid_is_reset(&status) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            100.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            -100.0F) == 0U))
     {
         failures++;
     }
@@ -387,6 +404,19 @@ static uint32 line_tracker_test_pid_self_check(void)
     line_tracker_get_status(&status);
     if ((status.state != LINE_TRACKER_STATE_FAULT)
         || (line_tracker_test_pid_is_reset(&status) == 0U))
+    {
+        failures++;
+    }
+
+    /* Signed inner speed accepts the lower bound and rejects overflow. */
+    line_tracker_test_prepare_pid_config(&config);
+    config.arc_inner_speed_mm_s = -301.0F;
+    if (line_tracker_set_config(&config) != ZF_FALSE)
+    {
+        failures++;
+    }
+    config.arc_inner_speed_mm_s = -300.0F;
+    if (line_tracker_set_config(&config) == ZF_FALSE)
     {
         failures++;
     }
@@ -434,13 +464,14 @@ static uint32 line_tracker_test_self_check(void)
                 line_tracker_test_expected_band(expected_normalized);
             expected_correction = expected_normalized
                 * line_tracker_test_default_kp[expected_band];
-            if (expected_correction > 140.0F)
+            if (expected_correction > LINE_TRACKER_TEST_MAX_CORRECTION)
             {
-                expected_correction = 140.0F;
+                expected_correction = LINE_TRACKER_TEST_MAX_CORRECTION;
             }
-            else if (expected_correction < -140.0F)
+            else if (expected_correction
+                < -LINE_TRACKER_TEST_MAX_CORRECTION)
             {
-                expected_correction = -140.0F;
+                expected_correction = -LINE_TRACKER_TEST_MAX_CORRECTION;
             }
             expected_left = line_tracker_test_clamp_target(
                 line_tracker_test_default_base_speed[expected_band]
@@ -539,17 +570,51 @@ static uint32 line_tracker_test_self_check(void)
         line_tracker_update(&sensor, &output);
     }
     line_tracker_get_status(&status);
-    if (status.state != LINE_TRACKER_STATE_LOST_ARC)
+    if ((status.state != LINE_TRACKER_STATE_LOST_ARC)
+        || (line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            400.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            -100.0F) == 0U))
     {
         failures++;
     }
 
-    for (index = 0U; index < 50U; index++)
+    for (index = 0U;
+        index < LINE_TRACKER_TEST_DEFAULT_ARC_SAMPLES;
+        index++)
     {
         line_tracker_update(&sensor, &output);
     }
     line_tracker_get_status(&status);
-    if (status.state != LINE_TRACKER_STATE_LOST_PIVOT)
+    if ((status.state != LINE_TRACKER_STATE_LOST_PIVOT)
+        || (line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            300.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            -300.0F) == 0U))
+    {
+        failures++;
+    }
+
+    gray_sensor_calculate(0x01U, &sensor);
+    line_tracker_reset();
+    line_tracker_update(&sensor, &output);
+    gray_sensor_calculate(0x00U, &sensor);
+    for (index = 0U; index < 3U; index++)
+    {
+        line_tracker_update(&sensor, &output);
+    }
+    line_tracker_get_status(&status);
+    if ((status.state != LINE_TRACKER_STATE_LOST_ARC)
+        || (line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            -100.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            400.0F) == 0U))
     {
         failures++;
     }

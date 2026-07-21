@@ -65,7 +65,10 @@ typedef struct
     float max_correction_mm_s;
     /** Nonnegative outer arc speed in mm/s; greater than inner speed. */
     float arc_outer_speed_mm_s;
-    /** Nonnegative inner arc speed in mm/s. */
+    /**
+     * Signed inner arc speed in mm/s.
+     * A negative value reverses the inner wheel during lost-line search.
+     */
     float arc_inner_speed_mm_s;
     /** Nonnegative pivot speed magnitude in mm/s. */
     float pivot_speed_mm_s;

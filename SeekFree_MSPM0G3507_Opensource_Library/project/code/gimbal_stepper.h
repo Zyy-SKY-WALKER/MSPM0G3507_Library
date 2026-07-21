@@ -8,11 +8,22 @@
 
 #include "zf_common_typedef.h"
 
-#define GIMBAL_STEPPER_STEPS_PER_REVOLUTION     (12800U)
-#define GIMBAL_STEPPER_YAW_MIN_STEPS            (-6400)
-#define GIMBAL_STEPPER_YAW_MAX_STEPS            (6400)
-#define GIMBAL_STEPPER_PITCH_MIN_STEPS          (-3700)
-#define GIMBAL_STEPPER_PITCH_MAX_STEPS          (3400)
+#include "gimbal_config.h"
+
+#define GIMBAL_STEPPER_STEPS_PER_REVOLUTION     \
+    (GIMBAL_CONFIG_STEPS_PER_REVOLUTION)
+#define GIMBAL_STEPPER_YAW_MIN_STEPS            \
+    (GIMBAL_CONFIG_YAW_MIN_STEPS)
+#define GIMBAL_STEPPER_YAW_MAX_STEPS            \
+    (GIMBAL_CONFIG_YAW_MAX_STEPS)
+#define GIMBAL_STEPPER_PITCH_MIN_STEPS          \
+    ((GIMBAL_CONFIG_PITCH_POSITION_SIGN > 0) \
+        ? GIMBAL_CONFIG_PITCH_LOW_ANGLE_STEPS \
+        : -GIMBAL_CONFIG_PITCH_HIGH_ANGLE_STEPS)
+#define GIMBAL_STEPPER_PITCH_MAX_STEPS          \
+    ((GIMBAL_CONFIG_PITCH_POSITION_SIGN > 0) \
+        ? GIMBAL_CONFIG_PITCH_HIGH_ANGLE_STEPS \
+        : -GIMBAL_CONFIG_PITCH_LOW_ANGLE_STEPS)
 
 typedef enum
 {
@@ -40,6 +51,59 @@ typedef struct
     uint8 positive_key_pressed;
     uint8 select_key_pressed;
 } gimbal_stepper_status_struct;
+
+/** @brief Feedforward target selection. */
+typedef enum
+{
+    /** Aim at the configured target center. */
+    GIMBAL_TARGET_CENTER = 0,
+    /** Aim at the configured target circle phase. */
+    GIMBAL_TARGET_CIRCLE,
+} gimbal_target_mode_enum;
+
+/** @brief Vehicle pose supplied to the gimbal feedforward solver. */
+typedef struct
+{
+    /** Vehicle origin in world millimeters. */
+    float x_mm;
+    float y_mm;
+    float z_mm;
+    /** Vehicle attitude in degrees. */
+    float roll_deg;
+    float pitch_deg;
+    /** Continuous world yaw in radians. */
+    float heading_rad;
+    /** Nonzero when the pose is usable. */
+    uint8 valid;
+} gimbal_feedforward_pose_struct;
+
+/** @brief Result returned by the geometric feedforward inverse solver. */
+typedef struct
+{
+    float target_x_mm;
+    float target_y_mm;
+    float target_z_mm;
+    float yaw_deg;
+    float pitch_deg;
+    float residual_deg;
+    uint8 valid;
+    uint8 singular;
+} gimbal_feedforward_solution_struct;
+
+/** @brief Camera-to-MSPM0 visual error placeholder until the UART protocol is fixed. */
+typedef struct
+{
+    int16 error_x_mm;
+    int16 error_y_mm;
+    uint16 sequence;
+    uint16 age_ms;
+    uint8 target_valid;
+    uint8 spot_valid;
+    uint8 mode;
+} gimbal_camera_error_struct;
+
+/** @brief Optional foreground log sink used by tests and applications. */
+typedef void (*gimbal_stepper_log_callback)(const char *message);
 
 /**
  * @brief Initialize the gimbal GPIOs, keys and 5 kHz pulse timer.
@@ -75,5 +139,70 @@ uint8 gimbal_stepper_relative_ready(void);
  */
 void gimbal_stepper_get_status(
     gimbal_stepper_status_struct *status);
+
+/**
+ * @brief Replace the foreground text log destination.
+ * @param callback Log sink, or NULL to restore debug printf output.
+ */
+void gimbal_stepper_set_log_callback(
+    gimbal_stepper_log_callback callback);
+
+/**
+ * @brief Select the target point used by the feedforward solver.
+ * @param mode Center or circle target mode.
+ */
+void gimbal_stepper_set_target_mode(gimbal_target_mode_enum mode);
+
+/**
+ * @brief Set the target-circle phase in radians.
+ * @param phase_rad Desired phase; it is wrapped internally.
+ */
+void gimbal_stepper_set_target_phase(float phase_rad);
+
+/**
+ * @brief Convert a world pose and target configuration into axis targets.
+ * @param pose Vehicle pose snapshot.
+ * @return 1 when a valid target was accepted.
+ */
+uint8 gimbal_stepper_update_feedforward(
+    const gimbal_feedforward_pose_struct *pose);
+
+/**
+ * @brief Calculate feedforward without changing motor targets.
+ * @param pose Vehicle pose snapshot.
+ * @param solution Destination solution.
+ * @return 1 when the configured target is reachable.
+ */
+uint8 gimbal_stepper_compute_feedforward(
+    const gimbal_feedforward_pose_struct *pose,
+    gimbal_feedforward_solution_struct *solution);
+
+/**
+ * @brief Set absolute step targets after a valid manual zero.
+ * @param yaw_steps Signed yaw target relative to the manual zero.
+ * @param pitch_steps Signed pitch target relative to the manual zero.
+ * @return 1 when accepted.
+ */
+uint8 gimbal_stepper_set_absolute_target_steps(
+    int32 yaw_steps,
+    int32 pitch_steps);
+
+/**
+ * @brief Copy the latest feedforward solution.
+ * @param solution Destination snapshot.
+ */
+void gimbal_stepper_get_feedforward_solution(
+    gimbal_feedforward_solution_struct *solution);
+
+/**
+ * @brief Initialize the laser output to its configured safe-off level.
+ */
+void gimbal_stepper_laser_init(void);
+
+/**
+ * @brief Set the laser output using the configured active level.
+ * @param enabled Nonzero to request laser on.
+ */
+void gimbal_stepper_set_laser(uint8 enabled);
 
 #endif

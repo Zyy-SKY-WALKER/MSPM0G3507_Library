@@ -8,6 +8,7 @@
 
 #include "ml_stepper_debug.h"
 
+#include "gimbal_stepper.h"
 #include "my_lib_ili9341.h"
 
 /* Static label X positions (8x16 font, 8 px per glyph) -----*/
@@ -39,12 +40,6 @@
 #define ML_SD_BAR_PAN_Y      (96U)
 #define ML_SD_BAR_TILT_Y     (192U)
 
-/* Position range spans (must match STEPPER_TEST_* in test_stepper.c) */
-#define ML_SD_PAN_RANGE      (12800U)
-#define ML_SD_PAN_OFFSET     (6400U)
-#define ML_SD_TILT_RANGE     (7100U)
-#define ML_SD_TILT_OFFSET    (3700U)
-
 /* Colour used for the empty portion of the bar ------------*/
 #define ML_SD_BAR_EMPTY      (0x2104U)
 
@@ -72,6 +67,31 @@ static void ml_sd_draw_bar(uint16 x, uint16 y, uint16 w, uint8 fill_pct)
         ili9341_fill_rect(x, y, (uint16)(x + fill_w - 1U),
                           (uint16)(y + ML_SD_BAR_H - 1U), colour);
     }
+}
+
+/**
+ * @brief Convert one bounded axis position to a bar percentage.
+ */
+static uint8 ml_sd_position_percent(
+    int32 position,
+    int32 minimum,
+    int32 maximum)
+{
+    uint32 range;
+    uint32 offset;
+
+    if(position <= minimum)
+    {
+        return 0U;
+    }
+    if(position >= maximum)
+    {
+        return 100U;
+    }
+
+    range = (uint32)(maximum - minimum);
+    offset = (uint32)(position - minimum);
+    return (uint8)((offset * 100U) / range);
 }
 
 /**
@@ -127,7 +147,10 @@ void ml_stepper_debug_update(
     ili9341_show_string(ML_SD_VALUE_X, ML_SD_ROW_PAN_ZERO,
                         (pan_zero != 0U) ? "YES" : "NO");
 
-    pct = (uint8)(((uint32)(pan_position + (int32)ML_SD_PAN_OFFSET) * 100U) / ML_SD_PAN_RANGE);
+    pct = ml_sd_position_percent(
+        pan_position,
+        GIMBAL_STEPPER_YAW_MIN_STEPS,
+        GIMBAL_STEPPER_YAW_MAX_STEPS);
     ml_sd_draw_bar(ML_SD_BAR_X, ML_SD_BAR_PAN_Y, ML_SD_BAR_W, pct);
 
     /* TILT section -------------------------------------------*/
@@ -152,7 +175,21 @@ void ml_stepper_debug_update(
     ili9341_show_string(ML_SD_VALUE_X, ML_SD_ROW_TILT_ZERO,
                         (tilt_zero != 0U) ? "YES" : "NO");
 
-    pct = (uint8)(((uint32)(tilt_position + (int32)ML_SD_TILT_OFFSET) * 100U) / ML_SD_TILT_RANGE);
+    if(tilt_zero == 0U)
+    {
+        pct = 0U;
+    }
+    else
+    {
+        pct = ml_sd_position_percent(
+            tilt_position,
+            GIMBAL_STEPPER_PITCH_MIN_STEPS,
+            GIMBAL_STEPPER_PITCH_MAX_STEPS);
+        if(GIMBAL_CONFIG_PITCH_POSITION_SIGN < 0)
+        {
+            pct = 100U - pct;
+        }
+    }
     ml_sd_draw_bar(ML_SD_BAR_X, ML_SD_BAR_TILT_Y, ML_SD_BAR_W, pct);
 
     /* Status section -----------------------------------------*/

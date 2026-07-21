@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 #include "my_lib_ili9341.h"
-#include "splash_image_tiles_exact.h"
+#include "snow_image_select.h"
 #include "zf_driver_delay.h"
 
 #define SNOW_BACKGROUND_COLOR          (0x0966U)
@@ -52,10 +52,10 @@ typedef struct
 } snow_particle_struct;
 
 static snow_particle_struct snow_particles[SNOW_PARTICLE_COUNT];
-static uint8 snow_column_height[SPLASH_TILE_COLUMNS];
+static uint8 snow_column_height[SNOW_IMAGE_TILE_COLUMNS];
 static uint16 snow_sprite_pixels[25U];
 static uint16 snow_exact_tile_pixels[
-    SPLASH_EXACT_TILE_SIZE * SPLASH_EXACT_TILE_SIZE];
+    SNOW_IMAGE_TILE_SIZE * SNOW_IMAGE_TILE_SIZE];
 static uint32 snow_random_state = 0x7A3C9E21U;
 static int32 snow_global_wind;
 static uint32 snow_settled_tiles;
@@ -122,16 +122,16 @@ static int16 snow_find_open_column(void)
 
     for (attempt = 0U; attempt < 128U; attempt++)
     {
-        column = (uint16)(snow_random() % SPLASH_TILE_COLUMNS);
-        if (snow_column_height[column] < SPLASH_TILE_ROWS)
+        column = (uint16)(snow_random() % SNOW_IMAGE_TILE_COLUMNS);
+        if (snow_column_height[column] < SNOW_IMAGE_TILE_ROWS)
         {
             return (int16)column;
         }
     }
 
-    for (column = 0U; column < SPLASH_TILE_COLUMNS; column++)
+    for (column = 0U; column < SNOW_IMAGE_TILE_COLUMNS; column++)
     {
-        if (snow_column_height[column] < SPLASH_TILE_ROWS)
+        if (snow_column_height[column] < SNOW_IMAGE_TILE_ROWS)
         {
             return (int16)column;
         }
@@ -160,8 +160,8 @@ static void snow_spawn_particle(snow_particle_struct *particle)
 
     shape = (uint8)(snow_random() % SNOW_SHAPE_COUNT);
     size = snow_shape_size(shape);
-    center_x = (int32)column * SPLASH_TILE_SIZE
-        + SPLASH_TILE_SIZE / 2U;
+    center_x = (int32)column * SNOW_IMAGE_TILE_SIZE
+        + SNOW_IMAGE_TILE_SIZE / 2U;
     x = center_x - size / 2U;
     if (x < 0)
     {
@@ -298,16 +298,16 @@ static uint8 snow_decode_exact_tile(
     uint32 bit_offset = 0U;
     uint16 pixel_index;
 
-    if ((tile_row >= SPLASH_EXACT_TILE_ROWS)
-        || (tile_column >= SPLASH_EXACT_TILE_COLUMNS))
+    if ((tile_row >= SNOW_IMAGE_TILE_ROWS)
+        || (tile_column >= SNOW_IMAGE_TILE_COLUMNS))
     {
         return 0U;
     }
 
-    row_start = splash_exact_tile_row_offsets[tile_row];
-    row_end = splash_exact_tile_row_offsets[tile_row + 1U];
+    row_start = SNOW_IMAGE_ROW_OFFSETS[tile_row];
+    row_end = SNOW_IMAGE_ROW_OFFSETS[tile_row + 1U];
     if ((row_start > row_end)
-        || (row_end > SPLASH_EXACT_TILE_DATA_SIZE))
+        || (row_end > SNOW_IMAGE_TILE_DATA_SIZE))
     {
         return 0U;
     }
@@ -319,7 +319,7 @@ static uint8 snow_decode_exact_tile(
         {
             return 0U;
         }
-        record_length = splash_exact_tile_data[record_offset];
+        record_length = SNOW_IMAGE_TILE_DATA[record_offset];
         if ((record_length < 4U)
             || (record_offset + record_length > row_end))
         {
@@ -328,12 +328,13 @@ static uint8 snow_decode_exact_tile(
         record_offset += record_length;
     }
 
-    if (record_offset >= row_end)
+    if ((record_offset + 2U > row_end)
+        || (record_offset + 2U > SNOW_IMAGE_TILE_DATA_SIZE))
     {
         return 0U;
     }
-    record_length = splash_exact_tile_data[record_offset];
-    palette_count = splash_exact_tile_data[record_offset + 1U];
+    record_length = SNOW_IMAGE_TILE_DATA[record_offset];
+    palette_count = SNOW_IMAGE_TILE_DATA[record_offset + 1U];
     if ((record_length < 4U) || (palette_count == 0U)
         || (palette_count > 16U)
         || (record_offset + record_length > row_end))
@@ -358,7 +359,7 @@ static uint8 snow_decode_exact_tile(
 
         while (bits_available < index_bits)
         {
-            bit_buffer |= (uint32)splash_exact_tile_data[
+            bit_buffer |= (uint32)SNOW_IMAGE_TILE_DATA[
                 packed_offset + bit_offset++] << bits_available;
             bits_available += 8U;
         }
@@ -381,8 +382,8 @@ static uint8 snow_decode_exact_tile(
         palette_color_offset = palette_offset
             + (uint32)palette_index * 2U;
         snow_exact_tile_pixels[pixel_index] =
-            ((uint16)splash_exact_tile_data[palette_color_offset] << 8U)
-            | splash_exact_tile_data[palette_color_offset + 1U];
+            ((uint16)SNOW_IMAGE_TILE_DATA[palette_color_offset] << 8U)
+            | SNOW_IMAGE_TILE_DATA[palette_color_offset + 1U];
     }
 
     return 1U;
@@ -468,11 +469,11 @@ static uint8 snow_particle_collides(
     {
         x = 0;
     }
-    left_column = (uint16)x / SPLASH_TILE_SIZE;
-    right_column = (uint16)(x + size - 1) / SPLASH_TILE_SIZE;
-    if (right_column >= SPLASH_TILE_COLUMNS)
+    left_column = (uint16)x / SNOW_IMAGE_TILE_SIZE;
+    right_column = (uint16)(x + size - 1) / SNOW_IMAGE_TILE_SIZE;
+    if (right_column >= SNOW_IMAGE_TILE_COLUMNS)
     {
-        right_column = SPLASH_TILE_COLUMNS - 1U;
+        right_column = SNOW_IMAGE_TILE_COLUMNS - 1U;
     }
 
     *contact_column = (uint8)left_column;
@@ -486,7 +487,7 @@ static uint8 snow_particle_collides(
     }
 
     surface_y = (uint16)(ILI9341_PORTRAIT_HEIGHT
-        - (uint16)maximum_height * SPLASH_TILE_SIZE);
+        - (uint16)maximum_height * SNOW_IMAGE_TILE_SIZE);
     return (uint8)((y + size) >= surface_y);
 }
 
@@ -515,7 +516,7 @@ static uint8 snow_try_slide(
         target_column = (int16)contact_column - 1;
         target_height = snow_column_height[contact_column - 1U];
     }
-    if (((uint16)contact_column + 1U < SPLASH_TILE_COLUMNS)
+    if (((uint16)contact_column + 1U < SNOW_IMAGE_TILE_COLUMNS)
         && ((uint16)snow_column_height[contact_column + 1U]
             + SNOW_REPOSE_DIFFERENCE <= current_height)
         && ((target_column < 0)
@@ -529,8 +530,8 @@ static uint8 snow_try_slide(
         return 0U;
     }
 
-    center_x = (int32)target_column * SPLASH_TILE_SIZE
-        + SPLASH_TILE_SIZE / 2U;
+    center_x = (int32)target_column * SNOW_IMAGE_TILE_SIZE
+        + SNOW_IMAGE_TILE_SIZE / 2U;
     particle->x_fixed = (center_x - size / 2U) * SNOW_FIXED_ONE;
     particle->velocity_x = target_column < contact_column
         ? -SNOW_FIXED_ONE / 2L
@@ -550,13 +551,13 @@ static void snow_settle_particle(
     uint8 height = snow_column_height[column];
     uint16 tile_row;
 
-    if (height >= SPLASH_TILE_ROWS)
+    if (height >= SNOW_IMAGE_TILE_ROWS)
     {
         snow_spawn_particle(particle);
         return;
     }
 
-    tile_row = (uint16)(SPLASH_TILE_ROWS - 1U - height);
+    tile_row = (uint16)(SNOW_IMAGE_TILE_ROWS - 1U - height);
     if (snow_decode_exact_tile(tile_row, column) == 0U)
     {
         snow_data_error = 1U;
@@ -564,11 +565,11 @@ static void snow_settle_particle(
         return;
     }
     ili9341_show_rgb565_image(
-        (uint16)column * SPLASH_EXACT_TILE_SIZE,
-        tile_row * SPLASH_EXACT_TILE_SIZE,
+        (uint16)column * SNOW_IMAGE_TILE_SIZE,
+        tile_row * SNOW_IMAGE_TILE_SIZE,
         snow_exact_tile_pixels,
-        SPLASH_EXACT_TILE_SIZE,
-        SPLASH_EXACT_TILE_SIZE);
+        SNOW_IMAGE_TILE_SIZE,
+        SNOW_IMAGE_TILE_SIZE);
 
     snow_column_height[column]++;
     snow_settled_tiles++;
@@ -593,7 +594,7 @@ static void snow_resolve_collisions(void)
             uint8 contact_column;
 
             if ((particle->active == 0U)
-                || (snow_settled_tiles >= SPLASH_TILE_COUNT))
+                || (snow_settled_tiles >= SNOW_IMAGE_TILE_COUNT))
             {
                 continue;
             }
@@ -615,7 +616,7 @@ static void snow_resolve_collisions(void)
         }
     }
 
-    if (snow_settled_tiles < SPLASH_TILE_COUNT)
+    if (snow_settled_tiles < SNOW_IMAGE_TILE_COUNT)
     {
         uint16 index;
 
@@ -696,7 +697,7 @@ void test_ili9341_snow_run(void)
     snow_global_wind = 0L;
     snow_settled_tiles = 0U;
     snow_data_error = 0U;
-    for (column = 0U; column < SPLASH_TILE_COLUMNS; column++)
+    for (column = 0U; column < SNOW_IMAGE_TILE_COLUMNS; column++)
     {
         snow_column_height[column] = 0U;
     }
@@ -706,13 +707,13 @@ void test_ili9341_snow_run(void)
         snow_spawn_particle(&snow_particles[index]);
     }
 
-    while ((snow_settled_tiles < SPLASH_EXACT_TILE_COUNT)
+    while ((snow_settled_tiles < SNOW_IMAGE_TILE_COUNT)
         && (snow_data_error == 0U))
     {
         snow_erase_particles();
         snow_integrate_particles(frame_index);
         snow_resolve_collisions();
-        if (snow_settled_tiles >= SPLASH_EXACT_TILE_COUNT)
+        if (snow_settled_tiles >= SNOW_IMAGE_TILE_COUNT)
         {
             break;
         }
@@ -724,7 +725,7 @@ void test_ili9341_snow_run(void)
             printf(
                 "Snow tiles: %lu/%u.\r\n",
                 (unsigned long)snow_settled_tiles,
-                (unsigned int)SPLASH_EXACT_TILE_COUNT);
+                (unsigned int)SNOW_IMAGE_TILE_COUNT);
         }
         system_delay_ms(SNOW_FRAME_DELAY_MS);
     }
