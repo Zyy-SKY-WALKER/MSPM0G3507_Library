@@ -37,6 +37,10 @@
     ((int32)((GIMBAL_TICK_HZ / 2U) * GIMBAL_RATE_SCALE))
 #define GIMBAL_CONTROL_PERIOD_MS                \
     (GIMBAL_CONFIG_CONTROL_PERIOD_MS)
+#define GIMBAL_MILLISECOND_DIVIDER_TICKS        \
+    (1000U / GIMBAL_TICK_US)
+#define GIMBAL_RATE_DIVIDER_TICKS               \
+    ((GIMBAL_TICK_HZ * GIMBAL_CONTROL_PERIOD_MS) / 1000U)
 #define GIMBAL_DEBOUNCE_MS                      (20U)
 #define GIMBAL_ZERO_HOLD_MS                     (1000U)
 #define GIMBAL_DIRECTION_SETTLE_TICKS           (1U)
@@ -116,6 +120,17 @@
     > (180U * GIMBAL_CONFIG_PULSE_ENGINE_HZ))
 #error Gimbal calibrate speed exceeds the STEP pulse engine capacity.
 #endif
+#if ((1000U % GIMBAL_CONFIG_PULSE_TICK_US) != 0U)
+#error Gimbal pulse tick must divide one millisecond exactly.
+#endif
+#if (((GIMBAL_CONFIG_PULSE_ENGINE_HZ \
+        * GIMBAL_CONFIG_CONTROL_PERIOD_MS) % 1000U) != 0U)
+#error Gimbal pulse rate must divide the control period exactly.
+#endif
+#if ((GIMBAL_CONFIG_PULSE_ENGINE_HZ \
+        * GIMBAL_CONFIG_PULSE_TICK_US) != 1000000U)
+#error Gimbal pulse rate and tick period are inconsistent.
+#endif
 
 typedef enum
 {
@@ -190,6 +205,7 @@ static volatile gimbal_control_mode_enum gimbal_control_mode;
 static volatile uint16 gimbal_pending_ms;
 static volatile uint8 gimbal_millisecond_divider;
 static volatile uint8 gimbal_rate_tick_divider;
+static volatile uint16 gimbal_laser_settle_ms;
 static volatile gimbal_target_mode_enum gimbal_target_mode;
 static volatile float gimbal_target_phase_rad;
 static volatile gimbal_feedforward_solution_struct
@@ -1160,6 +1176,8 @@ static void gimbal_stop_all(void)
 {
     uint32 primask = interrupt_global_disable();
 
+    gimbal_laser_force_off();
+    gimbal_laser_settle_ms = 0U;
     gimbal_clear_axis_command(
         &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW]);
     gimbal_clear_axis_command(
@@ -1191,7 +1209,45 @@ static uint8 gimbal_axes_zeroed(void)
 }
 
 /**
- * @brief Stop both outputs immediately from the 5 kHz callback.
+ * @brief Force the active-low laser output to its safe-off state.
+ */
+static void gimbal_laser_force_off(void)
+{
+    if(GIMBAL_CONFIG_LASER_POLARITY_VALID != 0U)
+    {
+        gpio_set_level(
+            GIMBAL_LASER_PIN,
+            gimbal_invert_level(GIMBAL_LASER_ACTIVE_LEVEL));
+    }
+}
+
+/**
+ * @brief Check all controller and raw-input laser interlocks.
+ */
+static uint8 gimbal_laser_can_enable(void)
+{
+    gimbal_axis_struct *yaw =
+        &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW];
+    gimbal_axis_struct *pitch =
+        &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH];
+
+    return (uint8)(
+        (gimbal_stop_latched == 0U)
+        && (gimbal_control_mode == GIMBAL_CONTROL_POSITION)
+        && (gimbal_axes_zeroed() != 0U)
+        && (gpio_get_level(GIMBAL_SELECT_KEY_PIN) == GPIO_HIGH)
+        && (gpio_get_level(GIMBAL_NEGATIVE_KEY_PIN) == GPIO_HIGH)
+        && (gpio_get_level(GIMBAL_POSITIVE_KEY_PIN) == GPIO_HIGH)
+        && (yaw->position_steps == yaw->target_position_steps)
+        && (pitch->position_steps == pitch->target_position_steps)
+        && (yaw->current_rate_milli_steps_s == 0)
+        && (pitch->current_rate_milli_steps_s == 0)
+        && (yaw->command_rate_milli_steps_s == 0)
+        && (pitch->command_rate_milli_steps_s == 0));
+}
+
+/**
+ * @brief Stop both outputs immediately from the pulse callback.
  */
 static void gimbal_emergency_stop_tick(void)
 {
@@ -1206,12 +1262,8 @@ static void gimbal_emergency_stop_tick(void)
     pitch->pulse_high = 0U;
     gpio_low(yaw->step_pin);
     gpio_low(pitch->step_pin);
-    if(GIMBAL_CONFIG_LASER_POLARITY_VALID != 0U)
-    {
-        gpio_set_level(
-            GIMBAL_LASER_PIN,
-            gimbal_invert_level(GIMBAL_LASER_ACTIVE_LEVEL));
-    }
+    gimbal_laser_force_off();
+    gimbal_laser_settle_ms = 0U;
     gimbal_sync_targets_to_positions();
     gimbal_control_mode = GIMBAL_CONTROL_IDLE;
     gimbal_stop_latched = 1U;
@@ -1658,14 +1710,30 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
  */
 static void gimbal_pit_callback(uint32 event, void *context)
 {
+    uint8 laser_safe;
+
     (void)event;
     (void)context;
 
+    laser_safe = gimbal_laser_can_enable();
+    if(laser_safe == 0U)
+    {
+        gimbal_laser_settle_ms = 0U;
+        gimbal_laser_force_off();
+    }
+
     gimbal_millisecond_divider++;
-    if(gimbal_millisecond_divider >= 5U)
+    if(gimbal_millisecond_divider
+        >= GIMBAL_MILLISECOND_DIVIDER_TICKS)
     {
         gimbal_millisecond_divider = 0U;
         gimbal_update_keys_tick();
+        if((laser_safe != 0U)
+            && (gimbal_laser_settle_ms
+                < GIMBAL_CONFIG_LASER_SETTLE_MS))
+        {
+            gimbal_laser_settle_ms++;
+        }
         if(gimbal_pending_ms < 1000U)
         {
             gimbal_pending_ms++;
@@ -1680,7 +1748,7 @@ static void gimbal_pit_callback(uint32 event, void *context)
     }
 
     gimbal_rate_tick_divider++;
-    if(gimbal_rate_tick_divider >= 50U)
+    if(gimbal_rate_tick_divider >= GIMBAL_RATE_DIVIDER_TICKS)
     {
         gimbal_rate_tick_divider = 0U;
         gimbal_update_rates_tick();
@@ -1786,6 +1854,7 @@ void gimbal_stepper_init(void)
     gimbal_pending_ms = 0U;
     gimbal_millisecond_divider = 0U;
     gimbal_rate_tick_divider = 0U;
+    gimbal_laser_settle_ms = 0U;
     gimbal_log_callback = gimbal_default_log;
     gimbal_target_mode = GIMBAL_TARGET_CENTER;
     gimbal_target_phase_rad = 0.0F;
@@ -1914,6 +1983,8 @@ uint8 gimbal_stepper_move_relative_steps(
         (int64)pitch->target_position_steps + pitch_delta_steps,
         pitch->min_position_steps,
         pitch->max_position_steps);
+    gimbal_laser_force_off();
+    gimbal_laser_settle_ms = 0U;
     interrupt_global_enable(primask);
 
     return 1U;
@@ -2057,6 +2128,8 @@ uint8 gimbal_stepper_set_absolute_target_steps(
             pitch_steps,
             GIMBAL_STEPPER_PITCH_MIN_STEPS,
             GIMBAL_STEPPER_PITCH_MAX_STEPS);
+    gimbal_laser_force_off();
+    gimbal_laser_settle_ms = 0U;
     gimbal_control_mode = GIMBAL_CONTROL_POSITION;
     interrupt_global_enable(primask);
     return 1U;
@@ -2200,24 +2273,32 @@ void gimbal_stepper_laser_init(void)
 /**
  * @brief Set B13 according to the configured laser active level.
  */
-void gimbal_stepper_set_laser(uint8 enabled)
+uint8 gimbal_stepper_set_laser(uint8 enabled)
 {
-    uint8 level;
+    uint8 accepted = 1U;
     uint32 primask;
 
     if(GIMBAL_CONFIG_LASER_POLARITY_VALID == 0U)
     {
-        return;
+        return 0U;
     }
 
     primask = interrupt_global_disable();
-    if(gimbal_stop_latched != 0U)
+    if(enabled == 0U)
     {
-        enabled = 0U;
+        gimbal_laser_force_off();
     }
-    level = enabled != 0U
-        ? GIMBAL_LASER_ACTIVE_LEVEL
-        : gimbal_invert_level(GIMBAL_LASER_ACTIVE_LEVEL);
-    gpio_set_level(GIMBAL_LASER_PIN, level);
+    else if((gimbal_laser_settle_ms
+            < GIMBAL_CONFIG_LASER_SETTLE_MS)
+        || (gimbal_laser_can_enable() == 0U))
+    {
+        gimbal_laser_force_off();
+        accepted = 0U;
+    }
+    else
+    {
+        gpio_set_level(GIMBAL_LASER_PIN, GIMBAL_LASER_ACTIVE_LEVEL);
+    }
     interrupt_global_enable(primask);
+    return accepted;
 }

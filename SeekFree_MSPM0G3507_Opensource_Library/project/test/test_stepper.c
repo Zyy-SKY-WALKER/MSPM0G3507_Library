@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 
+#include "drive_geometry.h"
 #include "gimbal_stepper.h"
 #include "ml_stepper_debug.h"
 #include "zf_driver_delay.h"
@@ -23,6 +24,8 @@
 #define TEST_STEPPER_UART_TX_PIN          (UART1_TX_B6)
 #define TEST_STEPPER_UART_RX_PIN          (UART1_RX_B7)
 #define TEST_STEPPER_TEXT_BUFFER_SIZE     (192U)
+#define TEST_STEPPER_ARRIVAL_HOLD_MS      (200U)
+#define TEST_STEPPER_POSITION_TOLERANCE   (2)
 
 /**
  * @brief Write one zero-terminated test message through UART1 B6.
@@ -49,8 +52,43 @@ static int32 test_stepper_scale_float(float value, float scale)
     return (int32)(scaled - 0.5F);
 }
 
-static void test_stepper_print_status(
+/**
+ * @brief Return the magnitude of one signed step error.
+ */
+static int32 test_stepper_step_error_magnitude(
+    int32 position,
+    int32 target)
+{
+    int32 error = target - position;
+
+    return error < 0 ? -error : error;
+}
+
+/**
+ * @brief Check that both software positions have settled at their targets.
+ */
+static uint8 test_stepper_axes_arrived(
     const gimbal_stepper_status_struct *status)
+{
+    const gimbal_stepper_axis_status_struct *yaw =
+        &status->axis[GIMBAL_STEPPER_AXIS_YAW];
+    const gimbal_stepper_axis_status_struct *pitch =
+        &status->axis[GIMBAL_STEPPER_AXIS_PITCH];
+
+    return (uint8)(
+        (test_stepper_step_error_magnitude(
+            yaw->position_steps,
+            yaw->target_position_steps) <= TEST_STEPPER_POSITION_TOLERANCE)
+        && (test_stepper_step_error_magnitude(
+            pitch->position_steps,
+            pitch->target_position_steps) <= TEST_STEPPER_POSITION_TOLERANCE)
+        && (yaw->current_rate_steps_s == 0)
+        && (pitch->current_rate_steps_s == 0));
+}
+
+static void test_stepper_print_status(
+    const gimbal_stepper_status_struct *status,
+    uint8 laser_enabled)
 {
     char buffer[TEST_STEPPER_TEXT_BUFFER_SIZE];
     const gimbal_stepper_axis_status_struct *yaw =
@@ -62,7 +100,7 @@ static void test_stepper_print_status(
         buffer,
         sizeof(buffer),
         "Axis=%s Yaw=%ld>%ld/%ldpps/Z%u "
-        "Pitch=%ld>%ld/%ldpps/Z%u Stop=%u\r\n",
+        "Pitch=%ld>%ld/%ldpps/Z%u Stop=%u Laser=%u\r\n",
         status->selected_axis == GIMBAL_STEPPER_AXIS_YAW
             ? "YAW" : "PITCH",
         (long)yaw->position_steps,
@@ -73,7 +111,8 @@ static void test_stepper_print_status(
         (long)pitch->target_position_steps,
         (long)pitch->current_rate_steps_s,
         (unsigned int)pitch->zero_valid,
-        (unsigned int)status->stop_latched);
+        (unsigned int)status->stop_latched,
+        (unsigned int)laser_enabled);
     test_stepper_uart_write(buffer);
 }
 
@@ -108,16 +147,19 @@ void test_stepper_run(void)
     gimbal_feedforward_pose_struct pose;
     gimbal_feedforward_solution_struct solution;
     uint16 status_elapsed_ms = 0U;
-    uint8 feedforward_sent = 0U;
+    uint16 arrival_hold_ms = 0U;
+    uint8 feedforward_started = 0U;
+    uint8 laser_enabled = 0U;
 
     pose.x_mm = 0.0F;
     pose.y_mm = 0.0F;
     pose.z_mm = 0.0F;
     pose.roll_deg = 0.0F;
     pose.pitch_deg = 0.0F;
-    pose.heading_rad = 0.0F;
+    pose.heading_rad = DRIVE_PI;
     pose.valid = 1U;
 
+    gimbal_stepper_laser_init();
     uart_init(
         TEST_STEPPER_UART_INDEX,
         TEST_STEPPER_UART_BAUDRATE,
@@ -136,26 +178,90 @@ void test_stepper_run(void)
         "Pitch zero: midpoint, laser points horizontally forward.\r\n");
     test_stepper_uart_write(
         "B0/B1: negative/positive jog; A31: immediate stop.\r\n");
+    test_stepper_uart_write(
+        "After zeroing, feedforward moves automatically; laser turns on "
+        "after 200 ms settled.\r\n");
 
     while(1)
     {
         uint16 elapsed_ms = gimbal_stepper_service();
+        uint8 manual_active;
 
         gimbal_stepper_get_status(&status);
-        if((feedforward_sent == 0U)
+        manual_active = (uint8)(
+            (status.negative_key_pressed != 0U)
+            || (status.positive_key_pressed != 0U)
+            || (status.select_key_pressed != 0U));
+
+        if((status.stop_latched != 0U)
+            || (status.axis[GIMBAL_STEPPER_AXIS_YAW].zero_valid == 0U)
+            || (status.axis[GIMBAL_STEPPER_AXIS_PITCH].zero_valid == 0U)
+            || (manual_active != 0U))
+        {
+            arrival_hold_ms = 0U;
+            feedforward_started = 0U;
+            if(laser_enabled != 0U)
+            {
+                gimbal_stepper_set_laser(0U);
+                laser_enabled = 0U;
+                test_stepper_uart_write("Laser off.\r\n");
+            }
+        }
+
+        if((feedforward_started == 0U)
             && (status.relative_ready != 0U)
+            && (manual_active == 0U)
             && (gimbal_stepper_compute_feedforward(
                 &pose,
                 &solution) != 0U))
         {
-            feedforward_sent = 1U;
             test_stepper_print_feedforward(&solution);
+            if(gimbal_stepper_update_feedforward(&pose) != 0U)
+            {
+                feedforward_started = 1U;
+                arrival_hold_ms = 0U;
+                gimbal_stepper_set_laser(0U);
+                laser_enabled = 0U;
+                test_stepper_uart_write("Feedforward motion started.\r\n");
+            }
+        }
+
+        if((feedforward_started != 0U)
+            && (status.stop_latched == 0U)
+            && (manual_active == 0U)
+            && (test_stepper_axes_arrived(&status) != 0U))
+        {
+            if(arrival_hold_ms
+                < TEST_STEPPER_ARRIVAL_HOLD_MS)
+            {
+                arrival_hold_ms += elapsed_ms;
+            }
+            if((arrival_hold_ms >= TEST_STEPPER_ARRIVAL_HOLD_MS)
+                && (laser_enabled == 0U))
+            {
+                if(gimbal_stepper_set_laser(1U) != 0U)
+                {
+                    laser_enabled = 1U;
+                    test_stepper_uart_write(
+                        "Feedforward arrived; laser on.\r\n");
+                }
+            }
+        }
+        else
+        {
+            arrival_hold_ms = 0U;
+            if(laser_enabled != 0U)
+            {
+                gimbal_stepper_set_laser(0U);
+                laser_enabled = 0U;
+                test_stepper_uart_write("Laser off: target moving.\r\n");
+            }
         }
 
         status_elapsed_ms += elapsed_ms;
         if(status_elapsed_ms >= TEST_STEPPER_STATUS_PERIOD_MS)
         {
-            test_stepper_print_status(&status);
+            test_stepper_print_status(&status, laser_enabled);
             ml_stepper_debug_update(
                 status.selected_axis,
                 status.axis[GIMBAL_STEPPER_AXIS_YAW].position_steps,

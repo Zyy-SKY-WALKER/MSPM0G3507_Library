@@ -106,12 +106,12 @@ typedef struct
 typedef void (*gimbal_stepper_log_callback)(const char *message);
 
 /**
- * @brief Initialize the gimbal GPIOs, keys and 5 kHz pulse timer.
+ * @brief Initialize the gimbal GPIOs, keys and configured pulse timer.
  */
 void gimbal_stepper_init(void);
 
 /**
- * @brief Process elapsed milliseconds reported by the 5 kHz pulse timer.
+ * @brief Process elapsed milliseconds reported by the pulse timer.
  * @return Number of milliseconds processed by this service call.
  * @note Call repeatedly from the foreground application loop.
  */
@@ -202,7 +202,8 @@ void gimbal_stepper_laser_init(void);
 /**
  * @brief Set the laser output using the configured active level.
  * @param enabled Nonzero to request laser on.
+ * @return 1 when the requested state was accepted.
  */
-void gimbal_stepper_set_laser(uint8 enabled);
+uint8 gimbal_stepper_set_laser(uint8 enabled);
 
 #endif
