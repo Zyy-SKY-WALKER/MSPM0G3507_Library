@@ -1,6 +1,6 @@
 /**
  * @file    my_lib_encoder.h
- * @brief   Hybrid hardware/software x2 quadrature encoder driver.
+ * @brief   Hybrid hardware/software x1 quadrature encoder driver.
  */
 
 #ifndef MY_LIB_ENCODER_H
@@ -16,27 +16,26 @@
 /** @brief Left count polarity; use 1 or -1 to select positive rotation. */
 #define MY_ENCODER_LEFT_COUNT_SIGN         (1)
 
-/** @brief Right encoder phase-A interrupt input pin. */
+/** @brief Right encoder phase-A rising-edge interrupt input pin. */
 #define MY_ENCODER_RIGHT_PHASE_A_PIN       (B17)
-/** @brief Right encoder phase-B sampled input pin. */
+/** @brief Right encoder phase-B direction input pin. */
 #define MY_ENCODER_RIGHT_PHASE_B_PIN       (B18)
 /**
- * @brief Select equal or unequal phases as the positive direction.
- * @note Use 1U for equal phases or 0U for unequal phases.
+ * @brief Phase-B level that represents positive motion at phase-A rising.
  */
-#define MY_ENCODER_RIGHT_POSITIVE_AB_EQUAL (1U)
+#define MY_ENCODER_RIGHT_POSITIVE_B_LEVEL  (GPIO_HIGH)
 
 /**
- * @brief Initialize both encoders for x2 quadrature counting.
+ * @brief Initialize both encoders for x1 quadrature counting.
  * @note Call once before using any other encoder API. Pending counts are reset.
  */
 void my_encoder_init(void);
 
 /**
- * @brief Read and consume both encoder counts accumulated since the last read.
- * @param left_count Destination for the signed left x2 interval count.
- * @param right_count Destination for the signed right x2 interval count.
- * @note One x2 count represents one of two counted edges per quadrature cycle.
+ * @brief Read and consume both x1 counts accumulated since the last read.
+ * @param left_count Destination for the signed left x1 interval count.
+ * @param right_count Destination for the signed right x1 interval count.
+ * @note One x1 count represents one complete phase-A cycle.
  *       Positive direction is selected by the polarity macros above. Results
  *       are clamped to -32768 through 32767.
  * @note This is a destructive read: the left sampling baseline advances and
@@ -72,12 +71,12 @@ uint8 my_encoder_get_right_phase_a(void);
 uint8 my_encoder_get_right_phase_b(void);
 
 /**
- * @brief Discard pending left counts and the x4-to-x2 scaling remainder.
+ * @brief Discard pending left counts and the x4-to-x1 scaling remainder.
  * @pre my_encoder_init() has completed.
  */
 void my_encoder_clear_left_count(void);
 /**
- * @brief Discard all pending right x2 counts.
+ * @brief Discard all pending right x1 counts.
  * @pre my_encoder_init() has completed.
  */
 void my_encoder_clear_right_count(void);

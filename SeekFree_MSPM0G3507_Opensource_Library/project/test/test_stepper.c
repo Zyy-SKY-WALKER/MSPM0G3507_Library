@@ -11,7 +11,6 @@
 
 #include <stdio.h>
 
-#include "drive_geometry.h"
 #include "gimbal_stepper.h"
 #include "ml_stepper_debug.h"
 #include "zf_driver_delay.h"
@@ -87,8 +86,7 @@ static uint8 test_stepper_axes_arrived(
 }
 
 static void test_stepper_print_status(
-    const gimbal_stepper_status_struct *status,
-    uint8 laser_enabled)
+    const gimbal_stepper_status_struct *status)
 {
     char buffer[TEST_STEPPER_TEXT_BUFFER_SIZE];
     const gimbal_stepper_axis_status_struct *yaw =
@@ -112,7 +110,7 @@ static void test_stepper_print_status(
         (long)pitch->current_rate_steps_s,
         (unsigned int)pitch->zero_valid,
         (unsigned int)status->stop_latched,
-        (unsigned int)laser_enabled);
+        (unsigned int)status->laser_enabled);
     test_stepper_uart_write(buffer);
 }
 
@@ -149,14 +147,13 @@ void test_stepper_run(void)
     uint16 status_elapsed_ms = 0U;
     uint16 arrival_hold_ms = 0U;
     uint8 feedforward_started = 0U;
-    uint8 laser_enabled = 0U;
 
     pose.x_mm = 0.0F;
     pose.y_mm = 0.0F;
     pose.z_mm = 0.0F;
     pose.roll_deg = 0.0F;
     pose.pitch_deg = 0.0F;
-    pose.heading_rad = DRIVE_PI;
+    pose.heading_rad = 0.0F;
     pose.valid = 1U;
 
     gimbal_stepper_laser_init();
@@ -200,12 +197,6 @@ void test_stepper_run(void)
         {
             arrival_hold_ms = 0U;
             feedforward_started = 0U;
-            if(laser_enabled != 0U)
-            {
-                gimbal_stepper_set_laser(0U);
-                laser_enabled = 0U;
-                test_stepper_uart_write("Laser off.\r\n");
-            }
         }
 
         if((feedforward_started == 0U)
@@ -220,8 +211,7 @@ void test_stepper_run(void)
             {
                 feedforward_started = 1U;
                 arrival_hold_ms = 0U;
-                gimbal_stepper_set_laser(0U);
-                laser_enabled = 0U;
+                (void)gimbal_stepper_set_laser(0U);
                 test_stepper_uart_write("Feedforward motion started.\r\n");
             }
         }
@@ -237,11 +227,10 @@ void test_stepper_run(void)
                 arrival_hold_ms += elapsed_ms;
             }
             if((arrival_hold_ms >= TEST_STEPPER_ARRIVAL_HOLD_MS)
-                && (laser_enabled == 0U))
+                && (status.laser_enabled == 0U))
             {
                 if(gimbal_stepper_set_laser(1U) != 0U)
                 {
-                    laser_enabled = 1U;
                     test_stepper_uart_write(
                         "Feedforward arrived; laser on.\r\n");
                 }
@@ -250,10 +239,9 @@ void test_stepper_run(void)
         else
         {
             arrival_hold_ms = 0U;
-            if(laser_enabled != 0U)
+            if(status.laser_enabled != 0U)
             {
-                gimbal_stepper_set_laser(0U);
-                laser_enabled = 0U;
+                (void)gimbal_stepper_set_laser(0U);
                 test_stepper_uart_write("Laser off: target moving.\r\n");
             }
         }
@@ -261,7 +249,7 @@ void test_stepper_run(void)
         status_elapsed_ms += elapsed_ms;
         if(status_elapsed_ms >= TEST_STEPPER_STATUS_PERIOD_MS)
         {
-            test_stepper_print_status(&status, laser_enabled);
+            test_stepper_print_status(&status);
             ml_stepper_debug_update(
                 status.selected_axis,
                 status.axis[GIMBAL_STEPPER_AXIS_YAW].position_steps,

@@ -19,16 +19,21 @@
 #define IMU_UART_DMA_BUFFER_MASK        (IMU_UART_DMA_BUFFER_SIZE - 1U)
 
 #define IMU_UART_FRAME_HEADER           (0x55U)
+#define IMU_UART_FRAME_GYRO             (0x52U)
 #define IMU_UART_FRAME_ANGLE            (0x53U)
 
 #define IMU_UART_ANGLE_SCALE            (180.0F / 32768.0F)
+#define IMU_UART_GYRO_SCALE             (2000.0F / 32768.0F)
 
 typedef struct
 {
     int16 angle[3];
+    int16 gyro[3];
     uint32 angle_frame_count;
+    uint32 gyro_frame_count;
     uint32 checksum_error_count;
     uint8 angle_valid;
+    uint8 gyro_valid;
 } imu_uart_raw_data_struct;
 
 static volatile imu_uart_raw_data_struct imu_uart_raw_data;
@@ -72,13 +77,38 @@ static uint8 imu_uart_checksum_is_valid(const uint8 frame[])
  * @brief Save one validated raw angle frame.
  * @param frame Complete validated 0x53 frame.
  */
-static void imu_uart_save_angle_frame(const uint8 frame[])
+static void imu_uart_save_frame(const uint8 frame[])
 {
-    imu_uart_raw_data.angle[0] = imu_uart_decode_int16(&frame[2]);
-    imu_uart_raw_data.angle[1] = imu_uart_decode_int16(&frame[4]);
-    imu_uart_raw_data.angle[2] = imu_uart_decode_int16(&frame[6]);
-    imu_uart_raw_data.angle_frame_count++;
-    imu_uart_raw_data.angle_valid = 1U;
+    volatile int16 *destination;
+    uint8 index;
+
+    if (frame[1] == IMU_UART_FRAME_ANGLE)
+    {
+        destination = imu_uart_raw_data.angle;
+        imu_uart_raw_data.angle_frame_count++;
+        imu_uart_raw_data.angle_valid = 1U;
+    }
+    else
+    {
+        destination = imu_uart_raw_data.gyro;
+        imu_uart_raw_data.gyro_frame_count++;
+        imu_uart_raw_data.gyro_valid = 1U;
+    }
+
+    for (index = 0U; index < 3U; index++)
+    {
+        destination[index] = imu_uart_decode_int16(
+            &frame[2U + ((uint8)index * 2U)]);
+    }
+}
+
+/**
+ * @brief Return whether one frame type is consumed by this driver.
+ */
+static uint8 imu_uart_frame_type_is_supported(uint8 frame_type)
+{
+    return (uint8)((frame_type == IMU_UART_FRAME_GYRO)
+        || (frame_type == IMU_UART_FRAME_ANGLE));
 }
 
 /**
@@ -95,8 +125,8 @@ static void imu_uart_resynchronize(void)
         header_index++)
     {
         if ((imu_uart_frame[header_index] == IMU_UART_FRAME_HEADER)
-            && (imu_uart_frame[header_index + 1U]
-                == IMU_UART_FRAME_ANGLE))
+            && (imu_uart_frame_type_is_supported(
+                imu_uart_frame[header_index + 1U]) != 0U))
         {
             break;
         }
@@ -143,7 +173,7 @@ static void imu_uart_process_byte(uint8 byte)
 
     if (imu_uart_frame_index == 1U)
     {
-        if (byte == IMU_UART_FRAME_ANGLE)
+        if (imu_uart_frame_type_is_supported(byte) != 0U)
         {
             imu_uart_frame[1] = byte;
             imu_uart_frame_index = 2U;
@@ -166,7 +196,7 @@ static void imu_uart_process_byte(uint8 byte)
     if (imu_uart_checksum_is_valid(imu_uart_frame) != 0U)
     {
         imu_uart_frame_index = 0U;
-        imu_uart_save_angle_frame(imu_uart_frame);
+        imu_uart_save_frame(imu_uart_frame);
     }
     else
     {
@@ -267,9 +297,14 @@ void imu_uart_init(void)
     imu_uart_raw_data.angle[0] = 0;
     imu_uart_raw_data.angle[1] = 0;
     imu_uart_raw_data.angle[2] = 0;
+    imu_uart_raw_data.gyro[0] = 0;
+    imu_uart_raw_data.gyro[1] = 0;
+    imu_uart_raw_data.gyro[2] = 0;
     imu_uart_raw_data.angle_frame_count = 0U;
+    imu_uart_raw_data.gyro_frame_count = 0U;
     imu_uart_raw_data.checksum_error_count = 0U;
     imu_uart_raw_data.angle_valid = 0U;
+    imu_uart_raw_data.gyro_valid = 0U;
 
     interrupt_global_enable(primask);
     imu_uart_angle_init();
@@ -338,10 +373,14 @@ uint8 imu_uart_get_data(imu_uart_data_struct *data)
     {
         data->angle_deg[index] =
             (float)raw_data.angle[index] * IMU_UART_ANGLE_SCALE;
+        data->gyro_deg_s[index] =
+            (float)raw_data.gyro[index] * IMU_UART_GYRO_SCALE;
     }
     data->angle_frame_count = raw_data.angle_frame_count;
+    data->gyro_frame_count = raw_data.gyro_frame_count;
     data->checksum_error_count = raw_data.checksum_error_count;
     data->angle_valid = raw_data.angle_valid;
+    data->gyro_valid = raw_data.gyro_valid;
 
     return raw_data.angle_valid != 0U ? ZF_TRUE : ZF_FALSE;
 }

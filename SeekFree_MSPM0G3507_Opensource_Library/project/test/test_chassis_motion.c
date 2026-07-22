@@ -737,6 +737,7 @@ void test_chassis_motion_run(void)
     control_scheduler_status_struct status;
     uint32 last_display_tick = 0U;
 
+    gimbal_stepper_laser_init();
     ili9341_init();
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);

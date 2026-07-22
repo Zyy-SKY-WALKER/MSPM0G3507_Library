@@ -6,6 +6,7 @@
 #include "control_scheduler.h"
 
 #include <float.h>
+#include <math.h>
 
 #include "drive_geometry.h"
 #include "imu_uart.h"
@@ -17,11 +18,20 @@
 
 #define CONTROL_SCHEDULER_PIT               (PIT_TIM_G12)
 #define CONTROL_EMERGENCY_KEY_PIN            (A31)
-#define CONTROL_ENCODER_COUNT_LIMIT          (5000)
-#define CONTROL_STOPPED_COUNT_LIMIT          (3)
+#define CONTROL_ENCODER_COUNT_LIMIT          (2500)
+#define CONTROL_STOPPED_COUNT_LIMIT          (1)
 #define CONTROL_IMU_FRESH_LIMIT_TICKS        (50U)
 #define CONTROL_SCHEDULER_IRQ_PRIORITY       (1U)
-#define CONTROL_ENCODER_IRQ_PRIORITY         (0U)
+#define CONTROL_ENCODER_IRQ_PRIORITY         (2U)
+#define CONTROL_GIMBAL_FEEDFORWARD_DIVIDER   (2U)
+#define CONTROL_GIMBAL_MAX_SEQUENCE_LAG      (1U)
+#define CONTROL_IMU_WARMUP_TICKS             (200U)
+#define CONTROL_IMU_STABLE_TICKS             (200U)
+#define CONTROL_IMU_MIN_STABLE_SAMPLES       (25U)
+#define CONTROL_IMU_GYRO_FRESH_LIMIT_TICKS   (10U)
+#define CONTROL_IMU_STABLE_GYRO_LIMIT_DEG_S  (1.0F)
+#define CONTROL_IMU_STABLE_ANGLE_STEP_DEG    (0.30F)
+#define CONTROL_IMU_ATTITUDE_FILTER_ALPHA    (0.15F)
 #define CONTROL_MANUAL_TIMEOUT_TICKS         \
     (CONTROL_SCHEDULER_MANUAL_TIMEOUT_MS \
         / CONTROL_SCHEDULER_PERIOD_MS)
@@ -75,15 +85,375 @@ static volatile control_request_mailbox_struct control_mailbox;
 static volatile uint8 control_initialized;
 static volatile uint8 control_started;
 static volatile uint8 control_update_busy;
-static volatile uint8 control_yaw_reset_pending;
-static volatile uint8 control_yaw_reset_sent;
-static volatile uint8 control_imu_rebase_pending;
-static volatile uint32 control_imu_rebase_frame_count;
 
 static uint32 control_last_imu_frame_count;
+static uint32 control_last_imu_gyro_frame_count;
 static uint16 control_manual_target_age_ticks;
 static uint8 control_manual_target_active;
 static uint8 control_key4_long_handled;
+static uint8 control_gimbal_calibration_complete;
+static uint8 control_gimbal_feedforward_divider;
+static volatile gimbal_feedforward_pose_struct control_gimbal_pose_mailbox;
+static volatile uint32 control_gimbal_pose_sequence;
+static volatile uint8 control_gimbal_pose_valid;
+static uint32 control_gimbal_pose_consumed_sequence;
+static volatile gimbal_feedforward_solution_struct
+    control_gimbal_last_solution;
+static uint16 control_imu_warmup_ticks;
+static uint16 control_imu_stable_ticks;
+static uint16 control_imu_stable_samples;
+static uint8 control_imu_unwrap_valid;
+static uint8 control_imu_previous_sample_valid;
+static float control_imu_last_raw_yaw_deg;
+static float control_imu_unwrapped_yaw_deg;
+static float control_imu_previous_roll_deg;
+static float control_imu_previous_pitch_deg;
+static float control_imu_previous_yaw_deg;
+static float control_imu_sum_roll_deg;
+static float control_imu_sum_pitch_deg;
+static float control_imu_sum_time;
+static float control_imu_sum_time_squared;
+static float control_imu_sum_yaw_deg;
+static float control_imu_sum_time_yaw;
+static float control_imu_reference_roll_deg;
+static float control_imu_reference_pitch_deg;
+static float control_imu_reference_yaw_deg;
+static float control_imu_yaw_drift_deg_per_tick;
+static float control_imu_filtered_roll_deg;
+static float control_imu_filtered_pitch_deg;
+static uint32 control_imu_reference_tick;
+
+static uint16 control_count_magnitude(int16 count);
+
+/**
+ * @brief Wrap one degree angle to the interval [-180, 180].
+ */
+static float control_wrap_angle_deg(float angle_deg)
+{
+    while (angle_deg > 180.0F)
+    {
+        angle_deg -= 360.0F;
+    }
+    while (angle_deg < -180.0F)
+    {
+        angle_deg += 360.0F;
+    }
+    return angle_deg;
+}
+
+/**
+ * @brief Clear one interrupted stationary-sample window.
+ */
+static void control_imu_clear_stability_window(void)
+{
+    control_imu_warmup_ticks = 0U;
+    control_imu_stable_ticks = 0U;
+    control_imu_stable_samples = 0U;
+    control_imu_previous_sample_valid = 0U;
+    control_imu_sum_roll_deg = 0.0F;
+    control_imu_sum_pitch_deg = 0.0F;
+    control_imu_sum_time = 0.0F;
+    control_imu_sum_time_squared = 0.0F;
+    control_imu_sum_yaw_deg = 0.0F;
+    control_imu_sum_time_yaw = 0.0F;
+}
+
+/**
+ * @brief Restart automatic startup attitude referencing.
+ */
+static void control_imu_begin_stability(void)
+{
+    control_imu_clear_stability_window();
+    control_imu_unwrap_valid = 0U;
+    control_imu_reference_roll_deg = 0.0F;
+    control_imu_reference_pitch_deg = 0.0F;
+    control_imu_reference_yaw_deg = 0.0F;
+    control_imu_yaw_drift_deg_per_tick = 0.0F;
+    control_imu_filtered_roll_deg = 0.0F;
+    control_imu_filtered_pitch_deg = 0.0F;
+    control_imu_reference_tick = control_status.tick_count;
+    control_status.imu_ready = 0U;
+    control_status.imu_stability_progress = 0U;
+    control_status.imu_stability_state =
+        CONTROL_IMU_STABILITY_WAIT_STREAM;
+    control_status.imu_yaw_drift_deg_min = 0.0F;
+}
+
+/**
+ * @brief Install the completed startup reference and measured yaw drift.
+ */
+static void control_imu_finish_stability(void)
+{
+    float sample_count = (float)control_imu_stable_samples;
+    float denominator = (sample_count
+            * control_imu_sum_time_squared)
+        - (control_imu_sum_time * control_imu_sum_time);
+
+    control_imu_reference_roll_deg =
+        control_imu_sum_roll_deg / sample_count;
+    control_imu_reference_pitch_deg =
+        control_imu_sum_pitch_deg / sample_count;
+    control_imu_reference_yaw_deg = control_imu_unwrapped_yaw_deg;
+    control_imu_yaw_drift_deg_per_tick = 0.0F;
+    if (fabsf(denominator) > 0.001F)
+    {
+        control_imu_yaw_drift_deg_per_tick =
+            ((sample_count * control_imu_sum_time_yaw)
+                - (control_imu_sum_time
+                    * control_imu_sum_yaw_deg))
+            / denominator;
+    }
+    control_imu_reference_tick = control_status.tick_count;
+    control_imu_filtered_roll_deg = 0.0F;
+    control_imu_filtered_pitch_deg = 0.0F;
+    control_status.imu_yaw_drift_deg_min =
+        control_imu_yaw_drift_deg_per_tick * 6000.0F;
+    control_status.imu_ready = 1U;
+    control_status.imu_stability_progress = 100U;
+    control_status.imu_stability_state = CONTROL_IMU_STABILITY_READY;
+    my_encoder_clear_count();
+    odometry_reset_pose(0.0F, 0.0F, 0.0F);
+}
+
+/**
+ * @brief Update startup stability and publish corrected body attitude.
+ */
+static void control_update_imu_stability(
+    const imu_uart_data_struct *imu_data,
+    int16 left_count,
+    int16 right_count,
+    uint8 new_angle_frame)
+{
+    float raw_roll_deg = -imu_data->angle_deg[1];
+    float raw_pitch_deg = -imu_data->angle_deg[0];
+    float raw_yaw_deg = -imu_data->angle_deg[2];
+    float gyro_roll_deg_s = -imu_data->gyro_deg_s[1];
+    float gyro_pitch_deg_s = -imu_data->gyro_deg_s[0];
+    float gyro_yaw_deg_s = -imu_data->gyro_deg_s[2];
+    uint8 wheels_stopped = (uint8)(
+        (control_count_magnitude(left_count)
+            <= CONTROL_STOPPED_COUNT_LIMIT)
+        && (control_count_magnitude(right_count)
+            <= CONTROL_STOPPED_COUNT_LIMIT));
+    uint8 sample_stable = wheels_stopped;
+
+    if ((imu_data->gyro_valid != 0U)
+        && (imu_data->gyro_frame_count
+            != control_last_imu_gyro_frame_count))
+    {
+        control_last_imu_gyro_frame_count = imu_data->gyro_frame_count;
+        control_status.imu_gyro_age_ticks = 0U;
+    }
+    else if (control_status.imu_gyro_age_ticks < 0xFFFFU)
+    {
+        control_status.imu_gyro_age_ticks++;
+    }
+    control_status.imu_gyro_frame_count = imu_data->gyro_frame_count;
+    control_status.imu_gyro_available = (uint8)(
+        (imu_data->gyro_valid != 0U)
+        && (control_status.imu_gyro_age_ticks
+            <= CONTROL_IMU_GYRO_FRESH_LIMIT_TICKS));
+    control_status.imu_gyro_z_deg_s = gyro_yaw_deg_s;
+
+    if (new_angle_frame != 0U)
+    {
+        if (control_imu_unwrap_valid == 0U)
+        {
+            control_imu_last_raw_yaw_deg = raw_yaw_deg;
+            control_imu_unwrapped_yaw_deg = raw_yaw_deg;
+            control_imu_unwrap_valid = 1U;
+        }
+        else
+        {
+            control_imu_unwrapped_yaw_deg += control_wrap_angle_deg(
+                raw_yaw_deg - control_imu_last_raw_yaw_deg);
+            control_imu_last_raw_yaw_deg = raw_yaw_deg;
+        }
+
+        if (control_imu_previous_sample_valid != 0U)
+        {
+            if ((fabsf(control_wrap_angle_deg(
+                        raw_roll_deg - control_imu_previous_roll_deg))
+                    > CONTROL_IMU_STABLE_ANGLE_STEP_DEG)
+                || (fabsf(control_wrap_angle_deg(
+                        raw_pitch_deg - control_imu_previous_pitch_deg))
+                    > CONTROL_IMU_STABLE_ANGLE_STEP_DEG)
+                || (fabsf(control_wrap_angle_deg(
+                        raw_yaw_deg - control_imu_previous_yaw_deg))
+                    > CONTROL_IMU_STABLE_ANGLE_STEP_DEG))
+            {
+                sample_stable = 0U;
+            }
+        }
+        control_imu_previous_roll_deg = raw_roll_deg;
+        control_imu_previous_pitch_deg = raw_pitch_deg;
+        control_imu_previous_yaw_deg = raw_yaw_deg;
+        control_imu_previous_sample_valid = 1U;
+    }
+
+    if ((control_status.imu_gyro_available != 0U)
+        && ((fabsf(gyro_roll_deg_s)
+                > CONTROL_IMU_STABLE_GYRO_LIMIT_DEG_S)
+            || (fabsf(gyro_pitch_deg_s)
+                > CONTROL_IMU_STABLE_GYRO_LIMIT_DEG_S)
+            || (fabsf(gyro_yaw_deg_s)
+                > CONTROL_IMU_STABLE_GYRO_LIMIT_DEG_S)))
+    {
+        sample_stable = 0U;
+    }
+
+    if (control_status.imu_ready != 0U)
+    {
+        float corrected_roll_deg = control_wrap_angle_deg(
+            raw_roll_deg - control_imu_reference_roll_deg);
+        float corrected_pitch_deg = control_wrap_angle_deg(
+            raw_pitch_deg - control_imu_reference_pitch_deg);
+        float corrected_yaw_deg = control_imu_unwrapped_yaw_deg
+            - control_imu_reference_yaw_deg
+            - (control_imu_yaw_drift_deg_per_tick
+                * (float)(control_status.tick_count
+                    - control_imu_reference_tick));
+
+        if ((control_status.mode != CONTROL_MODE_LINE_FOLLOW)
+            && (control_status.mode != CONTROL_MODE_CHASSIS_MOTION)
+            && (sample_stable == 0U))
+        {
+            control_imu_begin_stability();
+            return;
+        }
+        if (new_angle_frame != 0U)
+        {
+            control_imu_filtered_roll_deg +=
+                CONTROL_IMU_ATTITUDE_FILTER_ALPHA
+                * (corrected_roll_deg - control_imu_filtered_roll_deg);
+            control_imu_filtered_pitch_deg +=
+                CONTROL_IMU_ATTITUDE_FILTER_ALPHA
+                * (corrected_pitch_deg - control_imu_filtered_pitch_deg);
+        }
+        control_status.imu_roll_deg = control_imu_filtered_roll_deg;
+        control_status.imu_pitch_deg = control_imu_filtered_pitch_deg;
+        control_status.imu_yaw_deg = control_wrap_angle_deg(
+            corrected_yaw_deg);
+        return;
+    }
+
+    control_status.imu_roll_deg = raw_roll_deg;
+    control_status.imu_pitch_deg = raw_pitch_deg;
+    control_status.imu_yaw_deg = raw_yaw_deg;
+    if ((control_gimbal_calibration_complete == 0U)
+        || (control_status.imu_fresh == 0U))
+    {
+        control_status.imu_stability_state =
+            CONTROL_IMU_STABILITY_WAIT_STREAM;
+        control_status.imu_stability_progress = 0U;
+        control_imu_clear_stability_window();
+        return;
+    }
+    if (sample_stable == 0U)
+    {
+        control_status.imu_stability_state =
+            CONTROL_IMU_STABILITY_WARMUP;
+        control_status.imu_stability_progress = 0U;
+        control_imu_clear_stability_window();
+        return;
+    }
+
+    if (control_status.imu_stability_state
+        == CONTROL_IMU_STABILITY_WAIT_STREAM)
+    {
+        control_status.imu_stability_state =
+            CONTROL_IMU_STABILITY_WARMUP;
+    }
+    if (control_status.imu_stability_state
+        == CONTROL_IMU_STABILITY_WARMUP)
+    {
+        if (control_imu_warmup_ticks < CONTROL_IMU_WARMUP_TICKS)
+        {
+            control_imu_warmup_ticks++;
+        }
+        control_status.imu_stability_progress = (uint8)(
+            ((uint32)control_imu_warmup_ticks * 50U)
+            / CONTROL_IMU_WARMUP_TICKS);
+        if (control_imu_warmup_ticks >= CONTROL_IMU_WARMUP_TICKS)
+        {
+            control_status.imu_stability_state =
+                CONTROL_IMU_STABILITY_COLLECTING;
+            control_imu_stable_ticks = 0U;
+            control_imu_stable_samples = 0U;
+        }
+        return;
+    }
+
+    if (control_imu_stable_ticks < CONTROL_IMU_STABLE_TICKS)
+    {
+        control_imu_stable_ticks++;
+    }
+    control_status.imu_stability_progress = (uint8)(50U
+        + (((uint32)control_imu_stable_ticks * 50U)
+            / CONTROL_IMU_STABLE_TICKS));
+    if ((new_angle_frame != 0U)
+        && (control_imu_stable_samples < 0xFFFFU))
+    {
+        float time = (float)control_imu_stable_ticks;
+
+        control_imu_stable_samples++;
+        control_imu_sum_roll_deg += raw_roll_deg;
+        control_imu_sum_pitch_deg += raw_pitch_deg;
+        control_imu_sum_time += time;
+        control_imu_sum_time_squared += time * time;
+        control_imu_sum_yaw_deg += control_imu_unwrapped_yaw_deg;
+        control_imu_sum_time_yaw +=
+            time * control_imu_unwrapped_yaw_deg;
+    }
+    if ((control_imu_stable_ticks >= CONTROL_IMU_STABLE_TICKS)
+        && (control_imu_stable_samples
+            >= CONTROL_IMU_MIN_STABLE_SAMPLES))
+    {
+        control_imu_finish_stability();
+        control_status.imu_roll_deg = 0.0F;
+        control_status.imu_pitch_deg = 0.0F;
+        control_status.imu_yaw_deg = 0.0F;
+    }
+}
+
+/**
+ * @brief Check that all shared non-emergency keys are physically released.
+ */
+static uint8 control_gimbal_keys_released(void)
+{
+    return (uint8)(
+        (gpio_get_level(A30) == GPIO_HIGH)
+        && (gpio_get_level(B0) == GPIO_HIGH)
+        && (gpio_get_level(B1) == GPIO_HIGH));
+}
+
+/**
+ * @brief Transfer shared-key ownership after both gimbal zeros are valid.
+ */
+static void control_update_gimbal_calibration(
+    const gimbal_stepper_status_struct *gimbal_status)
+{
+    if ((control_gimbal_calibration_complete != 0U)
+        || (gimbal_status == NULL))
+    {
+        return;
+    }
+
+    if ((gimbal_status->relative_ready != 0U)
+        && (control_gimbal_keys_released() != 0U))
+    {
+        gimbal_stepper_set_manual_control_enabled(0U);
+        key_clear_all_state();
+        my_encoder_clear_count();
+        odometry_reset_pose(0.0F, 0.0F, 0.0F);
+        line_tracker_reset();
+        speed_pid_reset();
+        control_gimbal_pose_valid = 0U;
+        control_gimbal_feedforward_divider = 0U;
+        control_gimbal_calibration_complete = 1U;
+        control_imu_begin_stability();
+    }
+}
 
 /**
  * @brief Clear the stored manual command and its timeout state.
@@ -178,6 +548,7 @@ static void control_latch_fault(uint32 fault_flags)
     control_clear_manual_target();
     chassis_motion_reset();
     speed_pid_stop();
+    (void)gimbal_stepper_set_laser(0U);
 }
 
 /**
@@ -190,6 +561,7 @@ static void control_enter_disarmed(void)
     chassis_motion_reset();
     line_tracker_reset();
     speed_pid_stop();
+    (void)gimbal_stepper_set_laser(0U);
 }
 
 /**
@@ -220,11 +592,7 @@ static void control_try_clear_fault(uint8 emergency_active)
     control_status.fault_flags = CONTROL_FAULT_NONE;
     my_encoder_clear_count();
     odometry_reset();
-    control_yaw_reset_pending = 1U;
-    control_yaw_reset_sent = 0U;
-    control_imu_rebase_pending = 1U;
-    control_imu_rebase_frame_count =
-        control_status.imu_angle_frame_count;
+    control_imu_begin_stability();
     control_enter_disarmed();
 }
 
@@ -339,7 +707,9 @@ static void control_apply_requests(
 
     if ((requests->flags & CONTROL_REQUEST_ARM) != 0U)
     {
-        if (control_status.mode == CONTROL_MODE_DISARMED)
+        if ((control_status.mode == CONTROL_MODE_DISARMED)
+            && (control_status.imu_ready != 0U)
+            && (control_status.imu_fresh != 0U))
         {
             control_status.mode = CONTROL_MODE_MANUAL_ARMED;
             speed_pid_reset();
@@ -360,7 +730,10 @@ static void control_apply_requests(
     if ((requests->flags & CONTROL_REQUEST_LINE_START) != 0U)
     {
         if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
-            && (control_status.gray.status == GRAY_SENSOR_STATUS_VALID))
+            && (control_status.gray.status == GRAY_SENSOR_STATUS_VALID)
+            && (control_status.imu_ready != 0U)
+            && (control_status.imu_fresh != 0U)
+            && (control_wheels_are_stopped() != 0U))
         {
             control_clear_manual_target();
             line_tracker_reset();
@@ -402,7 +775,8 @@ static void control_apply_requests(
     {
         if ((requests->flags & CONTROL_REQUEST_CHASSIS_COMMAND) != 0U)
         {
-            if (control_status.imu_fresh == 0U)
+            if ((control_status.imu_fresh == 0U)
+                || (control_status.imu_ready == 0U))
             {
                 control_latch_fault(CONTROL_FAULT_IMU_STALE);
             }
@@ -524,15 +898,24 @@ static void control_publish_status(void)
     chassis_motion_status_struct chassis_status;
     speed_pid_status_struct speed_status;
     odometry_state_struct odometry_status;
+    gimbal_stepper_status_struct gimbal_status;
+    gimbal_feedforward_solution_struct gimbal_solution;
 
     line_tracker_get_status(&line_status);
     chassis_motion_get_status(&chassis_status);
     speed_pid_get_status(&speed_status);
     odometry_get_state(&odometry_status);
+    gimbal_stepper_get_status(&gimbal_status);
+    gimbal_solution = control_gimbal_last_solution;
+    gimbal_solution.valid = control_status.gimbal_feedforward_valid;
     control_status.line_status = line_status;
     control_status.chassis_motion = chassis_status;
     control_status.speed = speed_status;
     control_status.odometry = odometry_status;
+    control_status.gimbal = gimbal_status;
+    control_status.gimbal_feedforward = gimbal_solution;
+    control_status.gimbal_calibrated =
+        control_gimbal_calibration_complete;
     control_status.initialized = control_initialized;
     control_status.started = control_started;
 }
@@ -569,6 +952,11 @@ uint8 control_scheduler_init(void)
     control_manual_target_age_ticks = 0U;
     control_manual_target_active = 0U;
     control_key4_long_handled = 0U;
+    control_gimbal_calibration_complete = 0U;
+    control_gimbal_pose_sequence = 0U;
+    control_gimbal_pose_valid = 0U;
+    control_gimbal_pose_consumed_sequence = 0U;
+    control_gimbal_feedforward_divider = 0U;
 
     control_status.mode = CONTROL_MODE_BOOT;
     control_status.fault_flags = CONTROL_FAULT_NONE;
@@ -577,6 +965,11 @@ uint8 control_scheduler_init(void)
     control_status.imu_age_ticks = 0U;
     control_status.imu_valid = 0U;
     control_status.imu_fresh = 0U;
+    control_status.imu_roll_deg = 0.0F;
+    control_status.imu_pitch_deg = 0.0F;
+    control_status.gimbal_feedforward_count = 0U;
+    control_status.gimbal_calibrated = 0U;
+    control_status.gimbal_feedforward_valid = 0U;
     control_mailbox.flags = 0U;
     control_mailbox.left_target_mm_s = 0.0F;
     control_mailbox.right_target_mm_s = 0.0F;
@@ -602,6 +995,8 @@ uint8 control_scheduler_init(void)
     odometry_init();
     line_tracker_init(NULL);
     key_init(CONTROL_SCHEDULER_PERIOD_MS);
+    gimbal_stepper_init();
+    gimbal_stepper_set_manual_control_enabled(1U);
     my_encoder_clear_count();
 
     control_initialized = 1U;
@@ -654,13 +1049,18 @@ void control_scheduler_update_10ms(void)
     uint32 yaw_frame_count = 0U;
     float yaw_deg = 0.0F;
     odometry_state_struct odometry;
+    imu_uart_data_struct imu_data;
+    gimbal_stepper_status_struct gimbal_status;
+    gimbal_feedforward_pose_struct gimbal_pose;
     int16 left_count;
     int16 right_count;
     uint8 emergency_active;
     uint8 encoder_valid;
+    uint8 imu_data_valid;
     uint8 yaw_valid;
     uint8 odometry_yaw_valid;
     uint8 gray_valid;
+    uint8 calibration_complete_at_tick_start;
 
     if ((control_initialized == 0U) || (control_started == 0U))
     {
@@ -676,23 +1076,55 @@ void control_scheduler_update_10ms(void)
     control_update_busy = 1U;
     control_status.tick_count++;
 
-    /* Phase 1: latch safety input and apply one request snapshot. */
+    /* Phase 1: latch safety input and collect one request snapshot. */
     emergency_active = (uint8)(
         gpio_get_level(CONTROL_EMERGENCY_KEY_PIN) == GPIO_LOW);
-    if (emergency_active != 0U)
+    if ((emergency_active != 0U)
+        && (control_gimbal_calibration_complete != 0U))
     {
         control_latch_fault(CONTROL_FAULT_EMERGENCY_KEY);
     }
 
-    key_scanner();
+    calibration_complete_at_tick_start =
+        control_gimbal_calibration_complete;
     requests = control_take_requests();
-    control_add_key_requests(&requests);
-    control_apply_requests(&requests, emergency_active);
+    gimbal_stepper_get_status(&gimbal_status);
+    control_update_gimbal_calibration(&gimbal_status);
+    if (control_gimbal_calibration_complete != 0U)
+    {
+        key_scanner();
+        if (calibration_complete_at_tick_start != 0U)
+        {
+            control_add_key_requests(&requests);
+        }
+        else
+        {
+            requests.flags = 0U;
+            requests.chassis_command = CONTROL_CHASSIS_REQUEST_NONE;
+            key_clear_all_state();
+        }
+    }
+    else
+    {
+        requests.flags = 0U;
+        requests.chassis_command = CONTROL_CHASSIS_REQUEST_NONE;
+        key_clear_all_state();
+    }
 
     /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
     imu_uart_update();
-    yaw_valid = imu_uart_get_yaw(&yaw_deg, &yaw_frame_count);
+    imu_data.angle_deg[0] = 0.0F;
+    imu_data.angle_deg[1] = 0.0F;
+    imu_data.angle_deg[2] = 0.0F;
+    imu_data.angle_frame_count = 0U;
+    imu_data_valid = imu_uart_get_data(&imu_data);
+    yaw_valid = imu_data_valid;
+    if (imu_data_valid != 0U)
+    {
+        yaw_deg = -imu_data.angle_deg[2];
+        yaw_frame_count = imu_data.angle_frame_count;
+    }
     gray = control_status.gray;
     gray_valid = gray_sensor_sample(&gray);
 
@@ -704,6 +1136,8 @@ void control_scheduler_update_10ms(void)
     }
 
     control_status.imu_yaw_deg = yaw_deg;
+    control_status.imu_roll_deg = -imu_data.angle_deg[1];
+    control_status.imu_pitch_deg = -imu_data.angle_deg[0];
     control_status.imu_angle_frame_count = yaw_frame_count;
     control_status.imu_valid = yaw_valid;
     if ((yaw_valid != 0U)
@@ -758,7 +1192,7 @@ void control_scheduler_update_10ms(void)
         control_latch_fault(CONTROL_FAULT_IMU_STALE);
     }
 
-    /* Phase 4: integrate pose, substituting zero for invalid encoders. */
+    /* Phase 4: integrate pose, then apply requests with current inputs. */
     if (encoder_valid != 0U)
     {
         odometry_update(
@@ -777,7 +1211,38 @@ void control_scheduler_update_10ms(void)
             yaw_deg,
             yaw_frame_count);
     }
+    control_apply_requests(&requests, emergency_active);
     odometry_get_state(&odometry);
+
+    if ((control_gimbal_calibration_complete != 0U)
+        && (control_status.imu_fresh != 0U)
+        && (control_imu_rebase_pending == 0U)
+        && (control_status.mode != CONTROL_MODE_FAULT_LATCHED))
+    {
+        control_gimbal_feedforward_divider++;
+        if (control_gimbal_feedforward_divider
+            >= CONTROL_GIMBAL_FEEDFORWARD_DIVIDER)
+        {
+            control_gimbal_feedforward_divider = 0U;
+            gimbal_pose.x_mm = odometry.x_mm;
+            gimbal_pose.y_mm = odometry.y_mm;
+            gimbal_pose.z_mm = 0.0F;
+            gimbal_pose.roll_deg = control_status.imu_roll_deg;
+            gimbal_pose.pitch_deg = control_status.imu_pitch_deg;
+            gimbal_pose.heading_rad = odometry.theta_rad;
+            gimbal_pose.valid = 1U;
+            control_gimbal_pose_mailbox = gimbal_pose;
+            control_gimbal_pose_sequence++;
+            control_gimbal_pose_valid = 1U;
+        }
+    }
+    else
+    {
+        control_gimbal_feedforward_divider = 0U;
+        control_gimbal_pose_valid = 0U;
+        control_status.gimbal_feedforward_valid = 0U;
+        (void)gimbal_stepper_set_laser(0U);
+    }
 
     /* Phase 5: update mode timeouts and select the owning target source. */
     control_update_manual_timeout();
@@ -814,11 +1279,18 @@ void control_scheduler_update_10ms(void)
  */
 void control_scheduler_process_foreground(void)
 {
+    gimbal_feedforward_pose_struct gimbal_pose;
+    gimbal_feedforward_solution_struct gimbal_solution;
     float yaw_deg;
+    uint32 gimbal_pose_sequence = 0U;
     uint32 yaw_frame_count = 0U;
     uint32 primask;
+    uint8 gimbal_pose_pending = 0U;
+    uint8 gimbal_update_accepted;
     uint8 reset_yaw;
     uint8 yaw_valid;
+
+    (void)gimbal_stepper_service();
 
     primask = interrupt_global_disable();
     reset_yaw = control_yaw_reset_pending;
@@ -839,6 +1311,59 @@ void control_scheduler_process_foreground(void)
         }
         interrupt_global_enable(primask);
     }
+
+    primask = interrupt_global_disable();
+    if ((control_gimbal_pose_valid != 0U)
+        && (control_gimbal_pose_sequence
+            != control_gimbal_pose_consumed_sequence))
+    {
+        gimbal_pose = control_gimbal_pose_mailbox;
+        gimbal_pose_sequence = control_gimbal_pose_sequence;
+        gimbal_pose_pending = 1U;
+    }
+    interrupt_global_enable(primask);
+
+    if (gimbal_pose_pending != 0U)
+    {
+        gimbal_update_accepted = gimbal_stepper_compute_feedforward(
+            &gimbal_pose,
+            &gimbal_solution);
+
+        interrupt_disable(TIMG12_INT_IRQn);
+        if ((gimbal_update_accepted != 0U)
+            && (control_gimbal_pose_valid != 0U)
+            && ((uint32)(control_gimbal_pose_sequence
+                - gimbal_pose_sequence)
+                <= CONTROL_GIMBAL_MAX_SEQUENCE_LAG)
+            && (control_gimbal_calibration_complete != 0U)
+            && (control_status.mode != CONTROL_MODE_FAULT_LATCHED))
+        {
+            gimbal_update_accepted =
+                gimbal_stepper_apply_feedforward_solution(
+                    &gimbal_solution);
+        }
+        else
+        {
+            gimbal_update_accepted = 0U;
+        }
+        control_gimbal_pose_consumed_sequence = gimbal_pose_sequence;
+        if (gimbal_update_accepted != 0U)
+        {
+            control_status.gimbal_feedforward_valid = 1U;
+            control_status.gimbal_feedforward_count++;
+        }
+        else
+        {
+            control_status.gimbal_feedforward_valid = 0U;
+        }
+        interrupt_enable(TIMG12_INT_IRQn);
+
+        if (gimbal_update_accepted == 0U)
+        {
+            (void)gimbal_stepper_set_laser(0U);
+        }
+    }
+
 }
 
 /**

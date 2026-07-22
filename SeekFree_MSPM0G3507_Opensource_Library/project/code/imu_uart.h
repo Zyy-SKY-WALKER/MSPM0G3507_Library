@@ -16,12 +16,18 @@ typedef struct
 {
     /** X, Y and Z Euler angles in degrees, nominally -180 through 180. */
     float angle_deg[3];
+    /** X, Y and Z angular rates in degrees per second. */
+    float gyro_deg_s[3];
     /** Number of valid angle frames received since initialization. */
     uint32 angle_frame_count;
+    /** Number of valid angular-rate frames received since initialization. */
+    uint32 gyro_frame_count;
     /** Number of candidate angle frames rejected by checksum. */
     uint32 checksum_error_count;
     /** Nonzero after at least one valid angle frame is received. */
     uint8 angle_valid;
+    /** Nonzero after at least one valid angular-rate frame is received. */
+    uint8 gyro_valid;
 } imu_uart_data_struct;
 
 /**

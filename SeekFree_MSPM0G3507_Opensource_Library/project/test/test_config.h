@@ -32,7 +32,7 @@
 #define TEST_MODE_ILI9341_NEON       (23)
 #define TEST_MODE_ILI9341_RADIAL     (24)
 
-#define TEST_MODE                    TEST_MODE_ILI9341_SNOW
+#define TEST_MODE                    TEST_MODE_CONTROL_SCHEDULER
 
 
 #endif

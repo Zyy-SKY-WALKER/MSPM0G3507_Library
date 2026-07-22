@@ -50,6 +50,8 @@ typedef struct
     uint8 negative_key_pressed;
     uint8 positive_key_pressed;
     uint8 select_key_pressed;
+    uint8 laser_enabled;
+    uint8 manual_control_enabled;
 } gimbal_stepper_status_struct;
 
 /** @brief Feedforward target selection. */
@@ -148,6 +150,12 @@ void gimbal_stepper_set_log_callback(
     gimbal_stepper_log_callback callback);
 
 /**
+ * @brief Enable or disable direct A30/B0/B1 gimbal calibration controls.
+ * @param enabled Nonzero while the gimbal owns the shared physical keys.
+ */
+void gimbal_stepper_set_manual_control_enabled(uint8 enabled);
+
+/**
  * @brief Select the target point used by the feedforward solver.
  * @param mode Center or circle target mode.
  */
@@ -176,6 +184,14 @@ uint8 gimbal_stepper_update_feedforward(
 uint8 gimbal_stepper_compute_feedforward(
     const gimbal_feedforward_pose_struct *pose,
     gimbal_feedforward_solution_struct *solution);
+
+/**
+ * @brief Apply one previously computed feedforward solution.
+ * @param solution Valid geometric inverse solution.
+ * @return 1 when the bounded motor targets were accepted.
+ */
+uint8 gimbal_stepper_apply_feedforward_solution(
+    const gimbal_feedforward_solution_struct *solution);
 
 /**
  * @brief Set absolute step targets after a valid manual zero.

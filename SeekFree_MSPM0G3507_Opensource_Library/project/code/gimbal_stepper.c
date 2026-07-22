@@ -27,7 +27,7 @@
 
 #define GIMBAL_PIT                              (PIT_TIM_G6)
 #define GIMBAL_PIT_IRQ                          (TIMG6_INT_IRQn)
-#define GIMBAL_PIT_IRQ_PRIORITY                 (1U)
+#define GIMBAL_PIT_IRQ_PRIORITY                 (0U)
 #define GIMBAL_TICK_US                          \
     (GIMBAL_CONFIG_PULSE_TICK_US)
 #define GIMBAL_TICK_HZ                          \
@@ -206,11 +206,16 @@ static volatile uint16 gimbal_pending_ms;
 static volatile uint8 gimbal_millisecond_divider;
 static volatile uint8 gimbal_rate_tick_divider;
 static volatile uint16 gimbal_laser_settle_ms;
+static volatile uint8 gimbal_laser_enabled;
+static volatile uint8 gimbal_manual_control_enabled;
 static volatile gimbal_target_mode_enum gimbal_target_mode;
 static volatile float gimbal_target_phase_rad;
 static volatile gimbal_feedforward_solution_struct
     gimbal_feedforward_solution;
 static gimbal_stepper_log_callback gimbal_log_callback;
+
+static void gimbal_laser_force_off(void);
+static uint8 gimbal_laser_can_enable(void);
 
 /**
  * @brief Send one log line through the global debug printf route.
@@ -835,15 +840,19 @@ static uint8 gimbal_solve_feedforward(
     gimbal_feedforward_solution_struct *solution)
 {
     gimbal_matrix3_struct body_rotation;
+    gimbal_matrix3_struct pan_mount_rotation;
     gimbal_vector3_struct vehicle_origin;
     gimbal_vector3_struct pan_origin_body;
     gimbal_vector3_struct target_body;
+    gimbal_vector3_struct target_pan;
+    float horizontal_range;
+    float target_range;
+    float pitch_offset_rad;
+    float forward_range;
     float yaw_deg;
     float pitch_deg;
     float error_yaw_rad = 0.0F;
     float error_pitch_rad = 0.0F;
-    uint8 iteration;
-    uint8 singular = 0U;
 
     if((pose == NULL) || (solution == NULL))
     {
@@ -875,157 +884,53 @@ static uint8 gimbal_solve_feedforward(
                 gimbal_matrix_transform(
                     body_rotation,
                     pan_origin_body))));
-    yaw_deg = gimbal_wrap_angle_positive_deg(
-        ((atan2f(target_body.y, target_body.x)
-                * GIMBAL_RAD_TO_DEG)
-            - GIMBAL_CONFIG_PAN_MOUNT_YAW_DEG)
-            / GIMBAL_CONFIG_YAW_KINEMATIC_SIGN);
-    pitch_deg = atan2f(
-        target_body.z,
-        sqrtf((target_body.x * target_body.x)
-            + (target_body.y * target_body.y))) * GIMBAL_RAD_TO_DEG;
-    yaw_deg = gimbal_clamp_float(
-        yaw_deg,
-        GIMBAL_CONFIG_YAW_MIN_DEG,
-        GIMBAL_CONFIG_YAW_MAX_DEG);
-    pitch_deg = gimbal_clamp_float(
-        pitch_deg,
-        GIMBAL_CONFIG_PITCH_MIN_DEG,
-        GIMBAL_CONFIG_PITCH_MAX_DEG);
+    pan_mount_rotation = gimbal_configured_rotation(
+        GIMBAL_CONFIG_PAN_MOUNT_ROLL_DEG,
+        GIMBAL_CONFIG_PAN_MOUNT_PITCH_DEG,
+        GIMBAL_CONFIG_PAN_MOUNT_YAW_DEG);
+    target_pan = gimbal_matrix_inverse_transform(
+        pan_mount_rotation,
+        target_body);
 
-    for(iteration = 0U;
-        iteration < GIMBAL_CONFIG_FEEDFORWARD_ITERATIONS;
-        iteration++)
+    horizontal_range = sqrtf(
+        (target_pan.x * target_pan.x)
+        + (target_pan.y * target_pan.y));
+    target_range = sqrtf(
+        (horizontal_range * horizontal_range)
+        + (target_pan.z * target_pan.z));
+    if((horizontal_range <= GIMBAL_FEEDFORWARD_MIN_NORM)
+        || (target_range
+            <= fabsf(GIMBAL_CONFIG_LASER_ORIGIN_Z_MM))
+        || (fabsf(GIMBAL_CONFIG_YAW_KINEMATIC_SIGN)
+            <= GIMBAL_FEEDFORWARD_MIN_NORM))
     {
-        float yaw_plus;
-        float yaw_minus;
-        float pitch_plus;
-        float pitch_minus;
-        float error_yaw_plus;
-        float error_yaw_minus;
-        float error_pitch_plus;
-        float error_pitch_minus;
-        float jacobian_00;
-        float jacobian_01;
-        float jacobian_10;
-        float jacobian_11;
-        float determinant;
-        float delta_yaw;
-        float delta_pitch;
+        solution->singular = 1U;
+        return 0U;
+    }
 
-        if(gimbal_compute_ray_error(
-                pose,
-                target,
-                yaw_deg,
-                pitch_deg,
-                &error_yaw_rad,
-                &error_pitch_rad) == 0U)
-        {
-            return 0U;
-        }
-        if(sqrtf(
-                (error_yaw_rad * error_yaw_rad)
-                + (error_pitch_rad * error_pitch_rad))
-                * GIMBAL_RAD_TO_DEG
-            <= GIMBAL_CONFIG_FEEDFORWARD_TOLERANCE_DEG)
-        {
-            break;
-        }
+    yaw_deg = gimbal_wrap_angle_positive_deg(
+        (atan2f(target_pan.y, target_pan.x)
+            * GIMBAL_RAD_TO_DEG)
+            / GIMBAL_CONFIG_YAW_KINEMATIC_SIGN);
+    pitch_offset_rad = asinf(
+        GIMBAL_CONFIG_LASER_ORIGIN_Z_MM / target_range);
+    pitch_deg = (atan2f(target_pan.z, horizontal_range)
+        - pitch_offset_rad) * GIMBAL_RAD_TO_DEG;
+    forward_range = sqrtf(
+        (target_range * target_range)
+        - (GIMBAL_CONFIG_LASER_ORIGIN_Z_MM
+            * GIMBAL_CONFIG_LASER_ORIGIN_Z_MM))
+        - GIMBAL_CONFIG_LASER_ORIGIN_X_MM;
 
-        yaw_plus = gimbal_clamp_float(
-            yaw_deg + GIMBAL_CONFIG_FEEDFORWARD_JACOBIAN_DEG,
-            GIMBAL_CONFIG_YAW_MIN_DEG,
-            GIMBAL_CONFIG_YAW_MAX_DEG);
-        yaw_minus = gimbal_clamp_float(
-            yaw_deg - GIMBAL_CONFIG_FEEDFORWARD_JACOBIAN_DEG,
-            GIMBAL_CONFIG_YAW_MIN_DEG,
-            GIMBAL_CONFIG_YAW_MAX_DEG);
-        pitch_plus = gimbal_clamp_float(
-            pitch_deg + GIMBAL_CONFIG_FEEDFORWARD_JACOBIAN_DEG,
-            GIMBAL_CONFIG_PITCH_MIN_DEG,
-            GIMBAL_CONFIG_PITCH_MAX_DEG);
-        pitch_minus = gimbal_clamp_float(
-            pitch_deg - GIMBAL_CONFIG_FEEDFORWARD_JACOBIAN_DEG,
-            GIMBAL_CONFIG_PITCH_MIN_DEG,
-            GIMBAL_CONFIG_PITCH_MAX_DEG);
-
-        if((gimbal_compute_ray_error(
-                pose,
-                target,
-                yaw_plus,
-                pitch_deg,
-                &error_yaw_plus,
-                &error_pitch_plus) == 0U)
-            || (gimbal_compute_ray_error(
-                pose,
-                target,
-                yaw_minus,
-                pitch_deg,
-                &error_yaw_minus,
-                &error_pitch_minus) == 0U))
-        {
-            solution->yaw_deg = yaw_deg;
-            solution->pitch_deg = pitch_deg;
-            return 0U;
-        }
-        jacobian_00 = gimbal_wrap_angle_rad(
-            error_yaw_plus - error_yaw_minus)
-            / ((yaw_plus - yaw_minus) * GIMBAL_DEG_TO_RAD);
-        jacobian_10 = (error_pitch_plus - error_pitch_minus)
-            / ((yaw_plus - yaw_minus) * GIMBAL_DEG_TO_RAD);
-
-        if((gimbal_compute_ray_error(
-                pose,
-                target,
-                yaw_deg,
-                pitch_plus,
-                &error_yaw_plus,
-                &error_pitch_plus) == 0U)
-            || (gimbal_compute_ray_error(
-                pose,
-                target,
-                yaw_deg,
-                pitch_minus,
-                &error_yaw_minus,
-                &error_pitch_minus) == 0U))
-        {
-            solution->yaw_deg = yaw_deg;
-            solution->pitch_deg = pitch_deg;
-            return 0U;
-        }
-        jacobian_01 = gimbal_wrap_angle_rad(
-            error_yaw_plus - error_yaw_minus)
-            / ((pitch_plus - pitch_minus) * GIMBAL_DEG_TO_RAD);
-        jacobian_11 = (error_pitch_plus - error_pitch_minus)
-            / ((pitch_plus - pitch_minus) * GIMBAL_DEG_TO_RAD);
-        determinant = (jacobian_00 * jacobian_11)
-            - (jacobian_01 * jacobian_10);
-        if(fabsf(determinant) < GIMBAL_FEEDFORWARD_MIN_DETERMINANT)
-        {
-            singular = 1U;
-            break;
-        }
-
-        delta_yaw = ((-error_yaw_rad * jacobian_11)
-            + (jacobian_01 * error_pitch_rad)) / determinant;
-        delta_pitch = ((jacobian_10 * error_yaw_rad)
-            - (jacobian_00 * error_pitch_rad)) / determinant;
-        delta_yaw = gimbal_clamp_float(
-            delta_yaw * GIMBAL_RAD_TO_DEG,
-            -GIMBAL_CONFIG_FEEDFORWARD_MAX_STEP_DEG,
-            GIMBAL_CONFIG_FEEDFORWARD_MAX_STEP_DEG);
-        delta_pitch = gimbal_clamp_float(
-            delta_pitch * GIMBAL_RAD_TO_DEG,
-            -GIMBAL_CONFIG_FEEDFORWARD_MAX_STEP_DEG,
-            GIMBAL_CONFIG_FEEDFORWARD_MAX_STEP_DEG);
-        yaw_deg = gimbal_clamp_float(
-            yaw_deg + delta_yaw,
-            GIMBAL_CONFIG_YAW_MIN_DEG,
-            GIMBAL_CONFIG_YAW_MAX_DEG);
-        pitch_deg = gimbal_clamp_float(
-            pitch_deg + delta_pitch,
-            GIMBAL_CONFIG_PITCH_MIN_DEG,
-            GIMBAL_CONFIG_PITCH_MAX_DEG);
+    solution->yaw_deg = yaw_deg;
+    solution->pitch_deg = pitch_deg;
+    if((forward_range < 0.0F)
+        || (yaw_deg < GIMBAL_CONFIG_YAW_MIN_DEG)
+        || (yaw_deg > GIMBAL_CONFIG_YAW_MAX_DEG)
+        || (pitch_deg < GIMBAL_CONFIG_PITCH_MIN_DEG)
+        || (pitch_deg > GIMBAL_CONFIG_PITCH_MAX_DEG))
+    {
+        return 0U;
     }
 
     if(gimbal_compute_ray_error(
@@ -1036,21 +941,15 @@ static uint8 gimbal_solve_feedforward(
             &error_yaw_rad,
             &error_pitch_rad) == 0U)
     {
-        solution->yaw_deg = yaw_deg;
-        solution->pitch_deg = pitch_deg;
         solution->singular = 1U;
         return 0U;
     }
 
-    solution->yaw_deg = yaw_deg;
-    solution->pitch_deg = pitch_deg;
     solution->residual_deg = sqrtf(
         (error_yaw_rad * error_yaw_rad)
         + (error_pitch_rad * error_pitch_rad)) * GIMBAL_RAD_TO_DEG;
-    solution->singular = singular;
-    solution->valid = (uint8)((singular == 0U)
-        && (solution->residual_deg
-            <= GIMBAL_CONFIG_FEEDFORWARD_TOLERANCE_DEG));
+    solution->valid = (uint8)(solution->residual_deg
+        <= GIMBAL_CONFIG_FEEDFORWARD_TOLERANCE_DEG);
     return solution->valid;
 }
 
@@ -1213,12 +1112,14 @@ static uint8 gimbal_axes_zeroed(void)
  */
 static void gimbal_laser_force_off(void)
 {
-    if(GIMBAL_CONFIG_LASER_POLARITY_VALID != 0U)
+    if((GIMBAL_CONFIG_LASER_POLARITY_VALID != 0U)
+        && (gimbal_laser_enabled != 0U))
     {
         gpio_set_level(
             GIMBAL_LASER_PIN,
             gimbal_invert_level(GIMBAL_LASER_ACTIVE_LEVEL));
     }
+    gimbal_laser_enabled = 0U;
 }
 
 /**
@@ -1235,6 +1136,7 @@ static uint8 gimbal_laser_can_enable(void)
         (gimbal_stop_latched == 0U)
         && (gimbal_control_mode == GIMBAL_CONTROL_POSITION)
         && (gimbal_axes_zeroed() != 0U)
+        && (gpio_get_level(GIMBAL_STOP_KEY_PIN) == GPIO_HIGH)
         && (gpio_get_level(GIMBAL_SELECT_KEY_PIN) == GPIO_HIGH)
         && (gpio_get_level(GIMBAL_NEGATIVE_KEY_PIN) == GPIO_HIGH)
         && (gpio_get_level(GIMBAL_POSITIVE_KEY_PIN) == GPIO_HIGH)
@@ -1323,10 +1225,34 @@ static void gimbal_update_key(
 }
 
 /**
+ * @brief Clear all local shared-key debounce and gesture state.
+ */
+static void gimbal_reset_manual_key_state(void)
+{
+    gimbal_select_key.mismatch_ms = 0U;
+    gimbal_select_key.pressed = 0U;
+    gimbal_negative_key.mismatch_ms = 0U;
+    gimbal_negative_key.pressed = 0U;
+    gimbal_positive_key.mismatch_ms = 0U;
+    gimbal_positive_key.pressed = 0U;
+    gimbal_select_hold_ms = 0U;
+    gimbal_select_long_handled = 0U;
+    gimbal_select_release_event = 0U;
+    gimbal_select_previous_pressed = 0U;
+    gimbal_select_suppressed = 0U;
+}
+
+/**
  * @brief Debounce manual keys and track A30 hold time at 1 kHz.
  */
 static void gimbal_update_keys_tick(void)
 {
+    if(gimbal_manual_control_enabled == 0U)
+    {
+        gimbal_reset_manual_key_state();
+        return;
+    }
+
     gimbal_update_key(GIMBAL_SELECT_KEY_PIN, &gimbal_select_key);
     gimbal_update_key(GIMBAL_NEGATIVE_KEY_PIN, &gimbal_negative_key);
     gimbal_update_key(GIMBAL_POSITIVE_KEY_PIN, &gimbal_positive_key);
@@ -1599,7 +1525,7 @@ static void gimbal_update_rates_tick(void)
 }
 
 /**
- * @brief Execute one 5 kHz STEP/DIR pulse-engine tick for one axis.
+ * @brief Execute one configured STEP/DIR pulse-engine tick for one axis.
  */
 static void gimbal_axis_tick(gimbal_axis_struct *axis)
 {
@@ -1613,7 +1539,10 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
 
     if((command_rate == 0) || (axis->phase_increment == 0U))
     {
-        gpio_low(axis->step_pin);
+        if(axis->pulse_high != 0U)
+        {
+            gpio_low(axis->step_pin);
+        }
         axis->phase_accumulator = 0U;
         axis->pulse_pending = 0U;
         axis->pulse_high = 0U;
@@ -1663,7 +1592,10 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
                 && (axis->position_steps
                     <= axis->target_position_steps))))
     {
-        gpio_low(axis->step_pin);
+        if(axis->pulse_high != 0U)
+        {
+            gpio_low(axis->step_pin);
+        }
         axis->phase_accumulator = 0U;
         axis->pulse_pending = 0U;
         axis->pulse_high = 0U;
@@ -1673,7 +1605,10 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
     if(((positive != 0U) && (axis->position_steps >= maximum))
         || ((positive == 0U) && (axis->position_steps <= minimum)))
     {
-        gpio_low(axis->step_pin);
+        if(axis->pulse_high != 0U)
+        {
+            gpio_low(axis->step_pin);
+        }
         axis->phase_accumulator = 0U;
         axis->pulse_pending = 0U;
         axis->pulse_high = 0U;
@@ -1710,24 +1645,28 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
  */
 static void gimbal_pit_callback(uint32 event, void *context)
 {
-    uint8 laser_safe;
-
     (void)event;
     (void)context;
-
-    laser_safe = gimbal_laser_can_enable();
-    if(laser_safe == 0U)
-    {
-        gimbal_laser_settle_ms = 0U;
-        gimbal_laser_force_off();
-    }
 
     gimbal_millisecond_divider++;
     if(gimbal_millisecond_divider
         >= GIMBAL_MILLISECOND_DIVIDER_TICKS)
     {
+        uint8 laser_safe;
+
         gimbal_millisecond_divider = 0U;
         gimbal_update_keys_tick();
+        if(gpio_get_level(GIMBAL_STOP_KEY_PIN) == GPIO_LOW)
+        {
+            gimbal_emergency_stop_tick();
+            return;
+        }
+        laser_safe = gimbal_laser_can_enable();
+        if(laser_safe == 0U)
+        {
+            gimbal_laser_settle_ms = 0U;
+            gimbal_laser_force_off();
+        }
         if((laser_safe != 0U)
             && (gimbal_laser_settle_ms
                 < GIMBAL_CONFIG_LASER_SETTLE_MS))
@@ -1740,8 +1679,7 @@ static void gimbal_pit_callback(uint32 event, void *context)
         }
     }
 
-    if((gpio_get_level(GIMBAL_STOP_KEY_PIN) == GPIO_LOW)
-        || (gimbal_stop_latched != 0U))
+    if(gimbal_stop_latched != 0U)
     {
         gimbal_emergency_stop_tick();
         return;
@@ -1836,18 +1774,9 @@ void gimbal_stepper_init(void)
         GPIO_HIGH,
         GPI_PULL_UP);
 
-    gimbal_select_key.mismatch_ms = 0U;
-    gimbal_select_key.pressed = 0U;
-    gimbal_negative_key.mismatch_ms = 0U;
-    gimbal_negative_key.pressed = 0U;
-    gimbal_positive_key.mismatch_ms = 0U;
-    gimbal_positive_key.pressed = 0U;
+    gimbal_reset_manual_key_state();
     gimbal_selected_axis = GIMBAL_STEPPER_AXIS_YAW;
-    gimbal_select_hold_ms = 0U;
-    gimbal_select_long_handled = 0U;
-    gimbal_select_release_event = 0U;
-    gimbal_select_previous_pressed = 0U;
-    gimbal_select_suppressed = 0U;
+    gimbal_manual_control_enabled = 1U;
     gimbal_stop_latched = 0U;
     gimbal_stop_reported = 0U;
     gimbal_control_mode = GIMBAL_CONTROL_IDLE;
@@ -1855,6 +1784,7 @@ void gimbal_stepper_init(void)
     gimbal_millisecond_divider = 0U;
     gimbal_rate_tick_divider = 0U;
     gimbal_laser_settle_ms = 0U;
+    gimbal_laser_enabled = 0U;
     gimbal_log_callback = gimbal_default_log;
     gimbal_target_mode = GIMBAL_TARGET_CENTER;
     gimbal_target_phase_rad = 0.0F;
@@ -1935,7 +1865,7 @@ static void gimbal_stepper_update_foreground(void)
 }
 
 /**
- * @brief Consume real millisecond ticks generated by the 5 kHz callback.
+ * @brief Consume real millisecond ticks generated by the pulse callback.
  */
 uint16 gimbal_stepper_service(void)
 {
@@ -2048,6 +1978,8 @@ void gimbal_stepper_get_status(
     status->negative_key_pressed = gimbal_negative_key.pressed;
     status->positive_key_pressed = gimbal_positive_key.pressed;
     status->select_key_pressed = gimbal_select_key.pressed;
+    status->laser_enabled = gimbal_laser_enabled;
+    status->manual_control_enabled = gimbal_manual_control_enabled;
     interrupt_global_enable(primask);
 }
 
@@ -2061,6 +1993,29 @@ void gimbal_stepper_set_log_callback(
 
     gimbal_log_callback = callback != NULL
         ? callback : gimbal_default_log;
+    interrupt_global_enable(primask);
+}
+
+/**
+ * @brief Transfer shared A30/B0/B1 ownership to or from the gimbal.
+ */
+void gimbal_stepper_set_manual_control_enabled(uint8 enabled)
+{
+    uint32 primask = interrupt_global_disable();
+
+    gimbal_manual_control_enabled = enabled != 0U ? 1U : 0U;
+    gimbal_reset_manual_key_state();
+    if((gimbal_manual_control_enabled == 0U)
+        && (gimbal_control_mode == GIMBAL_CONTROL_JOG))
+    {
+        gimbal_clear_axis_command(
+            &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW]);
+        gimbal_clear_axis_command(
+            &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH]);
+        gimbal_sync_targets_to_positions();
+        gimbal_control_mode = gimbal_axes_zeroed() != 0U
+            ? GIMBAL_CONTROL_POSITION : GIMBAL_CONTROL_IDLE;
+    }
     interrupt_global_enable(primask);
 }
 
@@ -2105,6 +2060,9 @@ uint8 gimbal_stepper_set_absolute_target_steps(
     int32 yaw_steps,
     int32 pitch_steps)
 {
+    int32 bounded_yaw_steps;
+    int32 bounded_pitch_steps;
+    uint8 target_changed;
     uint32 primask;
 
     primask = interrupt_global_disable();
@@ -2118,18 +2076,28 @@ uint8 gimbal_stepper_set_absolute_target_steps(
         return 0U;
     }
 
+    bounded_yaw_steps = gimbal_clamp_position(
+        yaw_steps,
+        GIMBAL_STEPPER_YAW_MIN_STEPS,
+        GIMBAL_STEPPER_YAW_MAX_STEPS);
+    bounded_pitch_steps = gimbal_clamp_position(
+        pitch_steps,
+        GIMBAL_STEPPER_PITCH_MIN_STEPS,
+        GIMBAL_STEPPER_PITCH_MAX_STEPS);
+    target_changed = (uint8)(
+        (gimbal_axes[GIMBAL_STEPPER_AXIS_YAW].target_position_steps
+            != bounded_yaw_steps)
+        || (gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH].target_position_steps
+            != bounded_pitch_steps));
     gimbal_axes[GIMBAL_STEPPER_AXIS_YAW].target_position_steps =
-        gimbal_clamp_position(
-            yaw_steps,
-            GIMBAL_STEPPER_YAW_MIN_STEPS,
-            GIMBAL_STEPPER_YAW_MAX_STEPS);
+        bounded_yaw_steps;
     gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH].target_position_steps =
-        gimbal_clamp_position(
-            pitch_steps,
-            GIMBAL_STEPPER_PITCH_MIN_STEPS,
-            GIMBAL_STEPPER_PITCH_MAX_STEPS);
-    gimbal_laser_force_off();
-    gimbal_laser_settle_ms = 0U;
+        bounded_pitch_steps;
+    if(target_changed != 0U)
+    {
+        gimbal_laser_force_off();
+        gimbal_laser_settle_ms = 0U;
+    }
     gimbal_control_mode = GIMBAL_CONTROL_POSITION;
     interrupt_global_enable(primask);
     return 1U;
@@ -2175,31 +2143,35 @@ uint8 gimbal_stepper_compute_feedforward(
 }
 
 /**
- * @brief Run the configured world-to-gimbal feedforward inverse solver.
+ * @brief Apply one previously computed feedforward solution.
  */
-uint8 gimbal_stepper_update_feedforward(
-    const gimbal_feedforward_pose_struct *pose)
+uint8 gimbal_stepper_apply_feedforward_solution(
+    const gimbal_feedforward_solution_struct *solution)
 {
-    gimbal_feedforward_solution_struct solution;
+    gimbal_feedforward_solution_struct stored_solution;
     uint32 primask;
     int32 previous_yaw_steps;
     int32 nominal_yaw_steps;
     int32 yaw_steps;
     int32 pitch_steps;
 
-    if(gimbal_stepper_compute_feedforward(pose, &solution) == 0U)
+    if((solution == NULL)
+        || (solution->valid == 0U)
+        || (gimbal_float_is_valid(solution->yaw_deg) == 0U)
+        || (gimbal_float_is_valid(solution->pitch_deg) == 0U)
+        || (solution->yaw_deg < GIMBAL_CONFIG_YAW_MIN_DEG)
+        || (solution->yaw_deg > GIMBAL_CONFIG_YAW_MAX_DEG)
+        || (solution->pitch_deg < GIMBAL_CONFIG_PITCH_MIN_DEG)
+        || (solution->pitch_deg > GIMBAL_CONFIG_PITCH_MAX_DEG))
     {
-        primask = interrupt_global_disable();
-        gimbal_feedforward_solution = solution;
-        interrupt_global_enable(primask);
         return 0U;
     }
 
     nominal_yaw_steps = gimbal_angle_to_steps(
-        solution.yaw_deg,
+        solution->yaw_deg,
         GIMBAL_CONFIG_YAW_POSITION_SIGN);
     pitch_steps = gimbal_angle_to_steps(
-        solution.pitch_deg - GIMBAL_CONFIG_PITCH_ZERO_DEG,
+        solution->pitch_deg - GIMBAL_CONFIG_PITCH_ZERO_DEG,
         GIMBAL_CONFIG_PITCH_POSITION_SIGN);
 
     primask = interrupt_global_disable();
@@ -2211,19 +2183,40 @@ uint8 gimbal_stepper_update_feedforward(
             previous_yaw_steps,
             &yaw_steps) == 0U)
     {
-        solution.valid = 0U;
+        stored_solution = *solution;
+        stored_solution.valid = 0U;
+        primask = interrupt_global_disable();
+        gimbal_feedforward_solution = stored_solution;
+        interrupt_global_enable(primask);
+        return 0U;
+    }
+
+    primask = interrupt_global_disable();
+    gimbal_feedforward_solution = *solution;
+    interrupt_global_enable(primask);
+    return gimbal_stepper_set_absolute_target_steps(
+        yaw_steps,
+        pitch_steps);
+}
+
+/**
+ * @brief Run the configured world-to-gimbal feedforward inverse solver.
+ */
+uint8 gimbal_stepper_update_feedforward(
+    const gimbal_feedforward_pose_struct *pose)
+{
+    gimbal_feedforward_solution_struct solution;
+    uint32 primask;
+
+    if(gimbal_stepper_compute_feedforward(pose, &solution) == 0U)
+    {
         primask = interrupt_global_disable();
         gimbal_feedforward_solution = solution;
         interrupt_global_enable(primask);
         return 0U;
     }
 
-    primask = interrupt_global_disable();
-    gimbal_feedforward_solution = solution;
-    interrupt_global_enable(primask);
-    return gimbal_stepper_set_absolute_target_steps(
-        yaw_steps,
-        pitch_steps);
+    return gimbal_stepper_apply_feedforward_solution(&solution);
 }
 
 /**
@@ -2268,6 +2261,7 @@ void gimbal_stepper_laser_init(void)
             off_level,
             GPO_PUSH_PULL);
     }
+    gimbal_laser_enabled = 0U;
 }
 
 /**
@@ -2298,6 +2292,7 @@ uint8 gimbal_stepper_set_laser(uint8 enabled)
     else
     {
         gpio_set_level(GIMBAL_LASER_PIN, GIMBAL_LASER_ACTIVE_LEVEL);
+        gimbal_laser_enabled = 1U;
     }
     interrupt_global_enable(primask);
     return accepted;

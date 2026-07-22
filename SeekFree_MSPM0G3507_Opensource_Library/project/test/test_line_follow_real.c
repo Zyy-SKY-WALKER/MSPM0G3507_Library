@@ -156,6 +156,38 @@ static void line_follow_real_show_status(
         4U);
     line_follow_real_show_int(96U, 248U, status->left_count, 5U);
     line_follow_real_show_int(160U, 248U, status->right_count, 5U);
+    line_follow_real_show_uint(
+        96U,
+        280U,
+        status->gimbal.axis[GIMBAL_STEPPER_AXIS_YAW].zero_valid,
+        1U);
+    line_follow_real_show_uint(
+        112U,
+        280U,
+        status->gimbal.axis[GIMBAL_STEPPER_AXIS_PITCH].zero_valid,
+        1U);
+    line_follow_real_show_uint(
+        144U,
+        280U,
+        status->gimbal_calibrated,
+        1U);
+    line_follow_real_show_uint(
+        160U,
+        280U,
+        status->gimbal_feedforward_valid,
+        1U);
+    line_follow_real_show_int(
+        96U,
+        296U,
+        status->gimbal.axis[GIMBAL_STEPPER_AXIS_YAW]
+            .target_position_steps,
+        5U);
+    line_follow_real_show_int(
+        160U,
+        296U,
+        status->gimbal.axis[GIMBAL_STEPPER_AXIS_PITCH]
+            .target_position_steps,
+        5U);
 }
 
 /**
@@ -165,6 +197,7 @@ void test_line_follow_real_run(void)
 {
     control_scheduler_status_struct status;
 
+    gimbal_stepper_laser_init();
     ili9341_init();
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);
@@ -180,8 +213,8 @@ void test_line_follow_real_run(void)
     ili9341_show_string(8U, 200U, "STATE/B:");
     ili9341_show_string(8U, 224U, "I/D    :");
     ili9341_show_string(8U, 248U, "ENC L/R:");
-    ili9341_show_string(8U, 280U, "A30 ARM  B0 LINE");
-    ili9341_show_string(8U, 296U, "A31 STOP B1 CLEAR");
+    ili9341_show_string(8U, 280U, "GIM YP/CF:");
+    ili9341_show_string(8U, 296U, "GIM TGT:");
 
     control_scheduler_init();
     control_scheduler_start();

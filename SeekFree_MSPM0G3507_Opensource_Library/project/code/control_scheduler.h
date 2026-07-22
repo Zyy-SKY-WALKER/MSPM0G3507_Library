@@ -8,6 +8,7 @@
 
 #include "chassis_motion.h"
 #include "gray_sensor.h"
+#include "gimbal_stepper.h"
 #include "line_tracker.h"
 #include "odometry.h"
 #include "speed_pid.h"
@@ -54,6 +55,25 @@ typedef enum
     CONTROL_FAULT_IMU_STALE = 0x00000040U,
 } control_fault_enum;
 
+/** @brief Automatic startup attitude-reference states. */
+typedef enum
+{
+    CONTROL_IMU_STABILITY_WAIT_STREAM = 0,
+    CONTROL_IMU_STABILITY_WARMUP,
+    CONTROL_IMU_STABILITY_COLLECTING,
+    CONTROL_IMU_STABILITY_READY,
+} control_imu_stability_enum;
+
+/** @brief Reason the latest gimbal feedforward was not applied. */
+typedef enum
+{
+    CONTROL_GIMBAL_REJECT_NONE = 0,
+    CONTROL_GIMBAL_REJECT_NOT_READY,
+    CONTROL_GIMBAL_REJECT_SOLVER,
+    CONTROL_GIMBAL_REJECT_STALE,
+    CONTROL_GIMBAL_REJECT_APPLY,
+} control_gimbal_reject_enum;
+
 /** @brief Coherent scheduler and control-module telemetry snapshot. */
 typedef struct
 {
@@ -67,14 +87,26 @@ typedef struct
     uint32 overrun_count;
     /** Sequence number of the latest received IMU angle frame. */
     uint32 imu_angle_frame_count;
+    /** Sequence number of the latest received IMU gyro frame. */
+    uint32 imu_gyro_frame_count;
     /** Scheduler ticks since the last new valid IMU frame. */
     uint16 imu_age_ticks;
+    /** Scheduler ticks since the last new gyro frame. */
+    uint16 imu_gyro_age_ticks;
     /** Latest signed left encoder interval count. */
     int16 left_count;
     /** Latest signed right encoder interval count. */
     int16 right_count;
     /** Latest wrapped IMU yaw in degrees. */
     float imu_yaw_deg;
+    /** Chassis roll after applying the measured IMU mounting transform. */
+    float imu_roll_deg;
+    /** Chassis pitch after applying the measured IMU mounting transform. */
+    float imu_pitch_deg;
+    /** Latest mapped body yaw rate in degrees per second. */
+    float imu_gyro_z_deg_s;
+    /** Estimated stationary yaw drift in degrees per minute. */
+    float imu_yaw_drift_deg_min;
     /** Stored manual left-wheel target in millimeters per second. */
     float manual_left_target_mm_s;
     /** Stored manual right-wheel target in millimeters per second. */
@@ -91,6 +123,22 @@ typedef struct
     speed_pid_status_struct speed;
     /** Latest fused odometry snapshot. */
     odometry_state_struct odometry;
+    /** Latest two-axis gimbal controller snapshot. */
+    gimbal_stepper_status_struct gimbal;
+    /** Latest geometric feedforward inverse solution. */
+    gimbal_feedforward_solution_struct gimbal_feedforward;
+    /** Number of accepted real-time feedforward updates. */
+    uint32 gimbal_feedforward_count;
+    /** Number of computed feedforward updates that were rejected. */
+    uint32 gimbal_feedforward_reject_count;
+    /** Number of feedforward updates rejected specifically as stale. */
+    uint32 gimbal_feedforward_stale_count;
+    /** Scheduler ticks crossed by the latest foreground solve. */
+    uint16 gimbal_feedforward_solve_ticks;
+    /** Latest startup attitude-reference state. */
+    control_imu_stability_enum imu_stability_state;
+    /** Latest feedforward rejection reason. */
+    control_gimbal_reject_enum gimbal_feedforward_reject_reason;
     /** Nonzero after scheduler dependency initialization. */
     uint8 initialized;
     /** Nonzero after the unique periodic source starts. */
@@ -99,6 +147,16 @@ typedef struct
     uint8 imu_valid;
     /** Nonzero while the latest valid IMU frame is within its age limit. */
     uint8 imu_fresh;
+    /** Nonzero after the startup attitude reference is stable and installed. */
+    uint8 imu_ready;
+    /** Startup stability progress from 0 through 100 percent. */
+    uint8 imu_stability_progress;
+    /** Nonzero while fresh 0x52 angular-rate frames are available. */
+    uint8 imu_gyro_available;
+    /** Nonzero after both gimbal axes were manually referenced. */
+    uint8 gimbal_calibrated;
+    /** Nonzero when the latest real-time feedforward command was accepted. */
+    uint8 gimbal_feedforward_valid;
 } control_scheduler_status_struct;
 
 /**
