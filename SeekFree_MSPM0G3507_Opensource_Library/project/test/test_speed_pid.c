@@ -9,6 +9,7 @@
 
 #include "test_speed_pid.h"
 
+#include "drive_geometry.h"
 #include "my_lib_encoder.h"
 #include "speed_pid.h"
 #include "vofa.h"
@@ -19,6 +20,16 @@
 #define SPEED_PID_TEST_PIT               (PIT_TIM_G12)
 #define SPEED_PID_TEST_ARM_TIME_MS       (3000U)
 #define SPEED_PID_TEST_IDLE_TIME_MS      (1U)
+/** Conservative 520 test targets expressed as encoder counts per 10 ms. */
+#define SPEED_PID_TEST_COUNTS_LOW         (2.0F)
+#define SPEED_PID_TEST_COUNTS_MEDIUM      (4.0F)
+#define SPEED_PID_TEST_COUNTS_HIGH        (6.0F)
+#define SPEED_PID_TEST_LEFT_MM_S(counts)  \
+    ((counts) * DRIVE_LEFT_MM_PER_COUNT * 1000.0F \
+        / (float)SPEED_PID_SAMPLE_PERIOD_MS)
+#define SPEED_PID_TEST_RIGHT_MM_S(counts) \
+    ((counts) * DRIVE_RIGHT_MM_PER_COUNT * 1000.0F \
+        / (float)SPEED_PID_SAMPLE_PERIOD_MS)
 
 typedef struct
 {
@@ -29,9 +40,12 @@ typedef struct
 
 static const speed_pid_test_step_struct speed_pid_test_steps[] =
 {
-    {300.0F, 300.0F, 3000U},
-    {550.0F, 550.0F, 3000U},
-    {800.0F, 800.0F, 3000U},
+    {SPEED_PID_TEST_LEFT_MM_S(SPEED_PID_TEST_COUNTS_LOW),
+        SPEED_PID_TEST_RIGHT_MM_S(SPEED_PID_TEST_COUNTS_LOW), 3000U},
+    {SPEED_PID_TEST_LEFT_MM_S(SPEED_PID_TEST_COUNTS_MEDIUM),
+        SPEED_PID_TEST_RIGHT_MM_S(SPEED_PID_TEST_COUNTS_MEDIUM), 3000U},
+    {SPEED_PID_TEST_LEFT_MM_S(SPEED_PID_TEST_COUNTS_HIGH),
+        SPEED_PID_TEST_RIGHT_MM_S(SPEED_PID_TEST_COUNTS_HIGH), 3000U},
     {0.0F, 0.0F, 1000U},
 };
 

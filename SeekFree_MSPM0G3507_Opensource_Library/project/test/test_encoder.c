@@ -9,6 +9,7 @@
 
 #include "test_encoder.h"
 
+#include "drive_geometry.h"
 #include "my_lib_encoder.h"
 #include "my_lib_ili9341.h"
 #include "zf_driver_delay.h"
@@ -87,7 +88,12 @@ void test_encoder_run(void)
     ili9341_show_string(8U, 168U, "L A/B  :");
     ili9341_show_string(8U, 200U, "R A/B  :");
     ili9341_show_string(8U, 240U, "TURN ONE WHEEL");
-    ili9341_show_string(8U, 264U, "ONE REV ~= 10250");
+    ili9341_show_string(8U, 264U, "ONE REV CNT:");
+    ili9341_show_int(
+        104U,
+        264U,
+        (int32)DRIVE_ENCODER_COUNTS_PER_REV,
+        5U);
     ili9341_show_string(8U, 288U, "CHECK FORWARD SIGN");
 
     my_encoder_clear_count();

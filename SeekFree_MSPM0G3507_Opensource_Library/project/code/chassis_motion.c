@@ -8,6 +8,7 @@
 #include <float.h>
 
 #include "drive_geometry.h"
+#include "drive_motor_config.h"
 #include "speed_pid.h"
 #include "zf_common_interrupt.h"
 
@@ -865,7 +866,7 @@ static uint8 chassis_motion_submit_command(
 }
 
 /**
- * @brief Initialize motion state and clear all PID profile selections.
+ * @brief Initialize motion state and load active-motor PID profiles.
  */
 void chassis_motion_init(void)
 {
@@ -930,6 +931,48 @@ void chassis_motion_init(void)
     chassis_motion_pending_valid = 0U;
     chassis_motion_activation_pending = 0U;
     chassis_motion_turn_previous_heading_deg = 0.0F;
+
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .left_speed_kp = DRIVE_PROFILE_STRAIGHT_LEFT_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .left_speed_ki = DRIVE_PROFILE_STRAIGHT_LEFT_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .left_speed_kd = DRIVE_PROFILE_STRAIGHT_LEFT_KD;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .right_speed_kp = DRIVE_PROFILE_STRAIGHT_RIGHT_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .right_speed_ki = DRIVE_PROFILE_STRAIGHT_RIGHT_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .right_speed_kd = DRIVE_PROFILE_STRAIGHT_RIGHT_KD;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .heading_kp = DRIVE_PROFILE_HEADING_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .heading_ki = DRIVE_PROFILE_HEADING_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .heading_kd = DRIVE_PROFILE_HEADING_KD;
+    chassis_motion_pid_profile_configured[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        = 1U;
+
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .left_speed_kp = DRIVE_PROFILE_TURN_LEFT_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .left_speed_ki = DRIVE_PROFILE_TURN_LEFT_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .left_speed_kd = DRIVE_PROFILE_TURN_LEFT_KD;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .right_speed_kp = DRIVE_PROFILE_TURN_RIGHT_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .right_speed_ki = DRIVE_PROFILE_TURN_RIGHT_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .right_speed_kd = DRIVE_PROFILE_TURN_RIGHT_KD;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .heading_kp = DRIVE_PROFILE_HEADING_KP;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .heading_ki = DRIVE_PROFILE_HEADING_KI;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .heading_kd = DRIVE_PROFILE_HEADING_KD;
+    chassis_motion_pid_profile_configured[CHASSIS_MOTION_PID_PROFILE_TURN]
+        = 1U;
 }
 
 /**

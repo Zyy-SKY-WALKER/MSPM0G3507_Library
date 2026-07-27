@@ -10,6 +10,7 @@
 ".\objects\servo.o"
 ".\objects\chassis_motion.o"
 ".\objects\gimbal_stepper.o"
+".\objects\vision_uart.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
@@ -120,6 +121,7 @@
 ".\objects\test_ili9341_radial.o"
 ".\objects\test_ili9341_snow.o"
 ".\objects\test_touch_gimbal.o"
+".\objects\test_vision_uart.o"
 --strict --scatter ".\mspm0g3507.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

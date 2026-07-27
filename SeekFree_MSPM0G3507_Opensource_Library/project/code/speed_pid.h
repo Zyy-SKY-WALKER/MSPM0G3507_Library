@@ -6,20 +6,22 @@
 #ifndef SPEED_PID_H
 #define SPEED_PID_H
 
+#include "drive_motor_config.h"
 #include "zf_common_typedef.h"
 
 #define SPEED_PID_SAMPLE_PERIOD_MS        (10U)
 #define SPEED_PID_TARGET_LIMIT_MM_S       (800.0F)
-#define SPEED_PID_OUTPUT_LIMIT            (8000)
+#define SPEED_PID_OUTPUT_LIMIT            \
+    (DRIVE_PROFILE_SPEED_PID_OUTPUT_LIMIT)
 #define SPEED_PID_REVERSE_STOP_COUNT      (1)
 
-#define SPEED_PID_LEFT_KP                 (18.0F)
-#define SPEED_PID_LEFT_KI                 (2.6F)
-#define SPEED_PID_LEFT_KD                 (1.0F)
+#define SPEED_PID_LEFT_KP                 (DRIVE_PROFILE_STRAIGHT_LEFT_KP)
+#define SPEED_PID_LEFT_KI                 (DRIVE_PROFILE_STRAIGHT_LEFT_KI)
+#define SPEED_PID_LEFT_KD                 (DRIVE_PROFILE_STRAIGHT_LEFT_KD)
 
-#define SPEED_PID_RIGHT_KP                (18.0F)
-#define SPEED_PID_RIGHT_KI                (2.6F)
-#define SPEED_PID_RIGHT_KD                (1.0F)
+#define SPEED_PID_RIGHT_KP                (DRIVE_PROFILE_STRAIGHT_RIGHT_KP)
+#define SPEED_PID_RIGHT_KI                (DRIVE_PROFILE_STRAIGHT_RIGHT_KI)
+#define SPEED_PID_RIGHT_KD                (DRIVE_PROFILE_STRAIGHT_RIGHT_KD)
 
 /** @brief Latest dual-wheel command, measurement and controller state. */
 typedef struct
@@ -36,9 +38,9 @@ typedef struct
     int16 left_count;
     /** Signed right encoder count from the latest 10 ms interval. */
     int16 right_count;
-    /** Signed left motor duty from -8000 through 8000. */
+    /** Signed left motor duty bounded by SPEED_PID_OUTPUT_LIMIT. */
     int16 left_duty;
-    /** Signed right motor duty from -8000 through 8000. */
+    /** Signed right motor duty bounded by SPEED_PID_OUTPUT_LIMIT. */
     int16 right_duty;
     /** Nonzero when the latest left PID output was clamped. */
     uint8 left_saturated;

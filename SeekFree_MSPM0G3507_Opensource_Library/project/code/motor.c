@@ -5,7 +5,30 @@
 
 #include "motor.h"
 
+#include "drive_motor_config.h"
 #include "zf_driver_gpio.h"
+
+/**
+ * @brief Apply the active motor profile's physical polarity.
+ * @param duty Signed controller duty.
+ * @param polarity Profile value of 1 or -1.
+ * @return Duty with physical forward mapped to a positive controller command.
+ */
+static int16 motor_apply_profile_polarity(int16 duty, int8 polarity)
+{
+    int32 adjusted_duty = (int32)duty * (int32)polarity;
+
+    if (adjusted_duty > 32767)
+    {
+        return 32767;
+    }
+    if (adjusted_duty < -32768)
+    {
+        return -32768;
+    }
+
+    return (int16)adjusted_duty;
+}
 
 /**
  * @brief Set one TB6612 channel direction.
@@ -100,7 +123,9 @@ void motor_left_set_duty(int16 duty)
         MOTOR_LEFT_PWM_PIN,
         MOTOR_LEFT_IN1_PIN,
         MOTOR_LEFT_IN2_PIN,
-        duty);
+        motor_apply_profile_polarity(
+            duty,
+            DRIVE_PROFILE_LEFT_MOTOR_DUTY_SIGN));
 }
 
 /**
@@ -113,7 +138,9 @@ void motor_right_set_duty(int16 duty)
         MOTOR_RIGHT_PWM_PIN,
         MOTOR_RIGHT_IN1_PIN,
         MOTOR_RIGHT_IN2_PIN,
-        duty);
+        motor_apply_profile_polarity(
+            duty,
+            DRIVE_PROFILE_RIGHT_MOTOR_DUTY_SIGN));
 }
 
 /**

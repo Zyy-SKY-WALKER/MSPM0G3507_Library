@@ -9,6 +9,9 @@
 #ifndef GIMBAL_CONFIG_H
 #define GIMBAL_CONFIG_H
 
+/** Nonzero only when the physical gimbal is installed on the vehicle. */
+#define GIMBAL_CONFIG_INSTALLED                (0U)
+
 #define GIMBAL_CONFIG_STEPS_PER_REVOLUTION       (12800U)
 #define GIMBAL_CONFIG_PULSE_ENGINE_HZ           (10000U)
 #define GIMBAL_CONFIG_PULSE_TICK_US             (100U)
@@ -81,6 +84,10 @@
 #define GIMBAL_CONFIG_FEEDFORWARD_JACOBIAN_DEG  (0.5F)
 #define GIMBAL_CONFIG_FEEDFORWARD_TOLERANCE_DEG (1.0F)
 #define GIMBAL_CONFIG_FEEDFORWARD_MAX_STEP_DEG  (10.0F)
+
+/* The flat-course feedforward ignores drifting body tilt estimates. */
+#define GIMBAL_CONFIG_USE_BODY_ROLL              (0U)
+#define GIMBAL_CONFIG_USE_BODY_PITCH             (0U)
 
 #define GIMBAL_CONFIG_CAMERA_TIMEOUT_MS         (120U)
 

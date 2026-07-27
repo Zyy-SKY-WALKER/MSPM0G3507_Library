@@ -15,7 +15,8 @@
 #include "test_line_follow_real.h"
 #include "zf_driver_delay.h"
 
-#define LINE_FOLLOW_REAL_DISPLAY_TIME_MS    (100U)
+#define LINE_FOLLOW_REAL_LOOP_TIME_MS       (1U)
+#define LINE_FOLLOW_REAL_DISPLAY_TICKS      (20U)
 
 /**
  * @brief Round one float for integer TFT display.
@@ -196,8 +197,8 @@ static void line_follow_real_show_status(
 void test_line_follow_real_run(void)
 {
     control_scheduler_status_struct status;
+    uint32 last_display_tick = 0U;
 
-    gimbal_stepper_laser_init();
     ili9341_init();
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);
@@ -221,10 +222,18 @@ void test_line_follow_real_run(void)
 
     while (true)
     {
+        uint32 current_tick;
+
         control_scheduler_process_foreground();
-        control_scheduler_get_status(&status);
-        line_follow_real_show_status(&status);
-        system_delay_ms(LINE_FOLLOW_REAL_DISPLAY_TIME_MS);
+        current_tick = control_scheduler_get_tick_count();
+        if ((uint32)(current_tick - last_display_tick)
+            >= LINE_FOLLOW_REAL_DISPLAY_TICKS)
+        {
+            control_scheduler_get_status(&status);
+            line_follow_real_show_status(&status);
+            last_display_tick = status.tick_count;
+        }
+        system_delay_ms(LINE_FOLLOW_REAL_LOOP_TIME_MS);
     }
 }
 

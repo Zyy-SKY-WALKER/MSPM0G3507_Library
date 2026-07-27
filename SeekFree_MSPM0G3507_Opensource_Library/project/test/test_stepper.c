@@ -207,7 +207,7 @@ void test_stepper_run(void)
                 &solution) != 0U))
         {
             test_stepper_print_feedforward(&solution);
-            if(gimbal_stepper_update_feedforward(&pose) != 0U)
+            if(gimbal_stepper_apply_feedforward_solution(&solution) != 0U)
             {
                 feedforward_started = 1U;
                 arrival_hold_ms = 0U;

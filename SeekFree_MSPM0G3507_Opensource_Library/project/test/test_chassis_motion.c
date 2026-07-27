@@ -10,6 +10,7 @@
 #include "test_chassis_motion.h"
 
 #include "control_scheduler.h"
+#include "drive_motor_config.h"
 #include "my_lib_ili9341.h"
 #include "zf_driver_delay.h"
 
@@ -113,18 +114,25 @@ static uint8 chassis_motion_test_configure_profiles(void)
     chassis_motion_pid_profile_struct straight_profile;
     chassis_motion_pid_profile_struct turn_profile;
 
-    straight_profile.left_speed_kp = SPEED_PID_LEFT_KP;
-    straight_profile.left_speed_ki = SPEED_PID_LEFT_KI;
-    straight_profile.left_speed_kd = SPEED_PID_LEFT_KD;
-    straight_profile.right_speed_kp = SPEED_PID_RIGHT_KP;
-    straight_profile.right_speed_ki = SPEED_PID_RIGHT_KI;
-    straight_profile.right_speed_kd = SPEED_PID_RIGHT_KD;
-    straight_profile.heading_kp = 2.0F;
-    straight_profile.heading_ki = 0.0F;
-    straight_profile.heading_kd = 0.0F;
+    straight_profile.left_speed_kp = DRIVE_PROFILE_STRAIGHT_LEFT_KP;
+    straight_profile.left_speed_ki = DRIVE_PROFILE_STRAIGHT_LEFT_KI;
+    straight_profile.left_speed_kd = DRIVE_PROFILE_STRAIGHT_LEFT_KD;
+    straight_profile.right_speed_kp = DRIVE_PROFILE_STRAIGHT_RIGHT_KP;
+    straight_profile.right_speed_ki = DRIVE_PROFILE_STRAIGHT_RIGHT_KI;
+    straight_profile.right_speed_kd = DRIVE_PROFILE_STRAIGHT_RIGHT_KD;
+    straight_profile.heading_kp = DRIVE_PROFILE_HEADING_KP;
+    straight_profile.heading_ki = DRIVE_PROFILE_HEADING_KI;
+    straight_profile.heading_kd = DRIVE_PROFILE_HEADING_KD;
 
-    turn_profile = straight_profile;
-    turn_profile.heading_kp = 2.0F;
+    turn_profile.left_speed_kp = DRIVE_PROFILE_TURN_LEFT_KP;
+    turn_profile.left_speed_ki = DRIVE_PROFILE_TURN_LEFT_KI;
+    turn_profile.left_speed_kd = DRIVE_PROFILE_TURN_LEFT_KD;
+    turn_profile.right_speed_kp = DRIVE_PROFILE_TURN_RIGHT_KP;
+    turn_profile.right_speed_ki = DRIVE_PROFILE_TURN_RIGHT_KI;
+    turn_profile.right_speed_kd = DRIVE_PROFILE_TURN_RIGHT_KD;
+    turn_profile.heading_kp = DRIVE_PROFILE_HEADING_KP;
+    turn_profile.heading_ki = DRIVE_PROFILE_HEADING_KI;
+    turn_profile.heading_kd = DRIVE_PROFILE_HEADING_KD;
 
     if (chassis_motion_pid_profile_configure(
             CHASSIS_MOTION_PID_PROFILE_STRAIGHT,

@@ -504,6 +504,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\gimbal_stepper.h</FilePath>
             </File>
+            <File>
+              <FileName>vision_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\vision_uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>vision_uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\vision_uart.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1528,6 +1538,16 @@
               <FileName>splash_image2_tiles_quant5.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\splash_image2_tiles_quant5.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_vision_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_vision_uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_vision_uart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_vision_uart.h</FilePath>
             </File>
           </Files>
         </Group>

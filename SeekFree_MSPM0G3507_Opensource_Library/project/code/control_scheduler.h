@@ -87,12 +87,8 @@ typedef struct
     uint32 overrun_count;
     /** Sequence number of the latest received IMU angle frame. */
     uint32 imu_angle_frame_count;
-    /** Sequence number of the latest received IMU gyro frame. */
-    uint32 imu_gyro_frame_count;
     /** Scheduler ticks since the last new valid IMU frame. */
     uint16 imu_age_ticks;
-    /** Scheduler ticks since the last new gyro frame. */
-    uint16 imu_gyro_age_ticks;
     /** Latest signed left encoder interval count. */
     int16 left_count;
     /** Latest signed right encoder interval count. */
@@ -103,8 +99,6 @@ typedef struct
     float imu_roll_deg;
     /** Chassis pitch after applying the measured IMU mounting transform. */
     float imu_pitch_deg;
-    /** Latest mapped body yaw rate in degrees per second. */
-    float imu_gyro_z_deg_s;
     /** Estimated stationary yaw drift in degrees per minute. */
     float imu_yaw_drift_deg_min;
     /** Stored manual left-wheel target in millimeters per second. */
@@ -151,8 +145,6 @@ typedef struct
     uint8 imu_ready;
     /** Startup stability progress from 0 through 100 percent. */
     uint8 imu_stability_progress;
-    /** Nonzero while fresh 0x52 angular-rate frames are available. */
-    uint8 imu_gyro_available;
     /** Nonzero after both gimbal axes were manually referenced. */
     uint8 gimbal_calibrated;
     /** Nonzero when the latest real-time feedforward command was accepted. */
@@ -253,5 +245,8 @@ uint8 control_scheduler_request_chassis_motion_pid_profile(uint8 profile_id);
  * @param status Destination status structure.
  */
 void control_scheduler_get_status(control_scheduler_status_struct *status);
+
+/** @brief Return the current 10 ms scheduler tick count atomically. */
+uint32 control_scheduler_get_tick_count(void);
 
 #endif

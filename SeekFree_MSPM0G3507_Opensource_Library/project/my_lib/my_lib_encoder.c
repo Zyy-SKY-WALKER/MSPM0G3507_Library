@@ -2,7 +2,8 @@
  * @file    my_lib_encoder.c
  * @brief   Hybrid hardware/software x1 quadrature encoder driver.
  * @note    Left uses TIMG8 QEI divided by four. Right counts only phase-A
- *          rising edges and samples phase-B for direction.
+ *          rising edges and samples phase-B for direction. Direction polarity
+ *          is selected by the active drive motor profile.
  */
 
 #include "my_lib_encoder.h"

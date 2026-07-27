@@ -31,8 +31,9 @@
 #define TEST_MODE_ILI9341_FADE       (22)
 #define TEST_MODE_ILI9341_NEON       (23)
 #define TEST_MODE_ILI9341_RADIAL     (24)
+#define TEST_MODE_VISION_UART        (25)
 
-#define TEST_MODE                    TEST_MODE_CONTROL_SCHEDULER
+#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_REAL
 
 
 #endif

@@ -80,6 +80,8 @@
 #include "test_line_follow_real.h"
 #elif (TEST_MODE == TEST_MODE_STEPPER)
 #include "test_stepper.h"
+#elif (TEST_MODE == TEST_MODE_VISION_UART)
+#include "test_vision_uart.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -144,6 +146,8 @@ int main(void)
     test_line_follow_real_run();
 #elif (TEST_MODE == TEST_MODE_STEPPER)
     test_stepper_run();
+#elif (TEST_MODE == TEST_MODE_VISION_UART)
+    test_vision_uart_run();
 #endif
 
     while (true)

@@ -6,6 +6,7 @@
 #ifndef MY_LIB_ENCODER_H
 #define MY_LIB_ENCODER_H
 
+#include "drive_motor_config.h"
 #include "zf_common_typedef.h"
 #include "zf_driver_gpio.h"
 
@@ -14,7 +15,8 @@
 /** @brief Left encoder phase-B QEI input pin. */
 #define MY_ENCODER_LEFT_PHASE_B_PIN        (B22)
 /** @brief Left count polarity; use 1 or -1 to select positive rotation. */
-#define MY_ENCODER_LEFT_COUNT_SIGN         (1)
+#define MY_ENCODER_LEFT_COUNT_SIGN         \
+    (DRIVE_PROFILE_LEFT_ENCODER_COUNT_SIGN)
 
 /** @brief Right encoder phase-A rising-edge interrupt input pin. */
 #define MY_ENCODER_RIGHT_PHASE_A_PIN       (B17)
@@ -23,7 +25,8 @@
 /**
  * @brief Phase-B level that represents positive motion at phase-A rising.
  */
-#define MY_ENCODER_RIGHT_POSITIVE_B_LEVEL  (GPIO_HIGH)
+#define MY_ENCODER_RIGHT_POSITIVE_B_LEVEL  \
+    (DRIVE_PROFILE_RIGHT_ENCODER_POSITIVE_B_LEVEL)
 
 /**
  * @brief Initialize both encoders for x1 quadrature counting.
