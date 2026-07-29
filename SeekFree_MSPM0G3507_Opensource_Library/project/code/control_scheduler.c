@@ -8,8 +8,8 @@
 #include <float.h>
 #include <math.h>
 
+#include "control_imu_mpu6500.h"
 #include "drive_geometry.h"
-#include "imu_uart.h"
 #include "my_lib_encoder.h"
 #include "zf_common_interrupt.h"
 #include "zf_device_key.h"
@@ -20,12 +20,13 @@
 #define CONTROL_EMERGENCY_KEY_PIN            (A31)
 #define CONTROL_ENCODER_COUNT_LIMIT          (2500)
 #define CONTROL_STOPPED_COUNT_LIMIT          (1)
-#define CONTROL_IMU_FRESH_LIMIT_TICKS        (10U)
+#define CONTROL_IMU_FRESH_LIMIT_TICKS        (2U)
 #define CONTROL_SCHEDULER_IRQ_PRIORITY       (1U)
 #define CONTROL_ENCODER_IRQ_PRIORITY         (2U)
 #define CONTROL_GIMBAL_ENABLED                (GIMBAL_CONFIG_INSTALLED)
 #define CONTROL_GIMBAL_FEEDFORWARD_DIVIDER   (2U)
 #define CONTROL_GIMBAL_MAX_SEQUENCE_LAG      (1U)
+#define CONTROL_IMU_UART_LEGACY_PROCESSING    (0U)
 #define CONTROL_IMU_WARMUP_TICKS             (200U)
 #define CONTROL_IMU_STABLE_TICKS             (200U)
 #define CONTROL_IMU_MIN_STABLE_SAMPLES       (25U)
@@ -102,6 +103,7 @@ static volatile uint8 control_gimbal_pose_valid;
 static uint32 control_gimbal_pose_consumed_sequence;
 static volatile gimbal_feedforward_solution_struct
     control_gimbal_last_solution;
+#if (CONTROL_IMU_UART_LEGACY_PROCESSING != 0U)
 static uint16 control_imu_warmup_ticks;
 static uint16 control_imu_stable_ticks;
 static uint16 control_imu_stable_samples;
@@ -129,9 +131,12 @@ static uint16 control_imu_stationary_frames;
 static uint8 control_imu_roll_deadband_active;
 static uint8 control_imu_pitch_deadband_active;
 static uint8 control_imu_latest_angle_stationary;
+#endif
+static uint8 control_imu_ready_seen;
 
 static uint16 control_count_magnitude(int16 count);
 
+#if (CONTROL_IMU_UART_LEGACY_PROCESSING != 0U)
 /**
  * @brief Wrap one degree angle to the interval [-180, 180].
  */
@@ -501,6 +506,7 @@ static void control_update_imu_stability(
         control_status.imu_yaw_deg = 0.0F;
     }
 }
+#endif
 
 /**
  * @brief Check that all shared non-emergency keys are physically released.
@@ -538,7 +544,6 @@ static void control_update_gimbal_calibration(
         control_gimbal_pose_valid = 0U;
         control_gimbal_feedforward_divider = 0U;
         control_gimbal_calibration_complete = 1U;
-        control_imu_begin_stability();
     }
 }
 
@@ -679,7 +684,6 @@ static void control_try_clear_fault(uint8 emergency_active)
     control_status.fault_flags = CONTROL_FAULT_NONE;
     my_encoder_clear_count();
     odometry_reset();
-    control_imu_begin_stability();
     control_enter_disarmed();
 }
 
@@ -1026,6 +1030,7 @@ static void control_pit_callback(uint32 event, void *user_data)
 uint8 control_scheduler_init(void)
 {
     uint8 gray_ready;
+    uint8 imu_ready;
 
     control_initialized = 0U;
     control_started = 0U;
@@ -1034,6 +1039,7 @@ uint8 control_scheduler_init(void)
     control_manual_target_age_ticks = 0U;
     control_manual_target_active = 0U;
     control_key4_long_handled = 0U;
+    control_imu_ready_seen = 0U;
     control_gimbal_calibration_complete =
         CONTROL_GIMBAL_ENABLED == 0U ? 1U : 0U;
     control_gimbal_pose_sequence = 0U;
@@ -1061,9 +1067,14 @@ uint8 control_scheduler_init(void)
     control_status.imu_valid = 0U;
     control_status.imu_fresh = 0U;
     control_status.imu_yaw_deg = 0.0F;
+    control_status.imu_yaw_continuous_deg = 0.0F;
     control_status.imu_roll_deg = 0.0F;
     control_status.imu_pitch_deg = 0.0F;
     control_status.imu_yaw_drift_deg_min = 0.0F;
+    control_status.imu_ready = 0U;
+    control_status.imu_stability_progress = 0U;
+    control_status.imu_stability_state =
+        CONTROL_IMU_STABILITY_WAIT_STREAM;
     control_status.gimbal_feedforward_count = 0U;
     control_status.gimbal_feedforward_reject_count = 0U;
     control_status.gimbal_feedforward_stale_count = 0U;
@@ -1073,7 +1084,6 @@ uint8 control_scheduler_init(void)
     control_status.gimbal_calibrated =
         CONTROL_GIMBAL_ENABLED == 0U ? 1U : 0U;
     control_status.gimbal_feedforward_valid = 0U;
-    control_imu_begin_stability();
     control_mailbox.flags = 0U;
     control_mailbox.left_target_mm_s = 0.0F;
     control_mailbox.right_target_mm_s = 0.0F;
@@ -1095,7 +1105,7 @@ uint8 control_scheduler_init(void)
     chassis_motion_init();
     my_encoder_init();
     gray_ready = gray_sensor_init();
-    imu_uart_init();
+    imu_ready = control_imu_mpu6500_init();
     odometry_init();
     line_tracker_init(NULL);
     key_init(CONTROL_SCHEDULER_PERIOD_MS);
@@ -1112,6 +1122,12 @@ uint8 control_scheduler_init(void)
     if (gray_ready == ZF_FALSE)
     {
         control_latch_fault(CONTROL_FAULT_GRAY_INIT);
+        control_publish_status();
+        return ZF_FALSE;
+    }
+    if (imu_ready == ZF_FALSE)
+    {
+        control_latch_fault(CONTROL_FAULT_IMU_INIT);
         control_publish_status();
         return ZF_FALSE;
     }
@@ -1153,10 +1169,10 @@ void control_scheduler_update_10ms(void)
     line_tracker_output_struct line_output;
     float left_target = 0.0F;
     float right_target = 0.0F;
-    uint32 yaw_frame_count = 0U;
+    uint32 yaw_frame_count = control_status.imu_angle_frame_count;
     float yaw_deg = 0.0F;
     odometry_state_struct odometry;
-    imu_uart_data_struct imu_data;
+    control_imu_mpu6500_data_struct imu_data;
     gimbal_stepper_status_struct gimbal_status;
     gimbal_feedforward_pose_struct gimbal_pose;
     int16 left_count;
@@ -1189,8 +1205,7 @@ void control_scheduler_update_10ms(void)
     /* Phase 1: latch safety input and collect one request snapshot. */
     emergency_active = (uint8)(
         gpio_get_level(CONTROL_EMERGENCY_KEY_PIN) == GPIO_LOW);
-    if ((emergency_active != 0U)
-        && (control_gimbal_calibration_complete != 0U))
+    if (emergency_active != 0U)
     {
         control_latch_fault(CONTROL_FAULT_EMERGENCY_KEY);
     }
@@ -1224,18 +1239,39 @@ void control_scheduler_update_10ms(void)
 
     /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
-    imu_uart_update();
-    imu_data.angle_deg[0] = 0.0F;
-    imu_data.angle_deg[1] = 0.0F;
-    imu_data.angle_deg[2] = 0.0F;
-    imu_data.angle_frame_count = 0U;
-    imu_data.checksum_error_count = 0U;
-    imu_data.angle_valid = 0U;
-    imu_data_valid = imu_uart_get_data(&imu_data);
+    imu_data_valid = control_imu_mpu6500_get_data(&imu_data);
     yaw_valid = imu_data_valid;
     if (imu_data_valid != 0U)
     {
-        yaw_frame_count = imu_data.angle_frame_count;
+        yaw_frame_count = imu_data.update_count;
+        control_status.imu_roll_deg = imu_data.roll_deg;
+        control_status.imu_pitch_deg = imu_data.pitch_deg;
+        control_status.imu_yaw_deg = imu_data.yaw_deg;
+        control_status.imu_yaw_continuous_deg =
+            imu_data.yaw_continuous_deg;
+        control_status.imu_ready = imu_data.ready;
+        control_status.imu_stability_progress =
+            imu_data.calibration_progress;
+        control_status.imu_stability_state = imu_data.ready != 0U
+            ? CONTROL_IMU_STABILITY_READY
+            : CONTROL_IMU_STABILITY_COLLECTING;
+        control_status.imu_yaw_drift_deg_min = 0.0F;
+
+        if((imu_data.ready != 0U) && (control_imu_ready_seen == 0U))
+        {
+            control_imu_ready_seen = 1U;
+            my_encoder_clear_count();
+            odometry_reset_pose(0.0F, 0.0F, 0.0F);
+            left_count = 0;
+            right_count = 0;
+        }
+    }
+    else
+    {
+        control_status.imu_ready = 0U;
+        control_status.imu_stability_progress = 0U;
+        control_status.imu_stability_state =
+            CONTROL_IMU_STABILITY_WAIT_STREAM;
     }
     gray = control_status.gray;
     gray_valid = gray_sensor_sample(&gray);
@@ -1264,9 +1300,6 @@ void control_scheduler_update_10ms(void)
         (uint8)((yaw_valid != 0U)
             && (control_status.imu_age_ticks
                 <= CONTROL_IMU_FRESH_LIMIT_TICKS));
-    control_update_imu_stability(
-        &imu_data,
-        new_angle_frame);
     yaw_deg = control_status.imu_yaw_deg;
 
     /* Phase 3: validate inputs and gate corrected IMU use. */
@@ -1294,6 +1327,13 @@ void control_scheduler_update_10ms(void)
         control_enter_disarmed();
     }
     if ((control_status.mode == CONTROL_MODE_CHASSIS_MOTION)
+        && ((control_status.imu_fresh == 0U)
+            || (control_status.imu_ready == 0U)))
+    {
+        control_latch_fault(CONTROL_FAULT_IMU_STALE);
+    }
+    if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
+        && (control_manual_target_active != 0U)
         && ((control_status.imu_fresh == 0U)
             || (control_status.imu_ready == 0U)))
     {
@@ -1405,6 +1445,8 @@ void control_scheduler_process_foreground(void)
     uint8 gimbal_pose_pending = 0U;
     uint8 gimbal_update_accepted;
     uint8 gimbal_solution_valid;
+
+    control_imu_mpu6500_service(control_scheduler_get_tick_count());
 
     if (CONTROL_GIMBAL_ENABLED == 0U)
     {

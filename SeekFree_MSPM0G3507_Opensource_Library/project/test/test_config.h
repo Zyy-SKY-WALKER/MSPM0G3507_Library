@@ -32,8 +32,10 @@
 #define TEST_MODE_ILI9341_NEON       (23)
 #define TEST_MODE_ILI9341_RADIAL     (24)
 #define TEST_MODE_VISION_UART        (25)
+#define TEST_MODE_MPU6500            (26)
+#define TEST_MODE_MPU6500_YAW_TURN   (27)
 
-#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_REAL
+#define TEST_MODE                    TEST_MODE_MPU6500_YAW_TURN
 
 
 #endif

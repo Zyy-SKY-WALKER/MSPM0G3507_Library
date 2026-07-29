@@ -514,6 +514,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\vision_uart.h</FilePath>
             </File>
+            <File>
+              <FileName>control_imu_mpu6500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\control_imu_mpu6500.c</FilePath>
+            </File>
+            <File>
+              <FileName>control_imu_mpu6500.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\control_imu_mpu6500.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1259,6 +1269,26 @@
               <FileType>1</FileType>
               <FilePath>..\my_lib\splash_jpeg_player.c</FilePath>
             </File>
+            <File>
+              <FileName>my_lib_mpu6500.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\my_lib_mpu6500.h</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_mpu6500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\my_lib_mpu6500.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_mpu6500_attitude.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\my_lib\my_lib_mpu6500_attitude.h</FilePath>
+            </File>
+            <File>
+              <FileName>my_lib_mpu6500_attitude.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\my_lib\my_lib_mpu6500_attitude.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1548,6 +1578,26 @@
               <FileName>test_vision_uart.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_vision_uart.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_mpu6500.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_mpu6500.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500_yaw_turn.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_mpu6500_yaw_turn.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500_yaw_turn.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_mpu6500_yaw_turn.h</FilePath>
             </File>
           </Files>
         </Group>

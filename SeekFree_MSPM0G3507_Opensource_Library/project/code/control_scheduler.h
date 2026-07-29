@@ -53,6 +53,8 @@ typedef enum
     CONTROL_FAULT_REENTRY = 0x00000020U,
     /** A chassis command started or continued without fresh IMU yaw. */
     CONTROL_FAULT_IMU_STALE = 0x00000040U,
+    /** MPU6500 initialization failed before the scheduler started. */
+    CONTROL_FAULT_IMU_INIT = 0x00000080U,
 } control_fault_enum;
 
 /** @brief Automatic startup attitude-reference states. */
@@ -95,9 +97,11 @@ typedef struct
     int16 right_count;
     /** Latest wrapped IMU yaw in degrees. */
     float imu_yaw_deg;
-    /** Chassis roll after applying the measured IMU mounting transform. */
+    /** Latest continuous MPU6500 yaw in degrees. */
+    float imu_yaw_continuous_deg;
+    /** Roll about body +X; MPU axes must be X forward, Y left and Z up. */
     float imu_roll_deg;
-    /** Chassis pitch after applying the measured IMU mounting transform. */
+    /** Pitch about body +Y; MPU axes must be X forward, Y left and Z up. */
     float imu_pitch_deg;
     /** Estimated stationary yaw drift in degrees per minute. */
     float imu_yaw_drift_deg_min;

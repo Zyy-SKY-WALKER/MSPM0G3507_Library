@@ -82,6 +82,10 @@
 #include "test_stepper.h"
 #elif (TEST_MODE == TEST_MODE_VISION_UART)
 #include "test_vision_uart.h"
+#elif (TEST_MODE == TEST_MODE_MPU6500)
+#include "test_mpu6500.h"
+#elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
+#include "test_mpu6500_yaw_turn.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -148,6 +152,10 @@ int main(void)
     test_stepper_run();
 #elif (TEST_MODE == TEST_MODE_VISION_UART)
     test_vision_uart_run();
+#elif (TEST_MODE == TEST_MODE_MPU6500)
+    test_mpu6500_run();
+#elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
+    test_mpu6500_yaw_turn_run();
 #endif
 
     while (true)
