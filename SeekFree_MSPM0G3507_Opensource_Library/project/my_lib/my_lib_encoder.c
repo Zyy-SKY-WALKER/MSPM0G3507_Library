@@ -1,9 +1,8 @@
 /**
  * @file    my_lib_encoder.c
- * @brief   Hybrid hardware/software x1 quadrature encoder driver.
- * @note    Left uses TIMG8 QEI divided by four. Right counts only phase-A
- *          rising edges and samples phase-B for direction. Direction polarity
- *          is selected by the active drive motor profile.
+ * @brief   Profile-configured hardware/software quadrature encoder driver.
+ * @note    The 520 profile uses x4 decoding. Left uses TIMG8 QEI directly and
+ *          right uses both GPIO edge inputs with a four-phase state table.
  */
 
 #include "my_lib_encoder.h"
@@ -18,11 +17,24 @@
 #define MY_ENCODER_LEFT_TIMER             (TIM_G8)
 #define MY_ENCODER_LEFT_QEI_PHASE_A       (TIMG8_ENCODER1_CH1_B21)
 #define MY_ENCODER_LEFT_QEI_PHASE_B       (TIMG8_ENCODER1_CH2_B22)
-#define MY_ENCODER_QEI_X4_TO_X1_DIVISOR   (4)
-
 static uint16 my_encoder_left_previous;
+#if (DRIVE_PROFILE_ENCODER_USE_X4 == 0U)
 static int32 my_encoder_left_remainder;
+#endif
 static volatile int32 my_encoder_right_count;
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+static volatile uint32 my_encoder_right_invalid_transition_count;
+static uint8 my_encoder_right_previous_state;
+
+/**
+ * @brief Return the current right encoder A/B phase state.
+ */
+static uint8 my_encoder_right_get_state(void)
+{
+    return (uint8)((gpio_get_level(MY_ENCODER_RIGHT_PHASE_A_PIN) << 1U)
+        | gpio_get_level(MY_ENCODER_RIGHT_PHASE_B_PIN));
+}
+#endif
 
 /**
  * @brief Clamp one interval count to the public signed 16-bit range.
@@ -44,17 +56,47 @@ static int16 my_encoder_clamp_delta(int32 count)
 }
 
 /**
- * @brief Decode one right encoder phase-A rising edge at x1 resolution.
+ * @brief Decode one right encoder edge using the active profile resolution.
  * @param event EXTI trigger event.
  * @param user_data Optional callback context.
  */
 static void my_encoder_right_callback(uint32 event, void *user_data)
 {
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    static const int8 transition_delta[16] =
+    {
+         0, -1,  1,  0,
+         1,  0,  0, -1,
+        -1,  0,  0,  1,
+         0,  1, -1,  0,
+    };
+    uint8 current_state;
+    int8 delta;
+#else
     uint8 phase_b;
+#endif
 
     (void)event;
     (void)user_data;
 
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    current_state = my_encoder_right_get_state();
+    delta = transition_delta[(my_encoder_right_previous_state << 2U)
+        | current_state];
+    if((delta == 0) && (current_state != my_encoder_right_previous_state))
+    {
+        my_encoder_right_invalid_transition_count++;
+    }
+    else if(delta != 0)
+    {
+        if(MY_ENCODER_RIGHT_POSITIVE_B_LEVEL == GPIO_HIGH)
+        {
+            delta = -delta;
+        }
+        my_encoder_right_count += delta;
+    }
+    my_encoder_right_previous_state = current_state;
+#else
     phase_b = gpio_get_level(MY_ENCODER_RIGHT_PHASE_B_PIN);
 
     if (phase_b == MY_ENCODER_RIGHT_POSITIVE_B_LEVEL)
@@ -65,10 +107,11 @@ static void my_encoder_right_callback(uint32 event, void *user_data)
     {
         my_encoder_right_count--;
     }
+#endif
 }
 
 /**
- * @brief Initialize left hardware QEI and right software x1 decoding.
+ * @brief Initialize left hardware QEI and right software quadrature decoding.
  */
 void my_encoder_init(void)
 {
@@ -77,17 +120,25 @@ void my_encoder_init(void)
         MY_ENCODER_LEFT_QEI_PHASE_A,
         MY_ENCODER_LEFT_QEI_PHASE_B);
 
-    gpio_init(
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    exti_init(
+        MY_ENCODER_RIGHT_PHASE_A_PIN,
+        EXTI_TRIGGER_BOTH,
+        my_encoder_right_callback,
+        NULL);
+    exti_init(
         MY_ENCODER_RIGHT_PHASE_B_PIN,
-        GPI,
-        GPIO_HIGH,
-        GPI_PULL_UP);
-
+        EXTI_TRIGGER_BOTH,
+        my_encoder_right_callback,
+        NULL);
+    my_encoder_right_previous_state = my_encoder_right_get_state();
+#else
     exti_init(
         MY_ENCODER_RIGHT_PHASE_A_PIN,
         EXTI_TRIGGER_RISING,
         my_encoder_right_callback,
         NULL);
+#endif
     my_encoder_clear_count();
 }
 
@@ -113,16 +164,18 @@ void my_encoder_get_delta(int16 *left_count, int16 *right_count)
     primask = interrupt_global_disable();
 
     left_current = timer_get(MY_ENCODER_LEFT_TIMER);
-    /* Subtract QEI modulo 2^16, divide x4 to x1, and carry the signed
-     * remainder. */
+    /* Subtract the QEI counter modulo 2^16 and apply profile polarity. */
     left_raw_delta = (int32)(int16)(uint16)(
         left_current - my_encoder_left_previous);
     my_encoder_left_previous = left_current;
     left_raw_delta *= MY_ENCODER_LEFT_COUNT_SIGN;
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    left_delta = left_raw_delta;
+#else
     left_raw_delta += my_encoder_left_remainder;
-    left_delta = left_raw_delta / MY_ENCODER_QEI_X4_TO_X1_DIVISOR;
-    my_encoder_left_remainder =
-        left_raw_delta % MY_ENCODER_QEI_X4_TO_X1_DIVISOR;
+    left_delta = left_raw_delta / 4;
+    my_encoder_left_remainder = left_raw_delta % 4;
+#endif
 
     right_delta = my_encoder_right_count;
     my_encoder_right_count = 0;
@@ -170,26 +223,32 @@ uint8 my_encoder_get_right_phase_b(void)
 }
 
 /**
- * @brief Reset the left QEI sampling baseline and scaling remainder.
+ * @brief Reset the left QEI sampling baseline and optional x1 remainder.
  */
 void my_encoder_clear_left_count(void)
 {
     uint32 primask = interrupt_global_disable();
 
     my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
+#if (DRIVE_PROFILE_ENCODER_USE_X4 == 0U)
     my_encoder_left_remainder = 0;
+#endif
 
     interrupt_global_enable(primask);
 }
 
 /**
- * @brief Clear the right software x1 interval accumulator.
+ * @brief Clear the right software encoder interval accumulator.
  */
 void my_encoder_clear_right_count(void)
 {
     uint32 primask = interrupt_global_disable();
 
     my_encoder_right_count = 0;
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    my_encoder_right_invalid_transition_count = 0U;
+    my_encoder_right_previous_state = my_encoder_right_get_state();
+#endif
 
     interrupt_global_enable(primask);
 }
@@ -202,8 +261,34 @@ void my_encoder_clear_count(void)
     uint32 primask = interrupt_global_disable();
 
     my_encoder_left_previous = timer_get(MY_ENCODER_LEFT_TIMER);
+#if (DRIVE_PROFILE_ENCODER_USE_X4 == 0U)
     my_encoder_left_remainder = 0;
+#endif
     my_encoder_right_count = 0;
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    my_encoder_right_invalid_transition_count = 0U;
+    my_encoder_right_previous_state = my_encoder_right_get_state();
+#endif
 
     interrupt_global_enable(primask);
+}
+
+/**
+ * @brief Read the number of rejected right-wheel quadrature transitions.
+ * @return Invalid phase-transition count since the most recent clear.
+ */
+uint32 my_encoder_get_right_invalid_transition_count(void)
+{
+    uint32 primask;
+    uint32 count;
+
+    primask = interrupt_global_disable();
+#if (DRIVE_PROFILE_ENCODER_USE_X4 != 0U)
+    count = my_encoder_right_invalid_transition_count;
+#else
+    count = 0U;
+#endif
+    interrupt_global_enable(primask);
+
+    return count;
 }

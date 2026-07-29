@@ -9,6 +9,8 @@
 
 #include "test_speed_pid.h"
 
+#include <string.h>
+
 #include "drive_geometry.h"
 #include "my_lib_encoder.h"
 #include "speed_pid.h"
@@ -21,9 +23,9 @@
 #define SPEED_PID_TEST_ARM_TIME_MS       (3000U)
 #define SPEED_PID_TEST_IDLE_TIME_MS      (1U)
 /** Conservative 520 test targets expressed as encoder counts per 10 ms. */
-#define SPEED_PID_TEST_COUNTS_LOW         (2.0F)
-#define SPEED_PID_TEST_COUNTS_MEDIUM      (4.0F)
-#define SPEED_PID_TEST_COUNTS_HIGH        (6.0F)
+#define SPEED_PID_TEST_COUNTS_LOW         (8.0F)
+#define SPEED_PID_TEST_COUNTS_MEDIUM      (16.0F)
+#define SPEED_PID_TEST_COUNTS_HIGH        (24.0F)
 #define SPEED_PID_TEST_LEFT_MM_S(counts)  \
     ((counts) * DRIVE_LEFT_MM_PER_COUNT * 1000.0F \
         / (float)SPEED_PID_SAMPLE_PERIOD_MS)
@@ -72,6 +74,26 @@ static void speed_pid_test_pit_callback(uint32 event, void *user_data)
 }
 
 /**
+ * @brief Send six-channel wheel speed and PWM telemetry through VOFA.
+ */
+static void speed_pid_test_send_vofa(const speed_pid_status_struct *status)
+{
+    static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
+    float channels[6];
+    uint8 frame[28];
+
+    channels[0] = status->left_target_mm_s;
+    channels[1] = status->left_speed_mm_s;
+    channels[2] = status->right_target_mm_s;
+    channels[3] = status->right_speed_mm_s;
+    channels[4] = (float)status->left_duty;
+    channels[5] = (float)status->right_duty;
+    memcpy(frame, channels, sizeof(channels));
+    memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
+    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+}
+
+/**
  * @brief Send the latest speed status when one VOFA frame is due.
  */
 static void speed_pid_test_process_vofa(void)
@@ -88,7 +110,7 @@ static void speed_pid_test_process_vofa(void)
     if (send_due != 0U)
     {
         speed_pid_get_status(&status);
-        vofa_send_right_speed(&status);
+        speed_pid_test_send_vofa(&status);
     }
 }
 

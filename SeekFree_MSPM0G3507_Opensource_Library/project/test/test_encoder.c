@@ -73,6 +73,7 @@ void test_encoder_run(void)
     uint8 left_phase_b;
     uint8 right_phase_a;
     uint8 right_phase_b;
+    uint32 right_invalid_transition_count;
 
     ili9341_init();
     my_encoder_init();
@@ -94,7 +95,7 @@ void test_encoder_run(void)
         264U,
         (int32)DRIVE_ENCODER_COUNTS_PER_REV,
         5U);
-    ili9341_show_string(8U, 288U, "CHECK FORWARD SIGN");
+    ili9341_show_string(8U, 288U, "R INVALID:");
 
     my_encoder_clear_count();
     while (true)
@@ -106,6 +107,8 @@ void test_encoder_run(void)
         left_phase_b = my_encoder_get_left_phase_b();
         right_phase_a = my_encoder_get_right_phase_a();
         right_phase_b = my_encoder_get_right_phase_b();
+        right_invalid_transition_count =
+            my_encoder_get_right_invalid_transition_count();
 
         test_encoder_show_count(
             96U,
@@ -135,6 +138,11 @@ void test_encoder_run(void)
             120U,
             200U,
             right_phase_b);
+        test_encoder_show_count(
+            96U,
+            288U,
+            right_invalid_transition_count,
+            8U);
         system_delay_ms(ENCODER_TEST_REFRESH_DELAY_MS);
     }
 }

@@ -1,6 +1,6 @@
 /**
  * @file    my_lib_encoder.h
- * @brief   Hybrid hardware/software x1 quadrature encoder driver.
+ * @brief   Profile-configured hardware/software quadrature encoder driver.
  */
 
 #ifndef MY_LIB_ENCODER_H
@@ -38,7 +38,7 @@ void my_encoder_init(void);
  * @brief Read and consume both x1 counts accumulated since the last read.
  * @param left_count Destination for the signed left x1 interval count.
  * @param right_count Destination for the signed right x1 interval count.
- * @note One x1 count represents one complete phase-A cycle.
+ * @note The active motor profile selects x1 or x4 decoding.
  *       Positive direction is selected by the polarity macros above. Results
  *       are clamped to -32768 through 32767.
  * @note This is a destructive read: the left sampling baseline advances and
@@ -47,6 +47,13 @@ void my_encoder_init(void);
  *      hardware delta remains in the signed 16-bit range between reads.
  */
 void my_encoder_get_delta(int16 *left_count, int16 *right_count);
+
+/**
+ * @brief Read the number of rejected right-wheel quadrature transitions.
+ * @return Invalid phase-transition count since the most recent clear.
+ * @note Returns zero for profiles using the legacy x1 right-wheel decoder.
+ */
+uint32 my_encoder_get_right_invalid_transition_count(void);
 
 /**
  * @brief Read the left encoder phase-A logic level.

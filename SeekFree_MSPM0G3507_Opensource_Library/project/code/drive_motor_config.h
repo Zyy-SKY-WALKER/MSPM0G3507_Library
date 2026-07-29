@@ -19,6 +19,7 @@
 
 /* Original profile retained from the existing MSPM0G3507 vehicle setup. */
 #define DRIVE_ORIGINAL_ENCODER_COUNTS_PER_REV        (10250U)
+#define DRIVE_ORIGINAL_ENCODER_USE_X4                (0U)
 #define DRIVE_ORIGINAL_LEFT_ENCODER_COUNT_SIGN       (1)
 #define DRIVE_ORIGINAL_RIGHT_ENCODER_POSITIVE_B_LEVEL \
     (1U)
@@ -44,9 +45,10 @@
 #define DRIVE_ORIGINAL_HEADING_KI                    (0.0F)
 #define DRIVE_ORIGINAL_HEADING_KD                    (0.0F)
 
-/* 520 profile: 13 PPR, x1 decoding and a 30:1 gearbox yield 390 counts/rev. */
+/* 520 profile: 13 PPR, x4 decoding and a 30:1 gearbox yield 1560 counts/rev. */
 #define DRIVE_520_ENCODER_PPR                        (13U)
-#define DRIVE_520_ENCODER_DECODE_MULTIPLIER          (1U)
+#define DRIVE_520_ENCODER_DECODE_MULTIPLIER          (4U)
+#define DRIVE_520_ENCODER_USE_X4                     (1U)
 #define DRIVE_520_GEAR_RATIO                         (30U)
 #define DRIVE_520_ENCODER_COUNTS_PER_REV             \
     (DRIVE_520_ENCODER_PPR * DRIVE_520_ENCODER_DECODE_MULTIPLIER \
@@ -63,18 +65,19 @@
 /* Start at 40% duty while validating the new motor installation. */
 #define DRIVE_520_SPEED_PID_OUTPUT_LIMIT             (4000)
 /* Values are legacy 50000-duty gains scaled to the 10000-duty driver. */
-#define DRIVE_520_STRAIGHT_LEFT_KP                   (45.0F)
-#define DRIVE_520_STRAIGHT_LEFT_KI                   (51.0F)
-#define DRIVE_520_STRAIGHT_LEFT_KD                   (5.6F)
-#define DRIVE_520_STRAIGHT_RIGHT_KP                  (44.0F)
-#define DRIVE_520_STRAIGHT_RIGHT_KI                  (50.0F)
-#define DRIVE_520_STRAIGHT_RIGHT_KD                  (6.0F)
-#define DRIVE_520_TURN_LEFT_KP                       (42.0F)
-#define DRIVE_520_TURN_LEFT_KI                       (25.0F)
-#define DRIVE_520_TURN_LEFT_KD                       (2.0F)
-#define DRIVE_520_TURN_RIGHT_KP                      (42.0F)
-#define DRIVE_520_TURN_RIGHT_KI                      (25.0F)
-#define DRIVE_520_TURN_RIGHT_KD                      (2.0F)
+/* x4 counts scale speed PID errors by four, so gains are scaled by 1/4. */
+#define DRIVE_520_STRAIGHT_LEFT_KP                   (60.0F)
+#define DRIVE_520_STRAIGHT_LEFT_KI                   (0.0F)
+#define DRIVE_520_STRAIGHT_LEFT_KD                   (0.0F)
+#define DRIVE_520_STRAIGHT_RIGHT_KP                  (60.0F)
+#define DRIVE_520_STRAIGHT_RIGHT_KI                  (0.0F)
+#define DRIVE_520_STRAIGHT_RIGHT_KD                  (0.0F)
+#define DRIVE_520_TURN_LEFT_KP                       (10.5F)
+#define DRIVE_520_TURN_LEFT_KI                       (6.25F)
+#define DRIVE_520_TURN_LEFT_KD                       (0.5F)
+#define DRIVE_520_TURN_RIGHT_KP                      (10.5F)
+#define DRIVE_520_TURN_RIGHT_KI                      (6.25F)
+#define DRIVE_520_TURN_RIGHT_KD                      (0.5F)
 #define DRIVE_520_HEADING_KP                         (28.0F)
 #define DRIVE_520_HEADING_KI                         (0.8F)
 #define DRIVE_520_HEADING_KD                         (0.0F)
@@ -83,6 +86,8 @@
 
 #define DRIVE_PROFILE_ENCODER_COUNTS_PER_REV         \
     (DRIVE_ORIGINAL_ENCODER_COUNTS_PER_REV)
+#define DRIVE_PROFILE_ENCODER_USE_X4                 \
+    (DRIVE_ORIGINAL_ENCODER_USE_X4)
 #define DRIVE_PROFILE_LEFT_ENCODER_COUNT_SIGN        \
     (DRIVE_ORIGINAL_LEFT_ENCODER_COUNT_SIGN)
 #define DRIVE_PROFILE_RIGHT_ENCODER_POSITIVE_B_LEVEL \
@@ -134,6 +139,8 @@
 
 #define DRIVE_PROFILE_ENCODER_COUNTS_PER_REV         \
     (DRIVE_520_ENCODER_COUNTS_PER_REV)
+#define DRIVE_PROFILE_ENCODER_USE_X4                 \
+    (DRIVE_520_ENCODER_USE_X4)
 #define DRIVE_PROFILE_LEFT_ENCODER_COUNT_SIGN        \
     (DRIVE_520_LEFT_ENCODER_COUNT_SIGN)
 #define DRIVE_PROFILE_RIGHT_ENCODER_POSITIVE_B_LEVEL \
