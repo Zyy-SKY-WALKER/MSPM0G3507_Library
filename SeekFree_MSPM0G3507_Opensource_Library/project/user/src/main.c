@@ -86,6 +86,8 @@
 #include "test_mpu6500.h"
 #elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
 #include "test_mpu6500_yaw_turn.h"
+#elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN_CLOSED_LOOP)
+#include "test_mpu6500_yaw_turn_closed_loop.h"
 #endif
 // 打开新的工程或者工程移动了位置务必执行以下操作
 // 第一步 关闭上面所有打开的文件
@@ -156,6 +158,8 @@ int main(void)
     test_mpu6500_run();
 #elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
     test_mpu6500_yaw_turn_run();
+#elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN_CLOSED_LOOP)
+    test_mpu6500_yaw_turn_closed_loop_run();
 #endif
 
     while (true)

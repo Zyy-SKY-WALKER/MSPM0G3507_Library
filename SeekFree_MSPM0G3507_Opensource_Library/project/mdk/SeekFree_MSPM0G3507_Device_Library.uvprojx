@@ -524,6 +524,16 @@
               <FileType>5</FileType>
               <FilePath>..\code\control_imu_mpu6500.h</FilePath>
             </File>
+            <File>
+              <FileName>drive_motor_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\drive_motor_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>gimbal_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\code\gimbal_config.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1598,6 +1608,16 @@
               <FileName>test_mpu6500_yaw_turn.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\test_mpu6500_yaw_turn.h</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500_yaw_turn_closed_loop.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_mpu6500_yaw_turn_closed_loop.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_mpu6500_yaw_turn_closed_loop.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_mpu6500_yaw_turn_closed_loop.h</FilePath>
             </File>
           </Files>
         </Group>

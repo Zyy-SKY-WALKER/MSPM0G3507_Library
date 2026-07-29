@@ -34,8 +34,9 @@
 #define TEST_MODE_VISION_UART        (25)
 #define TEST_MODE_MPU6500            (26)
 #define TEST_MODE_MPU6500_YAW_TURN   (27)
+#define TEST_MODE_MPU6500_YAW_TURN_CLOSED_LOOP (28)
 
-#define TEST_MODE                    TEST_MODE_MPU6500_YAW_TURN
+#define TEST_MODE                    TEST_MODE_MPU6500_YAW_TURN_CLOSED_LOOP
 
 
 #endif
