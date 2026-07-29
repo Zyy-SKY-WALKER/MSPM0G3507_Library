@@ -120,6 +120,7 @@ static uint8 chassis_motion_test_configure_profiles(void)
     straight_profile.right_speed_kp = DRIVE_PROFILE_STRAIGHT_RIGHT_KP;
     straight_profile.right_speed_ki = DRIVE_PROFILE_STRAIGHT_RIGHT_KI;
     straight_profile.right_speed_kd = DRIVE_PROFILE_STRAIGHT_RIGHT_KD;
+    straight_profile.speed_kff = DRIVE_PROFILE_STRAIGHT_SPEED_KFF;
     straight_profile.heading_kp = DRIVE_PROFILE_HEADING_KP;
     straight_profile.heading_ki = DRIVE_PROFILE_HEADING_KI;
     straight_profile.heading_kd = DRIVE_PROFILE_HEADING_KD;
@@ -130,6 +131,7 @@ static uint8 chassis_motion_test_configure_profiles(void)
     turn_profile.right_speed_kp = DRIVE_PROFILE_TURN_RIGHT_KP;
     turn_profile.right_speed_ki = DRIVE_PROFILE_TURN_RIGHT_KI;
     turn_profile.right_speed_kd = DRIVE_PROFILE_TURN_RIGHT_KD;
+    turn_profile.speed_kff = DRIVE_PROFILE_TURN_SPEED_KFF;
     turn_profile.heading_kp = DRIVE_PROFILE_HEADING_KP;
     turn_profile.heading_ki = DRIVE_PROFILE_HEADING_KI;
     turn_profile.heading_kd = DRIVE_PROFILE_HEADING_KD;

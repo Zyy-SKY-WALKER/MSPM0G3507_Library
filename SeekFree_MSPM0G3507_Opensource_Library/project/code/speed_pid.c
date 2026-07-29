@@ -1,6 +1,6 @@
 /**
  * @file    speed_pid.c
- * @brief   Dual-wheel incremental speed PID controller implementation.
+ * @brief   Dual-wheel position-form speed PID controller implementation.
  */
 
 #include "speed_pid.h"
@@ -13,24 +13,30 @@
     ((float)SPEED_PID_SAMPLE_PERIOD_MS / 1000.0F)
 #define SPEED_PID_GAIN_LIMIT                (1000.0F)
 
-/** @brief Dynamic state and calibration for one incremental wheel PID. */
+/** @brief Dynamic state and calibration for one position-form wheel PID. */
 typedef struct
 {
     /** Requested wheel speed in millimeters per second. */
     float target_mm_s;
-    /** Requested encoder counts per 10 ms sample. */
-    float target_count;
-    /** Error history ordered as current, previous and two samples old. */
-    float error[3];
-    /** Accumulated incremental duty output. */
+    /** Current and previous errors in millimeters per second. */
+    float error;
+    float previous_error;
+    /** Independently bounded integral duty contribution. */
+    float integral_output;
+    /** Latest total position PID output. */
     float output;
     float kp;
     float ki;
     float kd;
-    /** Conversion factor from mm/s to counts per sample. */
-    float counts_per_sample_mm_s;
+    /** Velocity feedforward gain in duty per millimeter per second. */
+    float kff;
     /** Conversion factor from counts per sample to mm/s. */
     float mm_s_per_count;
+    /** Four-sample rolling encoder-count average state. */
+    int16 speed_history[SPEED_PID_SPEED_FILTER_SAMPLES];
+    int32 speed_history_sum;
+    uint8 speed_history_index;
+    uint8 speed_history_count;
     /** Nonzero when the candidate output was clamped to the duty limit. */
     uint8 saturated;
     /** Nonzero while output is held at zero for a direction reversal. */
@@ -98,17 +104,77 @@ static uint8 speed_pid_gain_is_valid(float gain)
 }
 
 /**
+ * @brief Clamp one floating point value to a closed range.
+ */
+static float speed_pid_clamp(float value, float minimum, float maximum)
+{
+    if(value < minimum)
+    {
+        return minimum;
+    }
+    if(value > maximum)
+    {
+        return maximum;
+    }
+
+    return value;
+}
+
+/**
  * @brief Clear one controller's dynamic state while preserving its gains.
  * @param controller Controller to reset.
  */
 static void speed_pid_reset_runtime(
     volatile speed_pid_controller_struct *controller)
 {
-    controller->error[0] = 0.0F;
-    controller->error[1] = 0.0F;
-    controller->error[2] = 0.0F;
+    controller->error = 0.0F;
+    controller->previous_error = 0.0F;
+    controller->integral_output = 0.0F;
     controller->output = 0.0F;
     controller->saturated = 0U;
+}
+
+/**
+ * @brief Clear one controller's rolling speed measurement history.
+ */
+static void speed_pid_reset_speed_filter(
+    volatile speed_pid_controller_struct *controller)
+{
+    uint8 index;
+
+    for(index = 0U; index < SPEED_PID_SPEED_FILTER_SAMPLES; index++)
+    {
+        controller->speed_history[index] = 0;
+    }
+    controller->speed_history_sum = 0;
+    controller->speed_history_index = 0U;
+    controller->speed_history_count = 0U;
+}
+
+/**
+ * @brief Add one raw count sample and return filtered speed in mm/s.
+ */
+static float speed_pid_update_speed_filter(
+    volatile speed_pid_controller_struct *controller,
+    int16 measured_count)
+{
+    controller->speed_history_sum -=
+        controller->speed_history[controller->speed_history_index];
+    controller->speed_history[controller->speed_history_index] = measured_count;
+    controller->speed_history_sum += measured_count;
+    controller->speed_history_index++;
+    if(controller->speed_history_index >= SPEED_PID_SPEED_FILTER_SAMPLES)
+    {
+        controller->speed_history_index = 0U;
+    }
+    if(controller->speed_history_count < SPEED_PID_SPEED_FILTER_SAMPLES)
+    {
+        controller->speed_history_count++;
+    }
+
+    return ((float)controller->speed_history_sum
+        / (float)controller->speed_history_count)
+        * controller->mm_s_per_count;
 }
 
 /**
@@ -123,19 +189,19 @@ static void speed_pid_controller_init(
     float kp,
     float ki,
     float kd,
+    float kff,
     float mm_per_count)
 {
     controller->target_mm_s = 0.0F;
-    controller->target_count = 0.0F;
     controller->kp = kp;
     controller->ki = ki;
     controller->kd = kd;
-    controller->counts_per_sample_mm_s =
-        SPEED_PID_SAMPLE_PERIOD_S / mm_per_count;
+    controller->kff = kff;
     controller->mm_s_per_count =
         mm_per_count / SPEED_PID_SAMPLE_PERIOD_S;
     controller->reversing = 0U;
     speed_pid_reset_runtime(controller);
+    speed_pid_reset_speed_filter(controller);
 }
 
 /**
@@ -163,25 +229,30 @@ static void speed_pid_controller_set_target(
     else if (new_sign == 0)
     {
         speed_pid_reset_runtime(controller);
+        speed_pid_reset_speed_filter(controller);
         controller->reversing = 0U;
     }
 
     controller->target_mm_s = target_mm_s;
-    controller->target_count =
-        target_mm_s * controller->counts_per_sample_mm_s;
 }
 
 /**
- * @brief Calculate one incremental PID output.
+ * @brief Calculate one position PID output from filtered wheel speed.
  * @param controller Controller state.
- * @param measured_count Signed encoder count for one sample.
+ * @param measured_count Raw encoder count for direction-reversal safety.
+ * @param measured_speed_mm_s Four-sample filtered speed feedback.
  * @return Signed motor duty command.
  */
 static int16 speed_pid_controller_update(
     volatile speed_pid_controller_struct *controller,
-    int16 measured_count)
+    int16 measured_count,
+    float measured_speed_mm_s)
 {
-    float delta_output;
+    float proportional_output;
+    float derivative_output;
+    float feedforward_output;
+    float integral_delta;
+    float candidate_integral;
     float candidate_output;
 
     if (controller->target_mm_s == 0.0F)
@@ -199,22 +270,37 @@ static int16 speed_pid_controller_update(
             && (measured_count <= SPEED_PID_REVERSE_STOP_COUNT))
         {
             controller->reversing = 0U;
+            speed_pid_reset_speed_filter(controller);
         }
 
         return 0;
     }
 
-    controller->error[0] =
-        controller->target_count - (float)measured_count;
-    /* du = Kp(e0-e1) + Ki(e0) + Kd(e0-2e1+e2). */
-    delta_output = controller->kp
-        * (controller->error[0] - controller->error[1]);
-    delta_output += controller->ki * controller->error[0];
-    delta_output += controller->kd
-        * (controller->error[0]
-            - (2.0F * controller->error[1])
-            + controller->error[2]);
-    candidate_output = controller->output + delta_output;
+    controller->error = controller->target_mm_s - measured_speed_mm_s;
+    proportional_output = controller->kp * controller->error;
+    derivative_output = controller->kd
+        * (controller->error - controller->previous_error);
+    feedforward_output = speed_pid_clamp(
+        controller->kff * controller->target_mm_s,
+        -SPEED_PID_FEEDFORWARD_LIMIT,
+        SPEED_PID_FEEDFORWARD_LIMIT);
+    integral_delta = controller->ki * controller->error;
+    candidate_integral = speed_pid_clamp(
+        controller->integral_output + integral_delta,
+        -SPEED_PID_INTEGRAL_LIMIT,
+        SPEED_PID_INTEGRAL_LIMIT);
+    candidate_output = proportional_output + candidate_integral
+        + derivative_output + feedforward_output;
+
+    /* Do not wind the integral farther into a saturated total output. */
+    if(((candidate_output > SPEED_PID_OUTPUT_LIMIT) && (integral_delta > 0.0F))
+        || ((candidate_output < -SPEED_PID_OUTPUT_LIMIT)
+            && (integral_delta < 0.0F)))
+    {
+        candidate_integral = controller->integral_output;
+        candidate_output = proportional_output + candidate_integral
+            + derivative_output + feedforward_output;
+    }
 
     controller->saturated = 0U;
     if (candidate_output > (float)SPEED_PID_OUTPUT_LIMIT)
@@ -228,9 +314,9 @@ static int16 speed_pid_controller_update(
         controller->saturated = 1U;
     }
 
+    controller->integral_output = candidate_integral;
     controller->output = candidate_output;
-    controller->error[2] = controller->error[1];
-    controller->error[1] = controller->error[0];
+    controller->previous_error = controller->error;
 
     if (candidate_output >= 0.0F)
     {
@@ -251,12 +337,14 @@ void speed_pid_init(void)
         SPEED_PID_LEFT_KP,
         SPEED_PID_LEFT_KI,
         SPEED_PID_LEFT_KD,
+        SPEED_PID_SPEED_KFF,
         DRIVE_LEFT_MM_PER_COUNT);
     speed_pid_controller_init(
         &speed_pid_right,
         SPEED_PID_RIGHT_KP,
         SPEED_PID_RIGHT_KI,
         SPEED_PID_RIGHT_KD,
+        SPEED_PID_SPEED_KFF,
         DRIVE_RIGHT_MM_PER_COUNT);
     motor_stop();
     speed_pid_reset();
@@ -309,29 +397,74 @@ uint8 speed_pid_set_shared_gains(float kp, float ki, float kd)
 }
 
 /**
+ * @brief Set one shared velocity feedforward gain for both wheel controllers.
+ */
+uint8 speed_pid_set_shared_feedforward(float kff)
+{
+    uint32 primask;
+
+    if(speed_pid_gain_is_valid(kff) == 0U)
+    {
+        return ZF_FALSE;
+    }
+
+    primask = interrupt_global_disable();
+    speed_pid_left.kff = kff;
+    speed_pid_right.kff = kff;
+    interrupt_global_enable(primask);
+
+    return ZF_TRUE;
+}
+
+/**
  * @brief Execute one 10 millisecond dual-wheel control update.
  */
 void speed_pid_update_10ms(int16 left_count, int16 right_count)
 {
     int16 left_duty;
     int16 right_duty;
+    float left_speed_mm_s;
+    float right_speed_mm_s;
+
+    if(speed_pid_left.target_mm_s == 0.0F)
+    {
+        speed_pid_reset_speed_filter(&speed_pid_left);
+        left_speed_mm_s = 0.0F;
+    }
+    else
+    {
+        left_speed_mm_s = speed_pid_update_speed_filter(
+            &speed_pid_left,
+            left_count);
+    }
+    if(speed_pid_right.target_mm_s == 0.0F)
+    {
+        speed_pid_reset_speed_filter(&speed_pid_right);
+        right_speed_mm_s = 0.0F;
+    }
+    else
+    {
+        right_speed_mm_s = speed_pid_update_speed_filter(
+            &speed_pid_right,
+            right_count);
+    }
 
     left_duty = speed_pid_controller_update(
         &speed_pid_left,
-        left_count);
+        left_count,
+        left_speed_mm_s);
     right_duty = speed_pid_controller_update(
         &speed_pid_right,
-        right_count);
+        right_count,
+        right_speed_mm_s);
 
     motor_left_set_duty(left_duty);
     motor_right_set_duty(right_duty);
 
     speed_pid_status.left_target_mm_s = speed_pid_left.target_mm_s;
     speed_pid_status.right_target_mm_s = speed_pid_right.target_mm_s;
-    speed_pid_status.left_speed_mm_s =
-        (float)left_count * speed_pid_left.mm_s_per_count;
-    speed_pid_status.right_speed_mm_s =
-        (float)right_count * speed_pid_right.mm_s_per_count;
+    speed_pid_status.left_speed_mm_s = left_speed_mm_s;
+    speed_pid_status.right_speed_mm_s = right_speed_mm_s;
     speed_pid_status.left_count = left_count;
     speed_pid_status.right_count = right_count;
     speed_pid_status.left_duty = left_duty;
@@ -360,6 +493,8 @@ void speed_pid_reset(void)
 
     speed_pid_controller_set_target(&speed_pid_left, 0.0F);
     speed_pid_controller_set_target(&speed_pid_right, 0.0F);
+    speed_pid_reset_speed_filter(&speed_pid_left);
+    speed_pid_reset_speed_filter(&speed_pid_right);
     motor_stop();
 
     speed_pid_status.left_target_mm_s = 0.0F;
@@ -379,7 +514,7 @@ void speed_pid_reset(void)
 }
 
 /**
- * @brief Set left-wheel incremental PID gains.
+ * @brief Set left-wheel position PID gains.
  * @param kp Proportional gain.
  * @param ki Integral gain.
  * @param kd Derivative gain.
@@ -406,7 +541,7 @@ void speed_pid_set_left_gains(float kp, float ki, float kd)
 }
 
 /**
- * @brief Set right-wheel incremental PID gains.
+ * @brief Set right-wheel position PID gains.
  * @param kp Proportional gain.
  * @param ki Integral gain.
  * @param kd Derivative gain.

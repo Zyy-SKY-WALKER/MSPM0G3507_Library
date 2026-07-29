@@ -74,20 +74,17 @@ static void speed_pid_test_pit_callback(uint32 event, void *user_data)
 }
 
 /**
- * @brief Send six-channel wheel speed and PWM telemetry through VOFA.
+ * @brief Send right-wheel target, feedback speed, and PWM through VOFA.
  */
 static void speed_pid_test_send_vofa(const speed_pid_status_struct *status)
 {
     static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
-    float channels[6];
-    uint8 frame[28];
+    float channels[3];
+    uint8 frame[16];
 
-    channels[0] = status->left_target_mm_s;
-    channels[1] = status->left_speed_mm_s;
-    channels[2] = status->right_target_mm_s;
-    channels[3] = status->right_speed_mm_s;
-    channels[4] = (float)status->left_duty;
-    channels[5] = (float)status->right_duty;
+    channels[0] = status->right_target_mm_s;
+    channels[1] = status->right_speed_mm_s;
+    channels[2] = (float)status->right_duty;
     memcpy(frame, channels, sizeof(channels));
     memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
     uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));

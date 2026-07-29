@@ -396,6 +396,7 @@ static uint8 chassis_motion_pid_profile_is_valid(
         && (chassis_motion_gain_is_valid(profile->right_speed_kp) != 0U)
         && (chassis_motion_gain_is_valid(profile->right_speed_ki) != 0U)
         && (chassis_motion_gain_is_valid(profile->right_speed_kd) != 0U)
+        && (chassis_motion_gain_is_valid(profile->speed_kff) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_kp) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_ki) != 0U)
         && (chassis_motion_gain_is_valid(profile->heading_kd) != 0U));
@@ -882,6 +883,7 @@ void chassis_motion_init(void)
         chassis_motion_pid_profiles[index].right_speed_kp = 0.0F;
         chassis_motion_pid_profiles[index].right_speed_ki = 0.0F;
         chassis_motion_pid_profiles[index].right_speed_kd = 0.0F;
+        chassis_motion_pid_profiles[index].speed_kff = 0.0F;
         chassis_motion_pid_profiles[index].heading_kp = 0.0F;
         chassis_motion_pid_profiles[index].heading_ki = 0.0F;
         chassis_motion_pid_profiles[index].heading_kd = 0.0F;
@@ -945,6 +947,8 @@ void chassis_motion_init(void)
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
         .right_speed_kd = DRIVE_PROFILE_STRAIGHT_RIGHT_KD;
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
+        .speed_kff = DRIVE_PROFILE_STRAIGHT_SPEED_KFF;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
         .heading_kp = DRIVE_PROFILE_HEADING_KP;
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_STRAIGHT]
         .heading_ki = DRIVE_PROFILE_HEADING_KI;
@@ -965,6 +969,8 @@ void chassis_motion_init(void)
         .right_speed_ki = DRIVE_PROFILE_TURN_RIGHT_KI;
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
         .right_speed_kd = DRIVE_PROFILE_TURN_RIGHT_KD;
+    chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
+        .speed_kff = DRIVE_PROFILE_TURN_SPEED_KFF;
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
         .heading_kp = DRIVE_PROFILE_HEADING_KP;
     chassis_motion_pid_profiles[CHASSIS_MOTION_PID_PROFILE_TURN]
@@ -1002,7 +1008,7 @@ uint8 chassis_motion_pid_profile_configure(
 }
 
 /**
- * @brief Apply one configured PID parameter group without resetting runtime state.
+ * @brief Apply one configured PID parameter group and reset wheel PID runtime.
  * @param profile_id Profile identifier from 0 to 3.
  * @return ZF_TRUE when the configured profile was selected.
  */
@@ -1025,6 +1031,7 @@ uint8 chassis_motion_pid_profile_select(uint8 profile_id)
         profile.right_speed_kp,
         profile.right_speed_ki,
         profile.right_speed_kd);
+    (void)speed_pid_set_shared_feedforward(profile.speed_kff);
 
     chassis_motion_heading_pid.kp = profile.heading_kp;
     chassis_motion_heading_pid.ki = profile.heading_ki;

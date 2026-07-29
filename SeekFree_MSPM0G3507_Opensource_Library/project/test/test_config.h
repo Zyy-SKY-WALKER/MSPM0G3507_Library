@@ -36,7 +36,7 @@
 #define TEST_MODE_MPU6500_YAW_TURN   (27)
 #define TEST_MODE_MPU6500_YAW_TURN_CLOSED_LOOP (28)
 
-#define TEST_MODE                    TEST_MODE_SPEED_PID
+#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_REAL
 
 
 #endif

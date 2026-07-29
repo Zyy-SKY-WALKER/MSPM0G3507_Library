@@ -162,6 +162,13 @@ typedef struct
 uint8 control_scheduler_init(void);
 
 /**
+ * @brief Enable or disable MPU initialization and yaw requirements before init.
+ * @param bypass Nonzero to bypass MPU only for line-follow testing.
+ * @note Calls after control_scheduler_init() are ignored.
+ */
+void control_scheduler_set_imu_bypass(uint8 bypass);
+
+/**
  * @brief Start the scheduler's unique 10 ms PIT source.
  * @return ZF_TRUE when the periodic source was started.
  */

@@ -91,6 +91,8 @@ typedef struct
     float right_speed_ki;
     /** Right wheel-speed derivative gain. */
     float right_speed_kd;
+    /** Shared wheel-speed feedforward gain in duty per millimeter per second. */
+    float speed_kff;
     /** Heading-correction proportional gain. */
     float heading_kp;
     /** Heading-correction integral gain. */

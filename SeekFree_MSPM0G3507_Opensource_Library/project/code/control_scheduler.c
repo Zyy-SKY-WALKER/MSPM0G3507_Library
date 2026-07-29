@@ -90,6 +90,7 @@ static volatile control_request_mailbox_struct control_mailbox;
 static volatile uint8 control_initialized;
 static volatile uint8 control_started;
 static volatile uint8 control_update_busy;
+static uint8 control_imu_bypass_enabled;
 
 static uint32 control_last_imu_frame_count;
 static uint16 control_manual_target_age_ticks;
@@ -866,7 +867,11 @@ static void control_apply_requests(
     {
         if ((requests->flags & CONTROL_REQUEST_CHASSIS_COMMAND) != 0U)
         {
-            if ((control_status.imu_fresh == 0U)
+            if(control_imu_bypass_enabled != 0U)
+            {
+                /* IMU-bypass mode is restricted to manual line-follow tests. */
+            }
+            else if ((control_status.imu_fresh == 0U)
                 || (control_status.imu_ready == 0U))
             {
                 control_latch_fault(CONTROL_FAULT_IMU_STALE);
@@ -1105,7 +1110,11 @@ uint8 control_scheduler_init(void)
     chassis_motion_init();
     my_encoder_init();
     gray_ready = gray_sensor_init();
-    imu_ready = control_imu_mpu6500_init();
+    imu_ready = ZF_TRUE;
+    if(control_imu_bypass_enabled == 0U)
+    {
+        imu_ready = control_imu_mpu6500_init();
+    }
     odometry_init();
     line_tracker_init(NULL);
     key_init(CONTROL_SCHEDULER_PERIOD_MS);
@@ -1135,6 +1144,17 @@ uint8 control_scheduler_init(void)
     control_enter_disarmed();
     control_publish_status();
     return ZF_TRUE;
+}
+
+/**
+ * @brief Enable or disable MPU initialization and yaw requirements before init.
+ */
+void control_scheduler_set_imu_bypass(uint8 bypass)
+{
+    if(control_initialized == 0U)
+    {
+        control_imu_bypass_enabled = bypass != 0U ? 1U : 0U;
+    }
 }
 
 /**
@@ -1239,39 +1259,52 @@ void control_scheduler_update_10ms(void)
 
     /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
-    imu_data_valid = control_imu_mpu6500_get_data(&imu_data);
-    yaw_valid = imu_data_valid;
-    if (imu_data_valid != 0U)
+    imu_data_valid = ZF_FALSE;
+    yaw_valid = ZF_FALSE;
+    if(control_imu_bypass_enabled != 0U)
     {
-        yaw_frame_count = imu_data.update_count;
-        control_status.imu_roll_deg = imu_data.roll_deg;
-        control_status.imu_pitch_deg = imu_data.pitch_deg;
-        control_status.imu_yaw_deg = imu_data.yaw_deg;
-        control_status.imu_yaw_continuous_deg =
-            imu_data.yaw_continuous_deg;
-        control_status.imu_ready = imu_data.ready;
-        control_status.imu_stability_progress =
-            imu_data.calibration_progress;
-        control_status.imu_stability_state = imu_data.ready != 0U
-            ? CONTROL_IMU_STABILITY_READY
-            : CONTROL_IMU_STABILITY_COLLECTING;
+        control_status.imu_ready = 1U;
+        control_status.imu_fresh = 1U;
+        control_status.imu_stability_progress = 100U;
+        control_status.imu_stability_state = CONTROL_IMU_STABILITY_READY;
         control_status.imu_yaw_drift_deg_min = 0.0F;
-
-        if((imu_data.ready != 0U) && (control_imu_ready_seen == 0U))
-        {
-            control_imu_ready_seen = 1U;
-            my_encoder_clear_count();
-            odometry_reset_pose(0.0F, 0.0F, 0.0F);
-            left_count = 0;
-            right_count = 0;
-        }
     }
     else
     {
-        control_status.imu_ready = 0U;
-        control_status.imu_stability_progress = 0U;
-        control_status.imu_stability_state =
-            CONTROL_IMU_STABILITY_WAIT_STREAM;
+        imu_data_valid = control_imu_mpu6500_get_data(&imu_data);
+        yaw_valid = imu_data_valid;
+        if (imu_data_valid != 0U)
+        {
+            yaw_frame_count = imu_data.update_count;
+            control_status.imu_roll_deg = imu_data.roll_deg;
+            control_status.imu_pitch_deg = imu_data.pitch_deg;
+            control_status.imu_yaw_deg = imu_data.yaw_deg;
+            control_status.imu_yaw_continuous_deg =
+                imu_data.yaw_continuous_deg;
+            control_status.imu_ready = imu_data.ready;
+            control_status.imu_stability_progress =
+                imu_data.calibration_progress;
+            control_status.imu_stability_state = imu_data.ready != 0U
+                ? CONTROL_IMU_STABILITY_READY
+                : CONTROL_IMU_STABILITY_COLLECTING;
+            control_status.imu_yaw_drift_deg_min = 0.0F;
+
+            if((imu_data.ready != 0U) && (control_imu_ready_seen == 0U))
+            {
+                control_imu_ready_seen = 1U;
+                my_encoder_clear_count();
+                odometry_reset_pose(0.0F, 0.0F, 0.0F);
+                left_count = 0;
+                right_count = 0;
+            }
+        }
+        else
+        {
+            control_status.imu_ready = 0U;
+            control_status.imu_stability_progress = 0U;
+            control_status.imu_stability_state =
+                CONTROL_IMU_STABILITY_WAIT_STREAM;
+        }
     }
     gray = control_status.gray;
     gray_valid = gray_sensor_sample(&gray);
@@ -1285,21 +1318,29 @@ void control_scheduler_update_10ms(void)
 
     control_status.imu_angle_frame_count = yaw_frame_count;
     control_status.imu_valid = yaw_valid;
-    new_angle_frame = (uint8)((yaw_valid != 0U)
-        && (yaw_frame_count != control_last_imu_frame_count));
-    if (new_angle_frame != 0U)
+    if(control_imu_bypass_enabled != 0U)
     {
-        control_last_imu_frame_count = yaw_frame_count;
         control_status.imu_age_ticks = 0U;
+        control_status.imu_fresh = 1U;
     }
-    else if (control_status.imu_age_ticks < 0xFFFFU)
+    else
     {
-        control_status.imu_age_ticks++;
+        new_angle_frame = (uint8)((yaw_valid != 0U)
+            && (yaw_frame_count != control_last_imu_frame_count));
+        if (new_angle_frame != 0U)
+        {
+            control_last_imu_frame_count = yaw_frame_count;
+            control_status.imu_age_ticks = 0U;
+        }
+        else if (control_status.imu_age_ticks < 0xFFFFU)
+        {
+            control_status.imu_age_ticks++;
+        }
+        control_status.imu_fresh =
+            (uint8)((yaw_valid != 0U)
+                && (control_status.imu_age_ticks
+                    <= CONTROL_IMU_FRESH_LIMIT_TICKS));
     }
-    control_status.imu_fresh =
-        (uint8)((yaw_valid != 0U)
-            && (control_status.imu_age_ticks
-                <= CONTROL_IMU_FRESH_LIMIT_TICKS));
     yaw_deg = control_status.imu_yaw_deg;
 
     /* Phase 3: validate inputs and gate corrected IMU use. */
@@ -1318,6 +1359,8 @@ void control_scheduler_update_10ms(void)
     }
 
     odometry_yaw_valid = (uint8)(
+        (control_imu_bypass_enabled == 0U)
+        &&
         (control_status.imu_ready != 0U)
         && (control_status.imu_fresh != 0U));
     if ((control_status.mode == CONTROL_MODE_LINE_FOLLOW)

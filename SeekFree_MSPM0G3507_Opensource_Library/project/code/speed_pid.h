@@ -1,6 +1,6 @@
 /**
  * @file    speed_pid.h
- * @brief   Dual-wheel incremental speed PID controller.
+ * @brief   Dual-wheel position-form speed PID controller.
  */
 
 #ifndef SPEED_PID_H
@@ -11,6 +11,9 @@
 
 #define SPEED_PID_SAMPLE_PERIOD_MS        (10U)
 #define SPEED_PID_TARGET_LIMIT_MM_S       (800.0F)
+#define SPEED_PID_SPEED_FILTER_SAMPLES     (4U)
+#define SPEED_PID_INTEGRAL_LIMIT           (3000.0F)
+#define SPEED_PID_FEEDFORWARD_LIMIT         (4000.0F)
 #define SPEED_PID_OUTPUT_LIMIT            \
     (DRIVE_PROFILE_SPEED_PID_OUTPUT_LIMIT)
 #define SPEED_PID_REVERSE_STOP_COUNT      (1)
@@ -22,6 +25,8 @@
 #define SPEED_PID_RIGHT_KP                (DRIVE_PROFILE_STRAIGHT_RIGHT_KP)
 #define SPEED_PID_RIGHT_KI                (DRIVE_PROFILE_STRAIGHT_RIGHT_KI)
 #define SPEED_PID_RIGHT_KD                (DRIVE_PROFILE_STRAIGHT_RIGHT_KD)
+#define SPEED_PID_SPEED_KFF               \
+    (DRIVE_PROFILE_STRAIGHT_SPEED_KFF)
 
 /** @brief Latest dual-wheel command, measurement and controller state. */
 typedef struct
@@ -30,9 +35,9 @@ typedef struct
     float left_target_mm_s;
     /** Applied signed right target in millimeters per second. */
     float right_target_mm_s;
-    /** Latest measured left speed in millimeters per second. */
+    /** Latest four-sample filtered left speed in millimeters per second. */
     float left_speed_mm_s;
-    /** Latest measured right speed in millimeters per second. */
+    /** Latest four-sample filtered right speed in millimeters per second. */
     float right_speed_mm_s;
     /** Signed left encoder count from the latest 10 ms interval. */
     int16 left_count;
@@ -53,7 +58,7 @@ typedef struct
 } speed_pid_status_struct;
 
 /**
- * @brief Initialize both incremental controllers and stopped motor outputs.
+ * @brief Initialize both position-form controllers and stopped motor outputs.
  */
 void speed_pid_init(void);
 
@@ -78,6 +83,13 @@ void speed_pid_set_target(float left_mm_s, float right_mm_s);
 uint8 speed_pid_set_shared_gains(float kp, float ki, float kd);
 
 /**
+ * @brief Set one shared velocity feedforward gain for both wheel controllers.
+ * @param kff Feedforward gain in duty per millimeter per second.
+ * @return ZF_TRUE when the gain was accepted.
+ */
+uint8 speed_pid_set_shared_feedforward(float kff);
+
+/**
  * @brief Execute one fixed-period speed control update.
  * @param left_count Signed left encoder count from the latest 10 ms interval.
  * @param right_count Signed right encoder count from the latest 10 ms interval.
@@ -97,7 +109,7 @@ void speed_pid_stop(void);
 void speed_pid_reset(void);
 
 /**
- * @brief Set left-wheel gains and clear its error and output history.
+ * @brief Set left-wheel position PID gains and clear its runtime history.
  * @param kp Finite proportional gain from -1000 through 1000.
  * @param ki Finite integral gain from -1000 through 1000.
  * @param kd Finite derivative gain from -1000 through 1000.
@@ -107,7 +119,7 @@ void speed_pid_reset(void);
 void speed_pid_set_left_gains(float kp, float ki, float kd);
 
 /**
- * @brief Set right-wheel gains and clear its error and output history.
+ * @brief Set right-wheel position PID gains and clear its runtime history.
  * @param kp Finite proportional gain from -1000 through 1000.
  * @param ki Finite integral gain from -1000 through 1000.
  * @param kd Finite derivative gain from -1000 through 1000.
