@@ -8,9 +8,11 @@
 
 #include "zf_common_typedef.h"
 
-/** @brief Latest foreground-produced MPU6500 attitude snapshot. */
+/** @brief Latest foreground-produced MPU6500 source snapshot. */
 typedef struct
 {
+    /** Longitudinal specific force along vehicle +X, in g. */
+    float accel_x_g;
     float roll_deg;
     float pitch_deg;
     float yaw_deg;
@@ -23,6 +25,14 @@ typedef struct
     uint8 valid;
     uint8 ready;
 } control_imu_mpu6500_data_struct;
+
+/**
+ * @brief Select whether this source runs the attitude estimator.
+ * @param enabled Nonzero for roll/pitch/yaw estimation and calibration.
+ * @note Call before control_imu_mpu6500_init(). Disabled mode publishes raw
+ *       longitudinal acceleration immediately after the first valid sample.
+ */
+void control_imu_mpu6500_set_attitude_enabled(uint8 enabled);
 
 /**
  * @brief Initialize the MPU6500 and clear the foreground source state.

@@ -91,6 +91,7 @@ static volatile uint8 control_initialized;
 static volatile uint8 control_started;
 static volatile uint8 control_update_busy;
 static uint8 control_imu_bypass_enabled;
+static uint8 control_imu_acceleration_only_enabled;
 
 static uint32 control_last_imu_frame_count;
 static uint16 control_manual_target_age_ticks;
@@ -867,9 +868,10 @@ static void control_apply_requests(
     {
         if ((requests->flags & CONTROL_REQUEST_CHASSIS_COMMAND) != 0U)
         {
-            if(control_imu_bypass_enabled != 0U)
+            if((control_imu_bypass_enabled != 0U)
+                || (control_imu_acceleration_only_enabled != 0U))
             {
-                /* IMU-bypass mode is restricted to manual line-follow tests. */
+                /* Tests without calibrated yaw cannot run chassis motion. */
             }
             else if ((control_status.imu_fresh == 0U)
                 || (control_status.imu_ready == 0U))
@@ -1073,6 +1075,7 @@ uint8 control_scheduler_init(void)
     control_status.imu_fresh = 0U;
     control_status.imu_yaw_deg = 0.0F;
     control_status.imu_yaw_continuous_deg = 0.0F;
+    control_status.imu_accel_x_g = 0.0F;
     control_status.imu_roll_deg = 0.0F;
     control_status.imu_pitch_deg = 0.0F;
     control_status.imu_yaw_drift_deg_min = 0.0F;
@@ -1113,6 +1116,8 @@ uint8 control_scheduler_init(void)
     imu_ready = ZF_TRUE;
     if(control_imu_bypass_enabled == 0U)
     {
+        control_imu_mpu6500_set_attitude_enabled(
+            control_imu_acceleration_only_enabled == 0U ? 1U : 0U);
         imu_ready = control_imu_mpu6500_init();
     }
     odometry_init();
@@ -1154,6 +1159,17 @@ void control_scheduler_set_imu_bypass(uint8 bypass)
     if(control_initialized == 0U)
     {
         control_imu_bypass_enabled = bypass != 0U ? 1U : 0U;
+    }
+}
+
+/**
+ * @brief Configure raw-acceleration-only MPU operation before initialization.
+ */
+void control_scheduler_set_imu_acceleration_only(uint8 enabled)
+{
+    if(control_initialized == 0U)
+    {
+        control_imu_acceleration_only_enabled = enabled != 0U ? 1U : 0U;
     }
 }
 
@@ -1202,6 +1218,7 @@ void control_scheduler_update_10ms(void)
     uint8 emergency_active;
     uint8 encoder_valid;
     uint8 imu_data_valid;
+    uint8 imu_source_valid;
     uint8 yaw_valid;
     uint8 odometry_yaw_valid;
     uint8 gray_valid;
@@ -1260,9 +1277,11 @@ void control_scheduler_update_10ms(void)
     /* Phase 2: acquire this tick's encoder, IMU and grayscale samples. */
     my_encoder_get_delta(&left_count, &right_count);
     imu_data_valid = ZF_FALSE;
+    imu_source_valid = ZF_FALSE;
     yaw_valid = ZF_FALSE;
     if(control_imu_bypass_enabled != 0U)
     {
+        imu_source_valid = ZF_TRUE;
         control_status.imu_ready = 1U;
         control_status.imu_fresh = 1U;
         control_status.imu_stability_progress = 100U;
@@ -1272,7 +1291,10 @@ void control_scheduler_update_10ms(void)
     else
     {
         imu_data_valid = control_imu_mpu6500_get_data(&imu_data);
-        yaw_valid = imu_data_valid;
+        imu_source_valid = imu_data_valid;
+        yaw_valid = (uint8)(
+            (imu_data_valid != 0U)
+            && (control_imu_acceleration_only_enabled == 0U));
         if (imu_data_valid != 0U)
         {
             yaw_frame_count = imu_data.update_count;
@@ -1281,6 +1303,7 @@ void control_scheduler_update_10ms(void)
             control_status.imu_yaw_deg = imu_data.yaw_deg;
             control_status.imu_yaw_continuous_deg =
                 imu_data.yaw_continuous_deg;
+            control_status.imu_accel_x_g = imu_data.accel_x_g;
             control_status.imu_ready = imu_data.ready;
             control_status.imu_stability_progress =
                 imu_data.calibration_progress;
@@ -1325,7 +1348,7 @@ void control_scheduler_update_10ms(void)
     }
     else
     {
-        new_angle_frame = (uint8)((yaw_valid != 0U)
+        new_angle_frame = (uint8)((imu_source_valid != 0U)
             && (yaw_frame_count != control_last_imu_frame_count));
         if (new_angle_frame != 0U)
         {
@@ -1337,7 +1360,7 @@ void control_scheduler_update_10ms(void)
             control_status.imu_age_ticks++;
         }
         control_status.imu_fresh =
-            (uint8)((yaw_valid != 0U)
+            (uint8)((imu_source_valid != 0U)
                 && (control_status.imu_age_ticks
                     <= CONTROL_IMU_FRESH_LIMIT_TICKS));
     }
@@ -1360,6 +1383,7 @@ void control_scheduler_update_10ms(void)
 
     odometry_yaw_valid = (uint8)(
         (control_imu_bypass_enabled == 0U)
+        && (control_imu_acceleration_only_enabled == 0U)
         &&
         (control_status.imu_ready != 0U)
         && (control_status.imu_fresh != 0U));
@@ -1680,6 +1704,7 @@ uint8 control_scheduler_request_chassis_motion_distance(
     uint32 primask;
 
     if ((control_imu_bypass_enabled != 0U)
+        || (control_imu_acceleration_only_enabled != 0U)
         || (control_value_is_valid(distance_mm) == 0U)
         || (control_target_is_valid(max_speed_mm_s) == 0U)
         || (distance_mm == 0.0F)
@@ -1712,6 +1737,7 @@ uint8 control_scheduler_request_chassis_motion_timed(
     uint32 primask;
 
     if ((control_imu_bypass_enabled != 0U)
+        || (control_imu_acceleration_only_enabled != 0U)
         || (control_target_is_valid(speed_mm_s) == 0U)
         || (speed_mm_s == 0.0F)
         || (duration_ms == 0U))
@@ -1744,6 +1770,7 @@ uint8 control_scheduler_request_chassis_motion_turn_relative(
     uint32 primask;
 
     if ((control_imu_bypass_enabled != 0U)
+        || (control_imu_acceleration_only_enabled != 0U)
         || (control_turn_request_is_valid(
             angle_deg,
             max_angular_speed_deg_s) == 0U))

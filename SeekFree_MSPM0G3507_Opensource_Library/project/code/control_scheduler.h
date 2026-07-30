@@ -99,6 +99,8 @@ typedef struct
     float imu_yaw_deg;
     /** Latest continuous MPU6500 yaw in degrees. */
     float imu_yaw_continuous_deg;
+    /** Latest longitudinal MPU6500 specific force along body +X, in g. */
+    float imu_accel_x_g;
     /** Roll about body +X; MPU axes must be X forward, Y left and Z up. */
     float imu_roll_deg;
     /** Pitch about body +Y; MPU axes must be X forward, Y left and Z up. */
@@ -145,7 +147,7 @@ typedef struct
     uint8 imu_valid;
     /** Nonzero while the latest valid IMU frame is within its age limit. */
     uint8 imu_fresh;
-    /** Nonzero after the startup attitude reference is stable and installed. */
+    /** Nonzero when the active IMU source has become usable. */
     uint8 imu_ready;
     /** Startup stability progress from 0 through 100 percent. */
     uint8 imu_stability_progress;
@@ -167,6 +169,14 @@ uint8 control_scheduler_init(void);
  * @note Calls after control_scheduler_init() are ignored.
  */
 void control_scheduler_set_imu_bypass(uint8 bypass);
+
+/**
+ * @brief Use MPU raw acceleration without attitude estimation before init.
+ * @param enabled Nonzero skips the 1000-sample attitude calibration.
+ * @note This mode is intended for acceleration-only line-follow tests and
+ *       disables yaw-dependent chassis-motion requests.
+ */
+void control_scheduler_set_imu_acceleration_only(uint8 enabled);
 
 /**
  * @brief Start the scheduler's unique 10 ms PIT source.

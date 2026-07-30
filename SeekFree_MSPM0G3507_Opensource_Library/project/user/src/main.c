@@ -78,7 +78,11 @@
 #include "test_chassis_motion.h"
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_REAL)
 #include "test_line_follow_real.h"
+#elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
+#include "test_line_follow_real.h"
 #elif (TEST_MODE == TEST_MODE_STEPPER)
+#include "test_stepper.h"
+#elif (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO)
 #include "test_stepper.h"
 #elif (TEST_MODE == TEST_MODE_VISION_UART)
 #include "test_vision_uart.h"
@@ -150,8 +154,12 @@ int main(void)
     test_chassis_motion_run();
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_REAL)
     test_line_follow_real_run();
+#elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
+    test_line_follow_ball_accel_open_loop_run();
 #elif (TEST_MODE == TEST_MODE_STEPPER)
     test_stepper_run();
+#elif (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO)
+    test_ball_groove_zero_run();
 #elif (TEST_MODE == TEST_MODE_VISION_UART)
     test_vision_uart_run();
 #elif (TEST_MODE == TEST_MODE_MPU6500)

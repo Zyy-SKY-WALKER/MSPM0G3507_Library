@@ -7,5 +7,6 @@
 #define TEST_STEPPER_H
 
 void test_stepper_run(void);
+void test_ball_groove_zero_run(void);
 
 #endif

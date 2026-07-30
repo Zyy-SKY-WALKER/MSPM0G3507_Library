@@ -10,5 +10,6 @@
 #define TEST_LINE_FOLLOW_REAL_H
 
 void test_line_follow_real_run(void);
+void test_line_follow_ball_accel_open_loop_run(void);
 
 #endif

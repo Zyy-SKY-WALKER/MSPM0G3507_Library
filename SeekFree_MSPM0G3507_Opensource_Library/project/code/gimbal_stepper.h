@@ -38,6 +38,7 @@ typedef struct
     int32 target_position_steps;
     int32 current_rate_steps_s;
     uint8 zero_valid;
+    uint8 enabled;
 } gimbal_stepper_axis_status_struct;
 
 typedef struct
@@ -113,6 +114,21 @@ typedef void (*gimbal_stepper_log_callback)(const char *message);
 void gimbal_stepper_init(void);
 
 /**
+ * @brief Restrict the controller to one manually referenced axis.
+ * @param axis Physical STEP/DIR axis to retain.
+ * @param minimum_steps Inclusive lower limit relative to its software zero.
+ * @param maximum_steps Inclusive upper limit relative to its software zero.
+ * @param jog_rate_steps_s Positive manual jog-rate limit.
+ * @return 1 when accepted before any axis has captured a software zero.
+ * @note Disable the unused axis before using this for a single-axis mechanism.
+ */
+uint8 gimbal_stepper_configure_single_axis(
+    gimbal_stepper_axis_enum axis,
+    int32 minimum_steps,
+    int32 maximum_steps,
+    uint16 jog_rate_steps_s);
+
+/**
  * @brief Process elapsed milliseconds reported by the pulse timer.
  * @return Number of milliseconds processed by this service call.
  * @note Call repeatedly from the foreground application loop.
@@ -131,7 +147,7 @@ uint8 gimbal_stepper_move_relative_steps(
 
 /**
  * @brief Check whether relative position commands may be accepted.
- * @return 1 when both axes are zeroed and manual controls are inactive.
+ * @return 1 when all enabled axes are zeroed and manual controls are inactive.
  */
 uint8 gimbal_stepper_relative_ready(void);
 
@@ -202,6 +218,16 @@ uint8 gimbal_stepper_apply_feedforward_solution(
 uint8 gimbal_stepper_set_absolute_target_steps(
     int32 yaw_steps,
     int32 pitch_steps);
+
+/**
+ * @brief Set one enabled axis target relative to its manual zero.
+ * @param axis Enabled and manually referenced axis.
+ * @param target_steps Signed target constrained to its configured limits.
+ * @return 1 when accepted.
+ */
+uint8 gimbal_stepper_set_axis_absolute_target_steps(
+    gimbal_stepper_axis_enum axis,
+    int32 target_steps);
 
 /**
  * @brief Copy the latest feedforward solution.

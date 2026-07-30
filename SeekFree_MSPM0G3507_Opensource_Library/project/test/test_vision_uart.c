@@ -1,6 +1,6 @@
 /**
  * @file    test_vision_uart.c
- * @brief   UART1 DMA ASCII vision-error receiver TFT test.
+ * @brief   UART1 DMA ASCII ball-position receiver TFT test.
  */
 
 #include "test_config.h"
@@ -20,8 +20,7 @@
 /** @brief Values already written to the TFT. */
 typedef struct
 {
-    int32 error_x;
-    int32 error_y;
+    int32 position_centi_cm;
     uint32 packet_count;
     uint32 valid_packet_count;
     uint32 invalid_packet_count;
@@ -94,29 +93,25 @@ static void vision_test_show_data(
 {
     uint8 force = (uint8)(cache->initialized == 0U);
 
-    if ((force != 0U) || (data->error_x != cache->error_x))
+    if ((force != 0U)
+        || (data->position_centi_cm != cache->position_centi_cm))
     {
-        vision_test_show_int(112U, 40U, data->error_x, 10U);
-        cache->error_x = data->error_x;
-    }
-    if ((force != 0U) || (data->error_y != cache->error_y))
-    {
-        vision_test_show_int(112U, 64U, data->error_y, 10U);
-        cache->error_y = data->error_y;
+        vision_test_show_int(112U, 40U, data->position_centi_cm, 10U);
+        cache->position_centi_cm = data->position_centi_cm;
     }
     if ((force != 0U)
         || (data->recognition_valid != cache->recognition_valid))
     {
         vision_test_show_uint(
             112U,
-            88U,
+            64U,
             data->recognition_valid,
             1U);
         cache->recognition_valid = data->recognition_valid;
     }
     if ((force != 0U) || (data->packet_count != cache->packet_count))
     {
-        vision_test_show_uint(112U, 112U, data->packet_count, 8U);
+        vision_test_show_uint(112U, 88U, data->packet_count, 8U);
         cache->packet_count = data->packet_count;
     }
     if ((force != 0U)
@@ -124,7 +119,7 @@ static void vision_test_show_data(
     {
         vision_test_show_uint(
             112U,
-            136U,
+            112U,
             data->valid_packet_count,
             8U);
         cache->valid_packet_count = data->valid_packet_count;
@@ -134,7 +129,7 @@ static void vision_test_show_data(
     {
         vision_test_show_uint(
             112U,
-            160U,
+            136U,
             data->invalid_packet_count,
             8U);
         cache->invalid_packet_count = data->invalid_packet_count;
@@ -144,7 +139,7 @@ static void vision_test_show_data(
     {
         vision_test_show_uint(
             112U,
-            184U,
+            160U,
             data->format_error_count,
             8U);
         cache->format_error_count = data->format_error_count;
@@ -154,14 +149,14 @@ static void vision_test_show_data(
     {
         vision_test_show_uint(
             112U,
-            208U,
+            184U,
             data->overflow_count,
             8U);
         cache->overflow_count = data->overflow_count;
     }
     if ((force != 0U) || (rate_hz != cache->rate_hz))
     {
-        vision_test_show_uint(112U, 232U, rate_hz, 4U);
+        vision_test_show_uint(112U, 208U, rate_hz, 4U);
         cache->rate_hz = rate_hz;
     }
     cache->initialized = 1U;
@@ -184,17 +179,16 @@ void test_vision_uart_run(void)
     ili9341_set_font(ILI9341_FONT_8X16);
     ili9341_set_color(ILI9341_COLOR_WHITE, ILI9341_COLOR_BLACK);
     ili9341_show_string(8U, 8U, "UART1 DMA VISION ASCII");
-    ili9341_show_string(8U, 40U, "ERROR X    :");
-    ili9341_show_string(8U, 64U, "ERROR Y    :");
-    ili9341_show_string(8U, 88U, "VALID      :");
-    ili9341_show_string(8U, 112U, "PACKETS    :");
-    ili9341_show_string(8U, 136U, "VALID PKT  :");
-    ili9341_show_string(8U, 160U, "INVALID PKT:");
-    ili9341_show_string(8U, 184U, "FORMAT ERR :");
-    ili9341_show_string(8U, 208U, "LINE OVR   :");
-    ili9341_show_string(8U, 232U, "RATE HZ    :");
-    ili9341_show_string(8U, 264U, "D,x,y CRLF / 50 Hz");
-    ili9341_show_string(8U, 288U, "UART1 B7 RX / 115200");
+    ili9341_show_string(8U, 40U, "POS cCM    :");
+    ili9341_show_string(8U, 64U, "VALID      :");
+    ili9341_show_string(8U, 88U, "PACKETS    :");
+    ili9341_show_string(8U, 112U, "VALID PKT  :");
+    ili9341_show_string(8U, 136U, "INVALID PKT:");
+    ili9341_show_string(8U, 160U, "FORMAT ERR :");
+    ili9341_show_string(8U, 184U, "LINE OVR   :");
+    ili9341_show_string(8U, 208U, "RATE HZ    :");
+    ili9341_show_string(8U, 240U, "+05.23 LF / ! LF");
+    ili9341_show_string(8U, 264U, "UART1 B7 RX / 115200");
 
     vision_test_time_ms = 0U;
     pit_ms_init(

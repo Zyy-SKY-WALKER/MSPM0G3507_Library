@@ -162,7 +162,9 @@ typedef struct
     int32 min_position_steps;
     int32 max_position_steps;
     int32 calibrate_travel_steps;
+    int32 jog_rate_milli_steps_s;
     uint8 positive_dir_level;
+    uint8 enabled;
     volatile int32 target_position_steps;
     volatile int32 target_rate_milli_steps_s;
     volatile int32 current_rate_milli_steps_s;
@@ -213,6 +215,7 @@ static volatile float gimbal_target_phase_rad;
 static volatile gimbal_feedforward_solution_struct
     gimbal_feedforward_solution;
 static gimbal_stepper_log_callback gimbal_log_callback;
+static uint8 gimbal_initialized;
 
 static void gimbal_laser_force_off(void);
 static uint8 gimbal_laser_can_enable(void);
@@ -1086,25 +1089,43 @@ static void gimbal_stop_all(void)
 }
 
 /**
- * @brief Check whether both foreground rates have reached zero.
+ * @brief Check whether all enabled foreground rates have reached zero.
  */
 static uint8 gimbal_axes_stopped(void)
 {
-    return (uint8)(
-        (gimbal_axes[GIMBAL_STEPPER_AXIS_YAW]
-            .current_rate_milli_steps_s == 0)
-        && (gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH]
-            .current_rate_milli_steps_s == 0));
+    uint8 index;
+
+    for(index = 0U; index < GIMBAL_STEPPER_AXIS_COUNT; index++)
+    {
+        if((gimbal_axes[index].enabled != 0U)
+            && (gimbal_axes[index].current_rate_milli_steps_s != 0))
+        {
+            return 0U;
+        }
+    }
+    return 1U;
 }
 
 /**
- * @brief Check whether both axes have valid software zero positions.
+ * @brief Check whether every enabled axis has a valid software zero position.
  */
 static uint8 gimbal_axes_zeroed(void)
 {
-    return (uint8)(
-        (gimbal_axes[GIMBAL_STEPPER_AXIS_YAW].zero_valid != 0U)
-        && (gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH].zero_valid != 0U));
+    uint8 index;
+    uint8 enabled_count = 0U;
+
+    for(index = 0U; index < GIMBAL_STEPPER_AXIS_COUNT; index++)
+    {
+        if(gimbal_axes[index].enabled != 0U)
+        {
+            enabled_count++;
+            if(gimbal_axes[index].zero_valid == 0U)
+            {
+                return 0U;
+            }
+        }
+    }
+    return enabled_count != 0U ? 1U : 0U;
 }
 
 /**
@@ -1181,7 +1202,7 @@ static uint8 gimbal_zero_selected_axis(void)
     uint32 primask;
 
     primask = interrupt_global_disable();
-    if(gimbal_stop_latched != 0U)
+    if((gimbal_stop_latched != 0U) || (axis->enabled == 0U))
     {
         interrupt_global_enable(primask);
         return 0U;
@@ -1343,11 +1364,16 @@ static void gimbal_update_select_key(
 
             if(gimbal_stop_latched == 0U)
             {
-                gimbal_selected_axis =
+                gimbal_stepper_axis_enum next_axis =
                     gimbal_selected_axis == GIMBAL_STEPPER_AXIS_YAW
                         ? GIMBAL_STEPPER_AXIS_PITCH
                         : GIMBAL_STEPPER_AXIS_YAW;
-                changed = 1U;
+
+                if(gimbal_axes[next_axis].enabled != 0U)
+                {
+                    gimbal_selected_axis = next_axis;
+                    changed = 1U;
+                }
             }
             interrupt_global_enable(primask);
 
@@ -1399,9 +1425,7 @@ static uint8 gimbal_update_jog_targets(
 
     if(selected->zero_valid != 0U)
     {
-        jog_rate = gimbal_selected_axis == GIMBAL_STEPPER_AXIS_YAW
-            ? GIMBAL_YAW_JOG_RATE_MILLI_STEPS_S
-            : GIMBAL_PITCH_JOG_RATE_MILLI_STEPS_S;
+        jog_rate = selected->jog_rate_milli_steps_s;
     }
 
     if(both_pressed != 0U)
@@ -1505,6 +1529,17 @@ static void gimbal_update_rates_tick(void)
         gimbal_axis_struct *axis = &gimbal_axes[index];
         int32 desired_rate = 0;
 
+        if(axis->enabled == 0U)
+        {
+            gimbal_clear_axis_command(axis);
+            if(axis->pulse_high != 0U)
+            {
+                gpio_low(axis->step_pin);
+            }
+            axis->pulse_high = 0U;
+            continue;
+        }
+
         if(gimbal_control_mode == GIMBAL_CONTROL_POSITION)
         {
             desired_rate = gimbal_position_target_rate(axis);
@@ -1536,6 +1571,17 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
     uint8 phase_overflow;
     int32 minimum;
     int32 maximum;
+
+    if(axis->enabled == 0U)
+    {
+        if(axis->pulse_high != 0U)
+        {
+            gpio_low(axis->step_pin);
+        }
+        axis->pulse_high = 0U;
+        gimbal_clear_axis_command(axis);
+        return;
+    }
 
     if((command_rate == 0) || (axis->phase_increment == 0U))
     {
@@ -1706,6 +1752,7 @@ static void gimbal_initialize_axis(
     int32 minimum,
     int32 maximum,
     int32 calibrate_travel_steps,
+    int32 jog_rate_milli_steps_s,
     uint8 positive_dir_level)
 {
     axis->step_pin = step_pin;
@@ -1713,7 +1760,9 @@ static void gimbal_initialize_axis(
     axis->min_position_steps = minimum;
     axis->max_position_steps = maximum;
     axis->calibrate_travel_steps = calibrate_travel_steps;
+    axis->jog_rate_milli_steps_s = jog_rate_milli_steps_s;
     axis->positive_dir_level = positive_dir_level;
+    axis->enabled = 1U;
     axis->target_position_steps = 0;
     axis->target_rate_milli_steps_s = 0;
     axis->current_rate_milli_steps_s = 0;
@@ -1736,6 +1785,7 @@ static void gimbal_initialize_axis(
  */
 void gimbal_stepper_init(void)
 {
+    gimbal_initialized = 0U;
     gimbal_initialize_axis(
         &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW],
         GIMBAL_YAW_STEP_PIN,
@@ -1743,6 +1793,7 @@ void gimbal_stepper_init(void)
         GIMBAL_STEPPER_YAW_MIN_STEPS,
         GIMBAL_STEPPER_YAW_MAX_STEPS,
         GIMBAL_YAW_CALIBRATE_TRAVEL_STEPS,
+        GIMBAL_YAW_JOG_RATE_MILLI_STEPS_S,
         GIMBAL_YAW_POSITIVE_DIR_LEVEL);
     gimbal_initialize_axis(
         &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH],
@@ -1751,6 +1802,7 @@ void gimbal_stepper_init(void)
         GIMBAL_STEPPER_PITCH_MIN_STEPS,
         GIMBAL_STEPPER_PITCH_MAX_STEPS,
         GIMBAL_PITCH_CALIBRATE_TRAVEL_STEPS,
+        GIMBAL_PITCH_JOG_RATE_MILLI_STEPS_S,
         GIMBAL_PITCH_POSITIVE_DIR_LEVEL);
 
     gpio_init(
@@ -1808,6 +1860,72 @@ void gimbal_stepper_init(void)
         GIMBAL_TICK_US,
         gimbal_pit_callback,
         NULL);
+    gimbal_initialized = 1U;
+}
+
+/**
+ * @brief Restrict motion and manual zeroing to one configured axis.
+ */
+uint8 gimbal_stepper_configure_single_axis(
+    gimbal_stepper_axis_enum axis,
+    int32 minimum_steps,
+    int32 maximum_steps,
+    uint16 jog_rate_steps_s)
+{
+    gimbal_axis_struct *selected_axis;
+    uint32 primask;
+    uint8 index;
+
+    if((axis >= GIMBAL_STEPPER_AXIS_COUNT)
+        || (minimum_steps >= maximum_steps)
+        || (minimum_steps > 0)
+        || (maximum_steps < 0)
+        || (jog_rate_steps_s == 0U)
+        || ((uint32)jog_rate_steps_s
+            > ((uint32)GIMBAL_MAX_RATE_MILLI_STEPS_S
+                / GIMBAL_RATE_SCALE)))
+    {
+        return 0U;
+    }
+
+    primask = interrupt_global_disable();
+    if((gimbal_initialized == 0U)
+        || (gimbal_stop_latched != 0U)
+        || (gimbal_axes_stopped() == 0U)
+        || (gimbal_axes[GIMBAL_STEPPER_AXIS_YAW].zero_valid != 0U)
+        || (gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH].zero_valid != 0U))
+    {
+        interrupt_global_enable(primask);
+        return 0U;
+    }
+
+    for(index = 0U; index < GIMBAL_STEPPER_AXIS_COUNT; index++)
+    {
+        gimbal_axis_struct *current_axis = &gimbal_axes[index];
+
+        gimbal_clear_axis_command(current_axis);
+        gpio_low(current_axis->step_pin);
+        current_axis->pulse_high = 0U;
+        current_axis->position_steps = 0;
+        current_axis->target_position_steps = 0;
+        current_axis->zero_valid = 0U;
+        current_axis->enabled = (uint8)(index == (uint8)axis);
+    }
+
+    selected_axis = &gimbal_axes[axis];
+    selected_axis->min_position_steps = minimum_steps;
+    selected_axis->max_position_steps = maximum_steps;
+    selected_axis->calibrate_travel_steps = 0;
+    selected_axis->jog_rate_milli_steps_s =
+        (int32)jog_rate_steps_s * (int32)GIMBAL_RATE_SCALE;
+    gimbal_selected_axis = axis;
+    gimbal_control_mode = GIMBAL_CONTROL_IDLE;
+    gimbal_manual_control_enabled = 1U;
+    gimbal_laser_force_off();
+    gimbal_laser_settle_ms = 0U;
+    gimbal_reset_manual_key_state();
+    interrupt_global_enable(primask);
+    return 1U;
 }
 
 /**
@@ -1897,6 +2015,8 @@ uint8 gimbal_stepper_move_relative_steps(
     if((gimbal_stop_latched != 0U)
         || (gimbal_control_mode != GIMBAL_CONTROL_POSITION)
         || (gimbal_axes_zeroed() == 0U)
+        || ((yaw->enabled == 0U) && (yaw_delta_steps != 0))
+        || ((pitch->enabled == 0U) && (pitch_delta_steps != 0))
         || (gimbal_select_key.pressed != 0U)
         || (gimbal_negative_key.pressed != 0U)
         || (gimbal_positive_key.pressed != 0U))
@@ -1905,14 +2025,20 @@ uint8 gimbal_stepper_move_relative_steps(
         return 0U;
     }
 
-    yaw->target_position_steps = gimbal_clamp_position(
-        (int64)yaw->target_position_steps + yaw_delta_steps,
-        yaw->min_position_steps,
-        yaw->max_position_steps);
-    pitch->target_position_steps = gimbal_clamp_position(
-        (int64)pitch->target_position_steps + pitch_delta_steps,
-        pitch->min_position_steps,
-        pitch->max_position_steps);
+    if(yaw->enabled != 0U)
+    {
+        yaw->target_position_steps = gimbal_clamp_position(
+            (int64)yaw->target_position_steps + yaw_delta_steps,
+            yaw->min_position_steps,
+            yaw->max_position_steps);
+    }
+    if(pitch->enabled != 0U)
+    {
+        pitch->target_position_steps = gimbal_clamp_position(
+            (int64)pitch->target_position_steps + pitch_delta_steps,
+            pitch->min_position_steps,
+            pitch->max_position_steps);
+    }
     gimbal_laser_force_off();
     gimbal_laser_settle_ms = 0U;
     interrupt_global_enable(primask);
@@ -1965,6 +2091,7 @@ void gimbal_stepper_get_status(
                 / (int32)GIMBAL_RATE_SCALE;
         status->axis[index].zero_valid =
             gimbal_axes[index].zero_valid;
+        status->axis[index].enabled = gimbal_axes[index].enabled;
     }
     status->selected_axis = gimbal_selected_axis;
     status->stop_latched = gimbal_stop_latched;
@@ -2095,6 +2222,50 @@ uint8 gimbal_stepper_set_absolute_target_steps(
         bounded_pitch_steps;
     if(target_changed != 0U)
     {
+        gimbal_laser_force_off();
+        gimbal_laser_settle_ms = 0U;
+    }
+    gimbal_control_mode = GIMBAL_CONTROL_POSITION;
+    interrupt_global_enable(primask);
+    return 1U;
+}
+
+/**
+ * @brief Set one enabled axis to a bounded absolute target.
+ */
+uint8 gimbal_stepper_set_axis_absolute_target_steps(
+    gimbal_stepper_axis_enum axis,
+    int32 target_steps)
+{
+    gimbal_axis_struct *selected_axis;
+    int32 bounded_target_steps;
+    uint32 primask;
+
+    if(axis >= GIMBAL_STEPPER_AXIS_COUNT)
+    {
+        return 0U;
+    }
+
+    primask = interrupt_global_disable();
+    selected_axis = &gimbal_axes[axis];
+    if((gimbal_stop_latched != 0U)
+        || (selected_axis->enabled == 0U)
+        || (selected_axis->zero_valid == 0U)
+        || (gimbal_select_key.pressed != 0U)
+        || (gimbal_negative_key.pressed != 0U)
+        || (gimbal_positive_key.pressed != 0U))
+    {
+        interrupt_global_enable(primask);
+        return 0U;
+    }
+
+    bounded_target_steps = gimbal_clamp_position(
+        target_steps,
+        selected_axis->min_position_steps,
+        selected_axis->max_position_steps);
+    if(selected_axis->target_position_steps != bounded_target_steps)
+    {
+        selected_axis->target_position_steps = bounded_target_steps;
         gimbal_laser_force_off();
         gimbal_laser_settle_ms = 0U;
     }

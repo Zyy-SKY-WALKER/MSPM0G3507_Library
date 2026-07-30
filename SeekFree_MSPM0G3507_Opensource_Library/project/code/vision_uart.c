@@ -1,6 +1,6 @@
 /**
  * @file    vision_uart.c
- * @brief   UART1 DMA receiver for ASCII vision-error lines.
+ * @brief   UART1 DMA receiver for ASCII ball-position lines.
  */
 
 #include "vision_uart.h"
@@ -19,9 +19,6 @@
 #define VISION_UART_DMA_CHANNEL        (1U)
 #define VISION_UART_DMA_BUFFER_SIZE    (4096U)
 #define VISION_UART_DMA_BUFFER_MASK    (VISION_UART_DMA_BUFFER_SIZE - 1U)
-#define VISION_UART_INT32_MAX_VALUE    (2147483647U)
-#define VISION_UART_INT32_MIN_MAGNITUDE (2147483648U)
-
 static volatile uint8 vision_uart_dma_buffer[
     VISION_UART_DMA_BUFFER_SIZE];
 static char vision_uart_line[VISION_UART_LINE_MAX_LENGTH];
@@ -31,110 +28,58 @@ static uint16 vision_uart_dma_consumer_index;
 static vision_uart_data_struct vision_uart_data;
 
 /**
- * @brief Parse one strict signed decimal int32 field.
- * @param cursor Input and end position.
- * @param value Parsed result.
- * @return ZF_TRUE when at least one digit was parsed without overflow.
+ * @brief Parse one fixed-width signed position in 0.01 cm.
+ * @return ZF_TRUE for [+-]DD.DD within the physical ball range.
  */
-static uint8 vision_uart_parse_int32(
-    const char **cursor,
-    int32 *value)
+static uint8 vision_uart_parse_position_centi_cm(int32 *position_centi_cm)
 {
-    const char *position = *cursor;
-    uint32 magnitude = 0U;
-    uint32 limit = VISION_UART_INT32_MAX_VALUE;
-    uint8 negative = 0U;
-    uint8 digit_count = 0U;
+    int32 magnitude;
 
-    if (*position == '-')
-    {
-        negative = 1U;
-        limit = VISION_UART_INT32_MIN_MAGNITUDE;
-        position++;
-    }
-    else if (*position == '+')
-    {
-        position++;
-    }
-
-    while ((*position >= '0') && (*position <= '9'))
-    {
-        uint32 digit = (uint32)(*position - '0');
-
-        if (magnitude > ((limit - digit) / 10U))
-        {
-            return ZF_FALSE;
-        }
-        magnitude = (magnitude * 10U) + digit;
-        digit_count++;
-        position++;
-    }
-    if (digit_count == 0U)
+    if((vision_uart_line_length != VISION_UART_POSITION_TEXT_LENGTH)
+        || ((vision_uart_line[0] != '+') && (vision_uart_line[0] != '-'))
+        || (vision_uart_line[3] != '.')
+        || (vision_uart_line[1] < '0')
+        || (vision_uart_line[1] > '9')
+        || (vision_uart_line[2] < '0')
+        || (vision_uart_line[2] > '9')
+        || (vision_uart_line[4] < '0')
+        || (vision_uart_line[4] > '9')
+        || (vision_uart_line[5] < '0')
+        || (vision_uart_line[5] > '9'))
     {
         return ZF_FALSE;
     }
 
-    if (negative != 0U)
+    magnitude = ((int32)(vision_uart_line[1] - '0') * 1000)
+        + ((int32)(vision_uart_line[2] - '0') * 100)
+        + ((int32)(vision_uart_line[4] - '0') * 10)
+        + (int32)(vision_uart_line[5] - '0');
+    if(magnitude > VISION_UART_POSITION_LIMIT_CENTI_CM)
     {
-        if (magnitude == VISION_UART_INT32_MIN_MAGNITUDE)
-        {
-            *value = (-2147483647 - 1);
-        }
-        else
-        {
-            *value = -(int32)magnitude;
-        }
+        return ZF_FALSE;
     }
-    else
-    {
-        *value = (int32)magnitude;
-    }
-    *cursor = position;
+    *position_centi_cm = vision_uart_line[0] == '-'
+        ? -magnitude : magnitude;
     return ZF_TRUE;
 }
 
 /**
- * @brief Decode and publish one complete D,x,y line.
+ * @brief Decode and publish one complete ball-position or invalid line.
  */
 static void vision_uart_process_line(void)
 {
-    const char *cursor;
-    int32 error_x;
-    int32 error_y;
+    int32 position_centi_cm;
 
-    vision_uart_line[vision_uart_line_length] = '\0';
-    if ((vision_uart_line_length == 0U)
-        || (vision_uart_line[vision_uart_line_length - 1U] != '\r'))
+    if((vision_uart_line_length == 1U)
+        && (vision_uart_line[0] == VISION_UART_INVALID_MARKER))
     {
-        vision_uart_data.format_error_count++;
+        vision_uart_data.packet_count++;
+        vision_uart_data.invalid_packet_count++;
         vision_uart_data.recognition_valid = 0U;
         return;
-    }
-    else
-    {
-        vision_uart_line_length--;
-        vision_uart_line[vision_uart_line_length] = '\0';
     }
 
-    cursor = vision_uart_line;
-    if ((cursor[0] != VISION_UART_LINE_HEADER)
-        || (cursor[1] != ','))
-    {
-        vision_uart_data.format_error_count++;
-        vision_uart_data.recognition_valid = 0U;
-        return;
-    }
-    cursor += 2;
-    if ((vision_uart_parse_int32(&cursor, &error_x) == 0U)
-        || (*cursor != ','))
-    {
-        vision_uart_data.format_error_count++;
-        vision_uart_data.recognition_valid = 0U;
-        return;
-    }
-    cursor++;
-    if ((vision_uart_parse_int32(&cursor, &error_y) == 0U)
-        || (*cursor != '\0'))
+    if(vision_uart_parse_position_centi_cm(&position_centi_cm) == 0U)
     {
         vision_uart_data.format_error_count++;
         vision_uart_data.recognition_valid = 0U;
@@ -142,18 +87,9 @@ static void vision_uart_process_line(void)
     }
 
     vision_uart_data.packet_count++;
-    if ((error_x == -1) && (error_y == -1))
-    {
-        vision_uart_data.invalid_packet_count++;
-        vision_uart_data.recognition_valid = 0U;
-    }
-    else
-    {
-        vision_uart_data.error_x = error_x;
-        vision_uart_data.error_y = error_y;
-        vision_uart_data.valid_packet_count++;
-        vision_uart_data.recognition_valid = 1U;
-    }
+    vision_uart_data.position_centi_cm = position_centi_cm;
+    vision_uart_data.valid_packet_count++;
+    vision_uart_data.recognition_valid = 1U;
 }
 
 /**
@@ -161,19 +97,6 @@ static void vision_uart_process_line(void)
  */
 static void vision_uart_process_byte(uint8 byte)
 {
-    if (byte == (uint8)VISION_UART_LINE_HEADER)
-    {
-        if ((vision_uart_line_length != 0U)
-            && (vision_uart_discard_line == 0U))
-        {
-            vision_uart_data.format_error_count++;
-        }
-        vision_uart_line[0] = VISION_UART_LINE_HEADER;
-        vision_uart_line_length = 1U;
-        vision_uart_discard_line = 0U;
-        return;
-    }
-
     if (byte == '\n')
     {
         if ((vision_uart_discard_line == 0U)
@@ -185,8 +108,7 @@ static void vision_uart_process_byte(uint8 byte)
         vision_uart_discard_line = 0U;
         return;
     }
-    if ((vision_uart_discard_line != 0U)
-        || (vision_uart_line_length == 0U))
+    if(vision_uart_discard_line != 0U)
     {
         return;
     }

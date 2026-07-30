@@ -5,7 +5,8 @@
 
 #include "test_config.h"
 
-#if (TEST_MODE == TEST_MODE_STEPPER)
+#if ((TEST_MODE == TEST_MODE_STEPPER) \
+    || (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO))
 
 #include "test_stepper.h"
 
@@ -25,6 +26,8 @@
 #define TEST_STEPPER_TEXT_BUFFER_SIZE     (192U)
 #define TEST_STEPPER_ARRIVAL_HOLD_MS      (200U)
 #define TEST_STEPPER_POSITION_TOLERANCE   (2)
+
+#if (TEST_MODE == TEST_MODE_STEPPER)
 
 /**
  * @brief Write one zero-terminated test message through UART1 B6.
@@ -270,5 +273,43 @@ void test_stepper_run(void)
         system_delay_ms(TEST_STEPPER_LOOP_PERIOD_MS);
     }
 }
+
+#endif
+
+#if (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO)
+
+/* 6,400 steps/rev and 2.06 mm/rev give 3,106.80 steps/mm. */
+#define BALL_GROOVE_ZERO_TRAVEL_LIMIT_STEPS  (124272)
+#define BALL_GROOVE_ZERO_JOG_RATE_STEPS_S    (777U)
+#define BALL_GROOVE_ZERO_LOOP_PERIOD_MS      (1U)
+
+/**
+ * @brief Run one silent single-axis groove zeroing and direction test.
+ * @note Place the stage near mid-travel, long-press A30 to capture a
+ *       temporary zero, use B0/B1 to inspect direction, then long-press
+ *       A30 again with the ball stationary at the groove center.
+ */
+void test_ball_groove_zero_run(void)
+{
+    gimbal_stepper_init();
+    if(gimbal_stepper_configure_single_axis(
+            GIMBAL_STEPPER_AXIS_YAW,
+            -BALL_GROOVE_ZERO_TRAVEL_LIMIT_STEPS,
+            BALL_GROOVE_ZERO_TRAVEL_LIMIT_STEPS,
+            BALL_GROOVE_ZERO_JOG_RATE_STEPS_S) == 0U)
+    {
+        while(true)
+        {
+        }
+    }
+
+    while(true)
+    {
+        (void)gimbal_stepper_service();
+        system_delay_ms(BALL_GROOVE_ZERO_LOOP_PERIOD_MS);
+    }
+}
+
+#endif
 
 #endif
