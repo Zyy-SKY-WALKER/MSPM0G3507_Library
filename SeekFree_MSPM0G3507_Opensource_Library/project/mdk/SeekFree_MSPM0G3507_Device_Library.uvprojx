@@ -1619,6 +1619,11 @@
               <FileType>5</FileType>
               <FilePath>..\test\test_mpu6500_yaw_turn_closed_loop.h</FilePath>
             </File>
+            <File>
+              <FileName>splash_image3_tiles_quant8.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\splash_image3_tiles_quant8.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

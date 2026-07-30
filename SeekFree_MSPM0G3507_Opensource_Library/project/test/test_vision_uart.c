@@ -5,13 +5,25 @@
 
 #include "test_config.h"
 
-#if (TEST_MODE == TEST_MODE_VISION_UART)
+#if ((TEST_MODE == TEST_MODE_VISION_UART) \
+    || (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION))
 
 #include "test_vision_uart.h"
 
 #include "my_lib_ili9341.h"
 #include "vision_uart.h"
+
+#if (TEST_MODE == TEST_MODE_VISION_UART)
 #include "zf_driver_pit.h"
+#endif
+
+#if (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION)
+#include "gimbal_stepper.h"
+#include "zf_driver_delay.h"
+#include "zf_driver_gpio.h"
+#endif
+
+#if (TEST_MODE == TEST_MODE_VISION_UART)
 
 #define VISION_TEST_TIMER             (PIT_TIM_G12)
 #define VISION_TEST_DISPLAY_MS        (100U)
@@ -232,5 +244,355 @@ void test_vision_uart_run(void)
         }
     }
 }
+
+#endif
+
+#if (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION)
+
+#define BALL_VISION_TRAVEL_LIMIT_STEPS        (124272)
+#define BALL_VISION_JOG_RATE_STEPS_S          (777U)
+#define BALL_VISION_LOOP_PERIOD_MS            (1U)
+#define BALL_VISION_START_DEBOUNCE_MS         (10U)
+#define BALL_VISION_START_LONG_PRESS_MS       (1000U)
+#define BALL_VISION_TARGET_POS_CENTI_CM       (500)
+#define BALL_VISION_TARGET_NEG_CENTI_CM       (-500)
+#define BALL_VISION_TARGET_TOLERANCE_CENTI_CM (30)
+#define BALL_VISION_FRAME_TIMEOUT_MS          (100U)
+#define BALL_VISION_KP_MM_PER_CM              (20.0F)
+#define BALL_VISION_KD_MM_PER_CM_S            (0.0F)
+#define BALL_VISION_MAX_VELOCITY_CM_S         (100.0F)
+#define BALL_VISION_VELOCITY_FILTER_ALPHA     (0.40F)
+#define BALL_VISION_TRAVEL_LIMIT_MM           (40.0F)
+#define BALL_VISION_LIFT_MM_PER_REVOLUTION    (2.06F)
+#define BALL_VISION_TEXT_LENGTH               (13U)
+
+typedef enum
+{
+    BALL_VISION_WAIT_FIRST_ZERO = 0,
+    BALL_VISION_WAIT_FINAL_ZERO,
+    BALL_VISION_WAIT_START,
+    BALL_VISION_RUNNING,
+} ball_vision_state_enum;
+
+typedef struct
+{
+    char characters[BALL_VISION_TEXT_LENGTH];
+    uint8 initialized;
+} ball_vision_display_cache_struct;
+
+/**
+ * @brief Clamp one scalar to a closed interval.
+ */
+static float ball_vision_clamp_float(float value, float minimum, float maximum)
+{
+    if(value < minimum)
+    {
+        return minimum;
+    }
+    if(value > maximum)
+    {
+        return maximum;
+    }
+    return value;
+}
+
+/**
+ * @brief Build the fixed first-row text from the latest vision state.
+ */
+static void ball_vision_build_position_text(
+    char text[BALL_VISION_TEXT_LENGTH],
+    uint8 recognition_valid,
+    int32 position_centi_cm)
+{
+    int32 magnitude = position_centi_cm;
+
+    text[0] = 'B';
+    text[1] = 'A';
+    text[2] = 'L';
+    text[3] = 'L';
+    text[4] = ':';
+    if(recognition_valid == 0U)
+    {
+        text[5] = '!';
+        text[6] = ' ';
+        text[7] = ' ';
+        text[8] = ' ';
+        text[9] = ' ';
+        text[10] = ' ';
+        text[11] = ' ';
+        text[12] = ' ';
+        return;
+    }
+
+    if(magnitude < 0)
+    {
+        magnitude = -magnitude;
+        text[5] = '-';
+    }
+    else
+    {
+        text[5] = '+';
+    }
+    text[6] = (char)('0' + ((magnitude / 1000) % 10));
+    text[7] = (char)('0' + ((magnitude / 100) % 10));
+    text[8] = '.';
+    text[9] = (char)('0' + ((magnitude / 10) % 10));
+    text[10] = (char)('0' + (magnitude % 10));
+    text[11] = 'c';
+    text[12] = 'm';
+}
+
+/**
+ * @brief Redraw only changed characters in the first display row.
+ */
+static void ball_vision_render_position(
+    const vision_uart_data_struct *data,
+    ball_vision_display_cache_struct *cache)
+{
+    char text[BALL_VISION_TEXT_LENGTH];
+    uint8 index;
+
+    ball_vision_build_position_text(
+        text,
+        data->recognition_valid,
+        data->position_centi_cm);
+    for(index = 0U; index < BALL_VISION_TEXT_LENGTH; index++)
+    {
+        if((cache->initialized == 0U)
+            || (text[index] != cache->characters[index]))
+        {
+            ili9341_show_char((uint16)index * 8U, 0U, text[index]);
+            cache->characters[index] = text[index];
+        }
+    }
+    cache->initialized = 1U;
+}
+
+/**
+ * @brief Detect one debounced B0 short press after calibration ownership ends.
+ */
+static uint8 ball_vision_start_key_update(
+    uint16 elapsed_ms,
+    uint8 *pressed,
+    uint16 *hold_ms)
+{
+    uint8 key_pressed = (uint8)(gpio_get_level(B0) == GPIO_LOW);
+
+    if(key_pressed != 0U)
+    {
+        if(*pressed == 0U)
+        {
+            *pressed = 1U;
+            *hold_ms = 0U;
+        }
+        if(*hold_ms < BALL_VISION_START_LONG_PRESS_MS)
+        {
+            *hold_ms = (uint16)(*hold_ms + elapsed_ms);
+            if(*hold_ms > BALL_VISION_START_LONG_PRESS_MS)
+            {
+                *hold_ms = BALL_VISION_START_LONG_PRESS_MS;
+            }
+        }
+        return 0U;
+    }
+
+    if(*pressed != 0U)
+    {
+        uint16 completed_hold_ms = *hold_ms;
+
+        *pressed = 0U;
+        *hold_ms = 0U;
+        return (uint8)((completed_hold_ms >= BALL_VISION_START_DEBOUNCE_MS)
+            && (completed_hold_ms < BALL_VISION_START_LONG_PRESS_MS));
+    }
+    return 0U;
+}
+
+/**
+ * @brief Convert one bounded PD lift command into the single-axis target.
+ */
+static int32 ball_vision_lift_to_steps(float lift_mm)
+{
+    float steps;
+
+    lift_mm = ball_vision_clamp_float(
+        lift_mm,
+        -BALL_VISION_TRAVEL_LIMIT_MM,
+        BALL_VISION_TRAVEL_LIMIT_MM);
+    steps = lift_mm * (float)GIMBAL_STEPPER_STEPS_PER_REVOLUTION
+        / BALL_VISION_LIFT_MM_PER_REVOLUTION;
+    return steps >= 0.0F
+        ? (int32)(steps + 0.5F)
+        : (int32)(steps - 0.5F);
+}
+
+/**
+ * @brief Run stationary visual PD control between +5 cm and -5 cm.
+ */
+void test_ball_vision_oscillation_run(void)
+{
+    ball_vision_display_cache_struct display_cache = {{0}, 0U};
+    vision_uart_data_struct vision_data;
+    gimbal_stepper_status_struct stepper_status;
+    ball_vision_state_enum state = BALL_VISION_WAIT_FIRST_ZERO;
+    uint32 time_ms = 0U;
+    uint32 last_packet_count = 0U;
+    uint32 last_valid_frame_ms = 0U;
+    uint32 previous_frame_ms = 0U;
+    int32 target_centi_cm = BALL_VISION_TARGET_POS_CENTI_CM;
+    int32 previous_position_centi_cm = 0;
+    float filtered_velocity_cm_s = 0.0F;
+    uint16 start_hold_ms = 0U;
+    uint8 start_key_pressed = 0U;
+    uint8 previous_position_valid = 0U;
+
+    ili9341_init();
+    ili9341_set_font(ILI9341_FONT_8X16);
+    ili9341_set_color(ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE);
+    vision_data.position_centi_cm = 0;
+    vision_data.recognition_valid = 0U;
+    ball_vision_render_position(&vision_data, &display_cache);
+
+    gimbal_stepper_init();
+    if((gimbal_stepper_configure_single_axis(
+            GIMBAL_STEPPER_AXIS_YAW,
+            -BALL_VISION_TRAVEL_LIMIT_STEPS,
+            BALL_VISION_TRAVEL_LIMIT_STEPS,
+            BALL_VISION_JOG_RATE_STEPS_S) == 0U)
+        || (vision_uart_init() == 0U))
+    {
+        while(true)
+        {
+        }
+    }
+
+    while(true)
+    {
+        uint16 elapsed_ms = gimbal_stepper_service();
+
+        time_ms += elapsed_ms;
+        vision_uart_update();
+        (void)vision_uart_get_data(&vision_data);
+        ball_vision_render_position(&vision_data, &display_cache);
+        gimbal_stepper_get_status(&stepper_status);
+
+        if(state == BALL_VISION_WAIT_FIRST_ZERO)
+        {
+            if(stepper_status.axis[GIMBAL_STEPPER_AXIS_YAW]
+                .zero_capture_count >= 1U)
+            {
+                state = BALL_VISION_WAIT_FINAL_ZERO;
+            }
+        }
+        else if(state == BALL_VISION_WAIT_FINAL_ZERO)
+        {
+            if((stepper_status.axis[GIMBAL_STEPPER_AXIS_YAW]
+                .zero_capture_count >= 2U)
+                && (stepper_status.relative_ready != 0U))
+            {
+                gimbal_stepper_set_manual_control_enabled(0U);
+                start_key_pressed = 0U;
+                start_hold_ms = 0U;
+                state = BALL_VISION_WAIT_START;
+            }
+        }
+        else if(state == BALL_VISION_WAIT_START)
+        {
+            if(ball_vision_start_key_update(
+                    elapsed_ms,
+                    &start_key_pressed,
+                    &start_hold_ms) != 0U)
+            {
+                target_centi_cm = BALL_VISION_TARGET_POS_CENTI_CM;
+                previous_position_valid = 0U;
+                filtered_velocity_cm_s = 0.0F;
+                state = BALL_VISION_RUNNING;
+            }
+        }
+        else if(vision_data.packet_count != last_packet_count)
+        {
+            last_packet_count = vision_data.packet_count;
+            if(vision_data.recognition_valid != 0U)
+            {
+                float velocity_cm_s = 0.0F;
+                float error_cm;
+                float lift_mm;
+
+                last_valid_frame_ms = time_ms;
+                if(previous_position_valid != 0U)
+                {
+                    uint32 frame_period_ms = time_ms - previous_frame_ms;
+
+                    if((frame_period_ms > 0U)
+                        && (frame_period_ms <= BALL_VISION_FRAME_TIMEOUT_MS))
+                    {
+                        velocity_cm_s = ((float)(
+                            vision_data.position_centi_cm
+                            - previous_position_centi_cm) * 10.0F)
+                            / (float)frame_period_ms;
+                        velocity_cm_s = ball_vision_clamp_float(
+                            velocity_cm_s,
+                            -BALL_VISION_MAX_VELOCITY_CM_S,
+                            BALL_VISION_MAX_VELOCITY_CM_S);
+                        filtered_velocity_cm_s +=
+                            BALL_VISION_VELOCITY_FILTER_ALPHA
+                            * (velocity_cm_s - filtered_velocity_cm_s);
+                    }
+                    else
+                    {
+                        filtered_velocity_cm_s = 0.0F;
+                    }
+                }
+                else
+                {
+                    filtered_velocity_cm_s = 0.0F;
+                }
+
+                if((target_centi_cm > 0)
+                    && (vision_data.position_centi_cm >=
+                        (BALL_VISION_TARGET_POS_CENTI_CM
+                            - BALL_VISION_TARGET_TOLERANCE_CENTI_CM)))
+                {
+                    target_centi_cm = BALL_VISION_TARGET_NEG_CENTI_CM;
+                }
+                else if((target_centi_cm < 0)
+                    && (vision_data.position_centi_cm <=
+                        (BALL_VISION_TARGET_NEG_CENTI_CM
+                            + BALL_VISION_TARGET_TOLERANCE_CENTI_CM)))
+                {
+                    target_centi_cm = BALL_VISION_TARGET_POS_CENTI_CM;
+                }
+
+                error_cm = (float)(target_centi_cm
+                    - vision_data.position_centi_cm) / 100.0F;
+                lift_mm = (BALL_VISION_KP_MM_PER_CM * error_cm)
+                    - (BALL_VISION_KD_MM_PER_CM_S
+                        * filtered_velocity_cm_s);
+                (void)gimbal_stepper_set_axis_absolute_target_steps(
+                    GIMBAL_STEPPER_AXIS_YAW,
+                    ball_vision_lift_to_steps(lift_mm));
+                previous_position_centi_cm = vision_data.position_centi_cm;
+                previous_frame_ms = time_ms;
+                previous_position_valid = 1U;
+            }
+            else
+            {
+                previous_position_valid = 0U;
+                filtered_velocity_cm_s = 0.0F;
+            }
+        }
+
+        if((previous_position_valid != 0U)
+            && ((uint32)(time_ms - last_valid_frame_ms)
+                > BALL_VISION_FRAME_TIMEOUT_MS))
+        {
+            previous_position_valid = 0U;
+            filtered_velocity_cm_s = 0.0F;
+        }
+        system_delay_ms(BALL_VISION_LOOP_PERIOD_MS);
+    }
+}
+
+#endif
 
 #endif

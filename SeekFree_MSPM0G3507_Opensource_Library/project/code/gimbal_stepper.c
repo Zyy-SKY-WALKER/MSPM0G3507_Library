@@ -10,15 +10,19 @@
 #include <stdio.h>
 
 #include "drive_geometry.h"
+#include "zf_common_clock.h"
 #include "zf_common_interrupt.h"
 #include "zf_driver_gpio.h"
 #include "zf_driver_pit.h"
+#include "zf_driver_pwm.h"
+#include "zf_driver_timer.h"
 
 #define GIMBAL_YAW_STEP_PIN                     (B4)
 #define GIMBAL_PITCH_STEP_PIN                   (B5)
 #define GIMBAL_YAW_DIR_PIN                      (B8)
 #define GIMBAL_PITCH_DIR_PIN                    (B9)
 #define GIMBAL_LASER_PIN                        (B13)
+#define GIMBAL_YAW_HARDWARE_PWM_PIN             (PWM_TIM_A1_CH0_B4)
 
 #define GIMBAL_SELECT_KEY_PIN                   (A30)
 #define GIMBAL_STOP_KEY_PIN                     (A31)
@@ -35,6 +39,12 @@
 #define GIMBAL_RATE_SCALE                       (1000U)
 #define GIMBAL_MAX_RATE_MILLI_STEPS_S           \
     ((int32)((GIMBAL_TICK_HZ / 2U) * GIMBAL_RATE_SCALE))
+#define GIMBAL_HARDWARE_PWM_MAX_RATE_MILLI_STEPS_S \
+    ((int32)(GIMBAL_CONFIG_HARDWARE_PWM_MAX_STEP_HZ \
+        * GIMBAL_RATE_SCALE))
+#define GIMBAL_HARDWARE_PWM_DUTY                (PWM_DUTY_MAX / 2U)
+#define GIMBAL_HARDWARE_PWM_RATE_DENOMINATOR    \
+    (GIMBAL_RATE_SCALE * 1000U)
 #define GIMBAL_CONTROL_PERIOD_MS                \
     (GIMBAL_CONFIG_CONTROL_PERIOD_MS)
 #define GIMBAL_MILLISECOND_DIVIDER_TICKS        \
@@ -165,6 +175,7 @@ typedef struct
     int32 jog_rate_milli_steps_s;
     uint8 positive_dir_level;
     uint8 enabled;
+    uint8 hardware_pwm_enabled;
     volatile int32 target_position_steps;
     volatile int32 target_rate_milli_steps_s;
     volatile int32 current_rate_milli_steps_s;
@@ -177,6 +188,10 @@ typedef struct
     volatile uint8 pulse_pending;
     volatile uint8 pulse_high;
     volatile uint8 zero_valid;
+    volatile uint16 zero_capture_count;
+    volatile int32 hardware_active_rate_milli_steps_s;
+    volatile uint32 hardware_pulse_remainder;
+    volatile uint8 hardware_direction_settle_ms;
 } gimbal_axis_struct;
 
 typedef struct
@@ -219,6 +234,7 @@ static uint8 gimbal_initialized;
 
 static void gimbal_laser_force_off(void);
 static uint8 gimbal_laser_can_enable(void);
+static void gimbal_hardware_pwm_stop(gimbal_axis_struct *axis);
 
 /**
  * @brief Send one log line through the global debug printf route.
@@ -1061,6 +1077,169 @@ static void gimbal_clear_axis_command(gimbal_axis_struct *axis)
 }
 
 /**
+ * @brief Disable the hardware PWM output for the single-axis STEP backend.
+ */
+static void gimbal_hardware_pwm_stop(gimbal_axis_struct *axis)
+{
+    if(axis->hardware_pwm_enabled != 0U)
+    {
+        pwm_set_duty(GIMBAL_YAW_HARDWARE_PWM_PIN, 0U);
+    }
+    axis->hardware_active_rate_milli_steps_s = 0;
+    axis->hardware_pulse_remainder = 0U;
+}
+
+/**
+ * @brief Program TIMA1 CH0 B4 for one signed continuous STEP rate.
+ */
+static void gimbal_hardware_pwm_start(
+    gimbal_axis_struct *axis,
+    int32 rate_milli_steps_s)
+{
+    uint64 magnitude;
+    uint32 frequency_hz;
+    uint32 load_value;
+
+    if(rate_milli_steps_s < 0)
+    {
+        magnitude = (uint64)(-(int64)rate_milli_steps_s);
+    }
+    else
+    {
+        magnitude = (uint64)rate_milli_steps_s;
+    }
+    frequency_hz = (uint32)((magnitude + (GIMBAL_RATE_SCALE / 2U))
+        / GIMBAL_RATE_SCALE);
+    if(frequency_hz == 0U)
+    {
+        gimbal_hardware_pwm_stop(axis);
+        return;
+    }
+    if(frequency_hz > GIMBAL_CONFIG_HARDWARE_PWM_MAX_STEP_HZ)
+    {
+        frequency_hz = GIMBAL_CONFIG_HARDWARE_PWM_MAX_STEP_HZ;
+    }
+
+    pwm_set_duty(GIMBAL_YAW_HARDWARE_PWM_PIN, 0U);
+    timer_stop(TIM_A1);
+    load_value = (SYSTEM_CLOCK_80M / frequency_hz) - 1U;
+    TIMA1->COUNTERREGS.LOAD = load_value;
+    TIMA1->COUNTERREGS.CC_01[PWM_CH0] = load_value / 2U;
+    TIMA1->COUNTERREGS.CTR = 0U;
+    timer_start(TIM_A1);
+    pwm_set_duty(GIMBAL_YAW_HARDWARE_PWM_PIN, GIMBAL_HARDWARE_PWM_DUTY);
+    axis->hardware_active_rate_milli_steps_s = rate_milli_steps_s;
+}
+
+/**
+ * @brief Account for one elapsed PWM millisecond and prepare the next one.
+ */
+static void gimbal_hardware_pwm_update_axis(gimbal_axis_struct *axis)
+{
+    int32 active_rate = axis->hardware_active_rate_milli_steps_s;
+    int32 command_rate = axis->command_rate_milli_steps_s;
+    uint8 positive;
+
+    if(axis->hardware_pwm_enabled == 0U)
+    {
+        return;
+    }
+
+    if(active_rate != 0)
+    {
+        uint64 accumulator = axis->hardware_pulse_remainder;
+        uint32 pulses;
+        int32 stop_position;
+
+        accumulator += active_rate < 0
+            ? (uint64)(-(int64)active_rate) : (uint64)active_rate;
+        pulses = (uint32)(accumulator
+            / GIMBAL_HARDWARE_PWM_RATE_DENOMINATOR);
+        axis->hardware_pulse_remainder = (uint32)(accumulator
+            % GIMBAL_HARDWARE_PWM_RATE_DENOMINATOR);
+        positive = (uint8)(active_rate > 0);
+        if(positive != 0U)
+        {
+            stop_position = axis->max_position_steps;
+            if((axis->zero_valid != 0U)
+                && (gimbal_control_mode == GIMBAL_CONTROL_POSITION)
+                && (axis->target_position_steps < stop_position))
+            {
+                stop_position = axis->target_position_steps;
+            }
+            if((axis->position_steps >= stop_position)
+                || (pulses >= (uint32)(stop_position - axis->position_steps)))
+            {
+                axis->position_steps = stop_position;
+                gimbal_hardware_pwm_stop(axis);
+            }
+            else
+            {
+                axis->position_steps += (int32)pulses;
+            }
+        }
+        else
+        {
+            stop_position = axis->min_position_steps;
+            if((axis->zero_valid != 0U)
+                && (gimbal_control_mode == GIMBAL_CONTROL_POSITION)
+                && (axis->target_position_steps > stop_position))
+            {
+                stop_position = axis->target_position_steps;
+            }
+            if((axis->position_steps <= stop_position)
+                || (pulses >= (uint32)(axis->position_steps - stop_position)))
+            {
+                axis->position_steps = stop_position;
+                gimbal_hardware_pwm_stop(axis);
+            }
+            else
+            {
+                axis->position_steps -= (int32)pulses;
+            }
+        }
+    }
+
+    if(command_rate == 0)
+    {
+        gimbal_hardware_pwm_stop(axis);
+        return;
+    }
+
+    positive = (uint8)(command_rate > 0);
+    if((axis->zero_valid != 0U)
+        && (gimbal_control_mode == GIMBAL_CONTROL_POSITION)
+        && (((positive != 0U)
+                && (axis->position_steps >= axis->target_position_steps))
+            || ((positive == 0U)
+                && (axis->position_steps <= axis->target_position_steps))))
+    {
+        gimbal_hardware_pwm_stop(axis);
+        return;
+    }
+    if(positive != axis->direction_positive)
+    {
+        gimbal_hardware_pwm_stop(axis);
+        axis->direction_positive = positive;
+        gpio_set_level(
+            axis->dir_pin,
+            positive != 0U ? axis->positive_dir_level
+                : gimbal_invert_level(axis->positive_dir_level));
+        axis->hardware_direction_settle_ms = 1U;
+        return;
+    }
+    if(axis->hardware_direction_settle_ms > 0U)
+    {
+        axis->hardware_direction_settle_ms--;
+        return;
+    }
+    if(axis->hardware_active_rate_milli_steps_s != command_rate)
+    {
+        gimbal_hardware_pwm_start(axis, command_rate);
+    }
+}
+
+/**
  * @brief Synchronize both position targets to current pulse positions.
  */
 static void gimbal_sync_targets_to_positions(void)
@@ -1179,16 +1358,25 @@ static void gimbal_emergency_stop_tick(void)
     gimbal_axis_struct *pitch =
         &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH];
 
+    gimbal_hardware_pwm_stop(yaw);
     gimbal_clear_axis_command(yaw);
     gimbal_clear_axis_command(pitch);
     yaw->pulse_high = 0U;
     pitch->pulse_high = 0U;
-    gpio_low(yaw->step_pin);
+    if(yaw->hardware_pwm_enabled == 0U)
+    {
+        gpio_low(yaw->step_pin);
+    }
     gpio_low(pitch->step_pin);
     gimbal_laser_force_off();
     gimbal_laser_settle_ms = 0U;
     gimbal_sync_targets_to_positions();
     gimbal_control_mode = GIMBAL_CONTROL_IDLE;
+    if(yaw->hardware_pwm_enabled != 0U)
+    {
+        yaw->zero_valid = 0U;
+        yaw->zero_capture_count = 0U;
+    }
     gimbal_stop_latched = 1U;
 }
 
@@ -1207,10 +1395,15 @@ static uint8 gimbal_zero_selected_axis(void)
         interrupt_global_enable(primask);
         return 0U;
     }
+    gimbal_hardware_pwm_stop(axis);
     gimbal_clear_axis_command(axis);
     axis->position_steps = 0;
     axis->target_position_steps = 0;
     axis->zero_valid = 1U;
+    if(axis->zero_capture_count < 65535U)
+    {
+        axis->zero_capture_count++;
+    }
     interrupt_global_enable(primask);
 
     gimbal_log(gimbal_selected_axis == GIMBAL_STEPPER_AXIS_YAW
@@ -1467,6 +1660,9 @@ static int32 gimbal_position_target_rate(
 {
     int32 error = axis->target_position_steps - axis->position_steps;
     int64 magnitude;
+    int32 maximum_rate = axis->hardware_pwm_enabled != 0U
+        ? GIMBAL_HARDWARE_PWM_MAX_RATE_MILLI_STEPS_S
+        : GIMBAL_POSITION_RATE_MILLI_STEPS_S;
 
     if(error == 0)
     {
@@ -1475,9 +1671,9 @@ static int32 gimbal_position_target_rate(
 
     magnitude = error < 0 ? -(int64)error : (int64)error;
     magnitude *= GIMBAL_POSITION_GAIN_MILLI_RATE;
-    if(magnitude > GIMBAL_POSITION_RATE_MILLI_STEPS_S)
+    if(magnitude > maximum_rate)
     {
-        magnitude = GIMBAL_POSITION_RATE_MILLI_STEPS_S;
+        magnitude = maximum_rate;
     }
 
     return error < 0 ? -(int32)magnitude : (int32)magnitude;
@@ -1571,6 +1767,11 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
     uint8 phase_overflow;
     int32 minimum;
     int32 maximum;
+
+    if(axis->hardware_pwm_enabled != 0U)
+    {
+        return;
+    }
 
     if(axis->enabled == 0U)
     {
@@ -1723,6 +1924,8 @@ static void gimbal_pit_callback(uint32 event, void *context)
         {
             gimbal_pending_ms++;
         }
+        gimbal_hardware_pwm_update_axis(
+            &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW]);
     }
 
     if(gimbal_stop_latched != 0U)
@@ -1763,6 +1966,7 @@ static void gimbal_initialize_axis(
     axis->jog_rate_milli_steps_s = jog_rate_milli_steps_s;
     axis->positive_dir_level = positive_dir_level;
     axis->enabled = 1U;
+    axis->hardware_pwm_enabled = 0U;
     axis->target_position_steps = 0;
     axis->target_rate_milli_steps_s = 0;
     axis->current_rate_milli_steps_s = 0;
@@ -1775,6 +1979,10 @@ static void gimbal_initialize_axis(
     axis->pulse_pending = 0U;
     axis->pulse_high = 0U;
     axis->zero_valid = 0U;
+    axis->zero_capture_count = 0U;
+    axis->hardware_active_rate_milli_steps_s = 0;
+    axis->hardware_pulse_remainder = 0U;
+    axis->hardware_direction_settle_ms = 0U;
 
     gpio_init(step_pin, GPO, GPIO_LOW, GPO_PUSH_PULL);
     gpio_init(dir_pin, GPO, GPIO_LOW, GPO_PUSH_PULL);
@@ -1909,6 +2117,11 @@ uint8 gimbal_stepper_configure_single_axis(
         current_axis->position_steps = 0;
         current_axis->target_position_steps = 0;
         current_axis->zero_valid = 0U;
+        current_axis->zero_capture_count = 0U;
+        current_axis->hardware_pwm_enabled = 0U;
+        current_axis->hardware_active_rate_milli_steps_s = 0;
+        current_axis->hardware_pulse_remainder = 0U;
+        current_axis->hardware_direction_settle_ms = 0U;
         current_axis->enabled = (uint8)(index == (uint8)axis);
     }
 
@@ -1925,6 +2138,15 @@ uint8 gimbal_stepper_configure_single_axis(
     gimbal_laser_settle_ms = 0U;
     gimbal_reset_manual_key_state();
     interrupt_global_enable(primask);
+
+    if(axis == GIMBAL_STEPPER_AXIS_YAW)
+    {
+        pwm_init(
+            GIMBAL_YAW_HARDWARE_PWM_PIN,
+            1000U,
+            0U);
+        selected_axis->hardware_pwm_enabled = 1U;
+    }
     return 1U;
 }
 
@@ -2091,6 +2313,8 @@ void gimbal_stepper_get_status(
                 / (int32)GIMBAL_RATE_SCALE;
         status->axis[index].zero_valid =
             gimbal_axes[index].zero_valid;
+        status->axis[index].zero_capture_count =
+            gimbal_axes[index].zero_capture_count;
         status->axis[index].enabled = gimbal_axes[index].enabled;
     }
     status->selected_axis = gimbal_selected_axis;

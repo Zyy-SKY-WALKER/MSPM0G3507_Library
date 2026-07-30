@@ -38,6 +38,8 @@ typedef struct
     int32 target_position_steps;
     int32 current_rate_steps_s;
     uint8 zero_valid;
+    /** Number of successful manual zero captures since initialization. */
+    uint16 zero_capture_count;
     uint8 enabled;
 } gimbal_stepper_axis_status_struct;
 
