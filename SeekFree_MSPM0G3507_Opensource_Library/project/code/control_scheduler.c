@@ -1489,7 +1489,10 @@ void control_scheduler_process_foreground(void)
     uint8 gimbal_update_accepted;
     uint8 gimbal_solution_valid;
 
-    control_imu_mpu6500_service(control_scheduler_get_tick_count());
+    if(control_imu_bypass_enabled == 0U)
+    {
+        control_imu_mpu6500_service(control_scheduler_get_tick_count());
+    }
 
     if (CONTROL_GIMBAL_ENABLED == 0U)
     {
@@ -1676,7 +1679,8 @@ uint8 control_scheduler_request_chassis_motion_distance(
 {
     uint32 primask;
 
-    if ((control_value_is_valid(distance_mm) == 0U)
+    if ((control_imu_bypass_enabled != 0U)
+        || (control_value_is_valid(distance_mm) == 0U)
         || (control_target_is_valid(max_speed_mm_s) == 0U)
         || (distance_mm == 0.0F)
         || (max_speed_mm_s <= 0.0F))
@@ -1707,7 +1711,8 @@ uint8 control_scheduler_request_chassis_motion_timed(
 {
     uint32 primask;
 
-    if ((control_target_is_valid(speed_mm_s) == 0U)
+    if ((control_imu_bypass_enabled != 0U)
+        || (control_target_is_valid(speed_mm_s) == 0U)
         || (speed_mm_s == 0.0F)
         || (duration_ms == 0U))
     {
@@ -1738,9 +1743,10 @@ uint8 control_scheduler_request_chassis_motion_turn_relative(
 {
     uint32 primask;
 
-    if (control_turn_request_is_valid(
+    if ((control_imu_bypass_enabled != 0U)
+        || (control_turn_request_is_valid(
             angle_deg,
-            max_angular_speed_deg_s) == 0U)
+            max_angular_speed_deg_s) == 0U))
     {
         return ZF_FALSE;
     }

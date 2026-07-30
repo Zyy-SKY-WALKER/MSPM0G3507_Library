@@ -160,6 +160,7 @@ static void line_tracker_test_prepare_pid_config(
     config->pid_derivative_filter_alpha = 0.25F;
     config->max_target_mm_s = 300.0F;
     config->max_correction_mm_s = 20.0F;
+    config->max_target_accel_mm_s2 = 0.0F;
     config->arc_outer_speed_mm_s = 160.0F;
     config->arc_inner_speed_mm_s = -60.0F;
     config->pivot_speed_mm_s = 100.0F;
@@ -168,6 +169,34 @@ static void line_tracker_test_prepare_pid_config(
     config->arc_duration_samples = 50U;
     config->search_timeout_samples = 500U;
     config->default_search_direction = LINE_TRACKER_DIRECTION_RIGHT;
+}
+
+/**
+ * @brief Fill the fixed configuration used by exhaustive output checks.
+ * @param config Destination configuration.
+ */
+static void line_tracker_test_prepare_tracking_config(
+    line_tracker_config_struct *config)
+{
+    uint8 index;
+
+    line_tracker_test_prepare_pid_config(config);
+    for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
+    {
+        config->base_speed_mm_s[index] =
+            line_tracker_test_default_base_speed[index];
+        config->pid_kp[index] = line_tracker_test_default_kp[index];
+    }
+
+    config->pid_ki = 0.0F;
+    config->pid_kd = 0.0F;
+    config->max_target_mm_s = LINE_TRACKER_TEST_MAX_TARGET;
+    config->max_correction_mm_s = LINE_TRACKER_TEST_MAX_CORRECTION;
+    config->max_target_accel_mm_s2 = 0.0F;
+    config->arc_outer_speed_mm_s = 400.0F;
+    config->arc_inner_speed_mm_s = -100.0F;
+    config->pivot_speed_mm_s = 300.0F;
+    config->arc_duration_samples = LINE_TRACKER_TEST_DEFAULT_ARC_SAMPLES;
 }
 
 /**
@@ -426,17 +455,117 @@ static uint32 line_tracker_test_pid_self_check(void)
 }
 
 /**
+ * @brief Check normal-tracking target slew and immediate safety outputs.
+ * @return Failure count.
+ */
+static uint32 line_tracker_test_target_slew_self_check(void)
+{
+    gray_sensor_result_struct sensor;
+    line_tracker_config_struct config;
+    line_tracker_output_struct output;
+    line_tracker_status_struct status;
+    uint32 failures = 0U;
+    uint8 index;
+
+    line_tracker_test_prepare_pid_config(&config);
+    for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
+    {
+        config.base_speed_mm_s[index] = 100.0F;
+        config.pid_kp[index] = 0.0F;
+    }
+    config.max_target_accel_mm_s2 = 2000.0F;
+    config.lost_debounce_samples = 1U;
+    config.reacquire_samples = 1U;
+    line_tracker_init(&config);
+
+    /* At 2,000 mm/s squared, each 10 ms tracking update moves 20 mm/s. */
+    gray_sensor_calculate(0x18U, &sensor);
+    line_tracker_update(&sensor, &output);
+    line_tracker_get_status(&status);
+    if ((line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            20.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            20.0F) == 0U)
+        || (status.output_limited == 0U))
+    {
+        failures++;
+    }
+    line_tracker_update(&sensor, &output);
+    if ((line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            40.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            40.0F) == 0U))
+    {
+        failures++;
+    }
+
+    /* Stop, search, and fault targets remain immediate. */
+    gray_sensor_calculate(0xFFU, &sensor);
+    line_tracker_update(&sensor, &output);
+    if ((output.left_target_mm_s != 0.0F)
+        || (output.right_target_mm_s != 0.0F))
+    {
+        failures++;
+    }
+
+    gray_sensor_calculate(0x18U, &sensor);
+    line_tracker_update(&sensor, &output);
+    if ((line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            20.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            20.0F) == 0U))
+    {
+        failures++;
+    }
+
+    gray_sensor_calculate(0x00U, &sensor);
+    line_tracker_update(&sensor, &output);
+    if ((line_tracker_test_float_is_near(
+            output.left_target_mm_s,
+            160.0F) == 0U)
+        || (line_tracker_test_float_is_near(
+            output.right_target_mm_s,
+            -60.0F) == 0U))
+    {
+        failures++;
+    }
+
+    gray_sensor_calculate(0x18U, &sensor);
+    line_tracker_update(&sensor, &output);
+    sensor.active_count++;
+    if ((line_tracker_update(&sensor, &output) != ZF_FALSE)
+        || (output.left_target_mm_s != 0.0F)
+        || (output.right_target_mm_s != 0.0F))
+    {
+        failures++;
+    }
+
+    line_tracker_init(NULL);
+    return failures;
+}
+
+/**
  * @brief Run all 256 masks and representative state transitions.
  * @return Failure count.
  */
 static uint32 line_tracker_test_self_check(void)
 {
     gray_sensor_result_struct sensor;
+    line_tracker_config_struct config;
     line_tracker_output_struct output;
     line_tracker_status_struct status;
     uint32 failures = 0U;
     uint16 mask;
     uint16 index;
+
+    line_tracker_test_prepare_tracking_config(&config);
+    line_tracker_init(&config);
 
     for (mask = 0U; mask <= 0xFFU; mask++)
     {
@@ -718,6 +847,7 @@ void test_line_tracker_run(void)
     line_tracker_init(NULL);
     failures = line_tracker_test_self_check();
     failures += line_tracker_test_pid_self_check();
+    failures += line_tracker_test_target_slew_self_check();
     ili9341_show_uint(104U, 40U, failures, 4U);
 
     while (true)

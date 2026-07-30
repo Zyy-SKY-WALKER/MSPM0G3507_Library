@@ -20,14 +20,15 @@
 
 static const line_tracker_config_struct line_tracker_default_config =
 {
-    .base_speed_mm_s = {215.0F, 194.0F, 173.0F, 151.0F, 129.0F},
-    .pid_kp = {15.1F, 19.4F, 19.4F, 23.7F, 28.0F},
+    .base_speed_mm_s = {210.0F, 190.0F, 170.0F, 150.0F, 126.0F},
+    .pid_kp = {17.0F, 22.0F, 26.0F, 28.0F, 31.0F},
     .pid_ki = 0.0F,
     .pid_kd = 0.0F,
     .pid_integral_limit_mm_s = 50.0F,
     .pid_derivative_filter_alpha = 0.2F,
     .max_target_mm_s = 600.0F,
     .max_correction_mm_s = 80.0F,
+    .max_target_accel_mm_s2 = 2000.0F,
     .arc_outer_speed_mm_s = 300.0F,
     .arc_inner_speed_mm_s = 60.0F,
     .pivot_speed_mm_s = 300.0F,
@@ -56,6 +57,16 @@ typedef struct
 } line_tracker_pid_state_struct;
 
 static volatile line_tracker_pid_state_struct line_tracker_pid_state;
+
+/** @brief Previous wheel targets used by the normal-tracking slew limiter. */
+typedef struct
+{
+    float left_target_mm_s;
+    float right_target_mm_s;
+} line_tracker_target_slew_state_struct;
+
+static volatile line_tracker_target_slew_state_struct
+    line_tracker_target_slew_state;
 
 /**
  * @brief Check that a float is finite.
@@ -99,6 +110,8 @@ static uint8 line_tracker_config_is_valid(
         || (config->max_target_mm_s <= 0.0F)
         || (line_tracker_float_is_nonnegative(
                 config->max_correction_mm_s) == 0U)
+        || (line_tracker_float_is_nonnegative(
+                config->max_target_accel_mm_s2) == 0U)
         || (line_tracker_float_is_nonnegative(config->pid_ki) == 0U)
         || (line_tracker_float_is_nonnegative(config->pid_kd) == 0U)
         || (line_tracker_float_is_nonnegative(
@@ -296,10 +309,67 @@ static void line_tracker_set_output(
     float left_mm_s,
     float right_mm_s)
 {
+    line_tracker_target_slew_state.left_target_mm_s = left_mm_s;
+    line_tracker_target_slew_state.right_target_mm_s = right_mm_s;
     output->left_target_mm_s = left_mm_s;
     output->right_target_mm_s = right_mm_s;
     line_tracker_status.left_target_mm_s = left_mm_s;
     line_tracker_status.right_target_mm_s = right_mm_s;
+}
+
+/**
+ * @brief Limit one normal-tracking target change to the configured slope.
+ */
+static float line_tracker_limit_target_slew(
+    float previous_target,
+    float desired_target,
+    float maximum_delta)
+{
+    float delta = desired_target - previous_target;
+
+    if(delta > maximum_delta)
+    {
+        return previous_target + maximum_delta;
+    }
+    if(delta < -maximum_delta)
+    {
+        return previous_target - maximum_delta;
+    }
+
+    return desired_target;
+}
+
+/**
+ * @brief Apply acceleration limiting only to normal valid-line tracking output.
+ */
+static void line_tracker_set_tracking_output(
+    line_tracker_output_struct *output,
+    float desired_left_target,
+    float desired_right_target)
+{
+    float maximum_delta = line_tracker_config.max_target_accel_mm_s2
+        * LINE_TRACKER_UPDATE_PERIOD_S;
+    float left_target = desired_left_target;
+    float right_target = desired_right_target;
+
+    if(maximum_delta > 0.0F)
+    {
+        left_target = line_tracker_limit_target_slew(
+            line_tracker_target_slew_state.left_target_mm_s,
+            desired_left_target,
+            maximum_delta);
+        right_target = line_tracker_limit_target_slew(
+            line_tracker_target_slew_state.right_target_mm_s,
+            desired_right_target,
+            maximum_delta);
+        if((left_target != desired_left_target)
+            || (right_target != desired_right_target))
+        {
+            line_tracker_status.output_limited = 1U;
+        }
+    }
+
+    line_tracker_set_output(output, left_target, right_target);
 }
 
 /**
@@ -309,6 +379,8 @@ static void line_tracker_set_output(
 static void line_tracker_enter_fault(line_tracker_output_struct *output)
 {
     line_tracker_pid_reset();
+    line_tracker_target_slew_state.left_target_mm_s = 0.0F;
+    line_tracker_target_slew_state.right_target_mm_s = 0.0F;
     line_tracker_status.state = LINE_TRACKER_STATE_FAULT;
     line_tracker_status.output_limited = 0U;
 
@@ -483,7 +555,7 @@ static void line_tracker_update_tracking(
     line_tracker_status.speed_band = band;
     line_tracker_status.normalized_deviation = normalized;
     line_tracker_status.correction_mm_s = correction;
-    line_tracker_set_output(output, left_target, right_target);
+    line_tracker_set_tracking_output(output, left_target, right_target);
 }
 
 /**
@@ -605,6 +677,8 @@ void line_tracker_reset(void)
     line_tracker_status.normalized_deviation = 0.0F;
     line_tracker_status.last_valid_deviation = 0.0F;
     line_tracker_pid_reset();
+    line_tracker_target_slew_state.left_target_mm_s = 0.0F;
+    line_tracker_target_slew_state.right_target_mm_s = 0.0F;
     line_tracker_status.left_target_mm_s = 0.0F;
     line_tracker_status.right_target_mm_s = 0.0F;
     line_tracker_status.lost_samples = 0U;
