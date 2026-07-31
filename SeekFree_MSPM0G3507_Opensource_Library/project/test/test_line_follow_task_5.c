@@ -3,11 +3,11 @@
  * @author  Project team
  * @version V1.0
  * @date    2026-08-01
- * @brief   Ball-groove acceleration feedforward with an A30 stopwatch.
+ * @brief   Ball-groove acceleration feedforward with line-follow timing.
  *
  * @attention
- * - The A30 key first captures the gimbal zero, then starts the stopwatch
- *   after a release-and-press sequence.
+ * - A30 captures the manually levelled lift zero before driving.
+ * - The stopwatch starts when the scheduler accepts line-follow mode.
  * - VOFA JustFloat telemetry runs at 50 Hz for tuning.
  */
 
@@ -22,7 +22,10 @@
 #include "test_line_follow_task_5.h"
 #include "vofa.h"
 #include "zf_driver_delay.h"
-#include "zf_driver_gpio.h"
+
+#if (GIMBAL_CONFIG_INSTALLED != 0U)
+#error Task 5 owns the lift and requires GIMBAL_CONFIG_INSTALLED to be zero.
+#endif
 
 #define TASK_5_STOP_MASK                    (0x7CU)
 #define TASK_5_STOP_DELAY_TICKS             \
@@ -54,14 +57,41 @@ typedef enum
 #define BALL_GROOVE_TRAVEL_LIMIT_MM          (40.0F)
 #define BALL_GROOVE_STEPS_PER_REVOLUTION     (6400.0F)
 #define BALL_GROOVE_LIFT_MM_PER_REVOLUTION   (2.06F)
+#define BALL_GROOVE_CENTER_TOLERANCE_STEPS   (2)
+
+#define TASK_5_CURVE_ENTER_DEVIATION          (0.70F)
+#define TASK_5_STRAIGHT_EXIT_DEVIATION        (0.25F)
+#define TASK_5_STRAIGHT_EXIT_SAMPLES          (15U)
 
 #define TASK_5_ERR_GIMBAL_CFG               (1U)
 #define TASK_5_ERR_SCHED_INIT               (2U)
 #define TASK_5_ERR_SCHED_START              (3U)
 #define TASK_5_ERR_VOFA_INIT                (4U)
+#define TASK_5_ERR_LINE_TRACKER_CFG         (5U)
 
 #define TASK_5_TIME_TEXT_LENGTH              (13U)
-#define TASK_5_DEBOUNCE_MS                   (20U)
+
+static const line_tracker_config_struct task_5_straight_line_config =
+{
+    .base_speed_mm_s = 340.0F,
+    .pid_kp = 22.0F,
+    .pid_ki = 0.0F,
+    .pid_kd = 0.0F,
+    .pid_integral_limit_mm_s = 91.40F,
+    .pid_derivative_filter_alpha = 0.2F,
+    .max_target_mm_s = 800.0F,
+    .max_correction_mm_s = 90.0F,
+    .max_target_accel_mm_s2 = 3655.71F,
+    .arc_outer_speed_mm_s = 548.36F,
+    .arc_inner_speed_mm_s = 109.67F,
+    .pivot_speed_mm_s = 548.36F,
+    .lost_debounce_samples = 3U,
+    .reacquire_samples = 3U,
+    .arc_duration_samples = 100U,
+    .search_timeout_samples = 500U,
+    .default_search_direction = LINE_TRACKER_DIRECTION_RIGHT,
+    .track_all_active_as_center = 1U,
+};
 
 /**
  * @brief Return whether all center D3-D7 stop sensors are active.
@@ -187,6 +217,88 @@ static void task_5_update_stop_state(
     {
         *stop_state = TASK_5_STOP_MONITOR;
     }
+}
+
+/**
+ * @brief Apply one of Task 5's straight/curve line-tracking PID profiles.
+ */
+static uint8 task_5_apply_line_profile(uint8 curve_profile)
+{
+    line_tracker_config_struct config = task_5_straight_line_config;
+
+    if(curve_profile != 0U)
+    {
+        config.pid_kp = 48.0F;
+        config.max_correction_mm_s = 180.0F;
+    }
+    return line_tracker_set_config(&config);
+}
+
+/**
+ * @brief Select the active line-tracking PID profile from deviation hysteresis.
+ */
+static void task_5_update_line_profile(
+    const control_scheduler_status_struct *status,
+    uint8 *curve_profile,
+    uint8 *straight_exit_samples)
+{
+    float absolute_deviation = status->gray.deviation;
+
+    if(absolute_deviation < 0.0F)
+    {
+        absolute_deviation = -absolute_deviation;
+    }
+
+    if(*curve_profile == 0U)
+    {
+        *straight_exit_samples = 0U;
+        if(absolute_deviation >= TASK_5_CURVE_ENTER_DEVIATION)
+        {
+            if(task_5_apply_line_profile(1U) != ZF_FALSE)
+            {
+                *curve_profile = 1U;
+            }
+        }
+    }
+    else if(absolute_deviation <= TASK_5_STRAIGHT_EXIT_DEVIATION)
+    {
+        if(*straight_exit_samples < TASK_5_STRAIGHT_EXIT_SAMPLES)
+        {
+            (*straight_exit_samples)++;
+        }
+        if(*straight_exit_samples >= TASK_5_STRAIGHT_EXIT_SAMPLES)
+        {
+            if(task_5_apply_line_profile(0U) != ZF_FALSE)
+            {
+                *curve_profile = 0U;
+                *straight_exit_samples = 0U;
+            }
+        }
+    }
+    else
+    {
+        *straight_exit_samples = 0U;
+    }
+}
+
+/**
+ * @brief Return whether the lift is stopped at its manual-reference center.
+ */
+static uint8 task_5_lift_is_centered(void)
+{
+    gimbal_stepper_status_struct gimbal_status;
+    const gimbal_stepper_axis_status_struct *lift;
+
+    gimbal_stepper_get_status(&gimbal_status);
+    lift = &gimbal_status.axis[GIMBAL_STEPPER_AXIS_YAW];
+    return (uint8)(
+        (gimbal_status.stop_latched == 0U)
+        && (lift->enabled != 0U)
+        && (lift->zero_valid != 0U)
+        && (lift->target_position_steps == 0)
+        && (lift->position_steps >= -BALL_GROOVE_CENTER_TOLERANCE_STEPS)
+        && (lift->position_steps <= BALL_GROOVE_CENTER_TOLERANCE_STEPS)
+        && (lift->current_rate_steps_s == 0));
 }
 
 /**
@@ -350,7 +462,7 @@ static void task_5_render_time(
 }
 
 /**
- * @brief Run ball-groove acceleration feedforward with an A30 stopwatch.
+ * @brief Run ball-groove acceleration feedforward with line-follow timing.
  */
 void test_line_follow_task_5_run(void)
 {
@@ -363,19 +475,29 @@ void test_line_follow_task_5_run(void)
     uint32 stepper_reject_count = 0U;
     uint32 last_vofa_tick = 0U;
     uint32 start_tick = 0U;
+    uint32 last_profile_tick = 0xFFFFFFFFU;
     float accel_baseline_sum = 0.0F;
     float accel_baseline_g = 0.0F;
     float filtered_accel_g = 0.0F;
     uint16 accel_baseline_samples = 0U;
-    uint16 a30_low_ms = 0U;
     uint8 accel_baseline_ready = 0U;
     uint8 accel_deadband_active = 0U;
     uint8 filtered_valid = 0U;
     uint8 stopwatch_running = 0U;
-    uint8 a30_released = 0U;
+    uint8 lift_center_commanded = 0U;
+    uint8 curve_profile = 0U;
+    uint8 straight_exit_samples = 0U;
     control_mode_enum previous_mode = CONTROL_MODE_BOOT;
     char display_cache[TASK_5_TIME_TEXT_LENGTH] = {0};
     uint8 display_cache_valid = 0U;
+
+    if(ml_oled_init() == false)
+    {
+        while(true)
+        {
+        }
+    }
+    task_5_render_time(0U, 0U, display_cache, &display_cache_valid);
 
     gimbal_stepper_init();
     if(gimbal_stepper_configure_single_axis(
@@ -401,6 +523,10 @@ void test_line_follow_task_5_run(void)
     {
         task_5_report_error(TASK_5_ERR_SCHED_INIT);
     }
+    if(task_5_apply_line_profile(0U) == ZF_FALSE)
+    {
+        task_5_report_error(TASK_5_ERR_LINE_TRACKER_CFG);
+    }
     if(control_scheduler_start() == ZF_FALSE)
     {
         task_5_report_error(TASK_5_ERR_SCHED_START);
@@ -409,45 +535,22 @@ void test_line_follow_task_5_run(void)
     {
         task_5_report_error(TASK_5_ERR_VOFA_INIT);
     }
-    if(ml_oled_init() == false)
-    {
-        while(true)
-        {
-        }
-    }
-    gpio_init(A30, GPI, GPIO_HIGH, GPI_PULL_UP);
-    task_5_render_time(0U, 0U, display_cache, &display_cache_valid);
 
     while(true)
     {
         float command_accel_g = 0.0F;
-        float target_steps = 0.0F;
+        int32 target_steps = 0;
         uint32 elapsed_tenths = 0U;
 
         control_scheduler_process_foreground();
         (void)gimbal_stepper_service();
         control_scheduler_get_status(&status);
 
-        /* A30 starts the stopwatch after the calibration key is released. */
-        if(gpio_get_level(A30) == GPIO_LOW)
+        if((stopwatch_running == 0U)
+            && (status.mode == CONTROL_MODE_LINE_FOLLOW))
         {
-            if((stopwatch_running == 0U) && (a30_released != 0U))
-            {
-                if(a30_low_ms < TASK_5_DEBOUNCE_MS)
-                {
-                    a30_low_ms++;
-                }
-                if(a30_low_ms >= TASK_5_DEBOUNCE_MS)
-                {
-                    start_tick = status.tick_count;
-                    stopwatch_running = 1U;
-                }
-            }
-        }
-        else
-        {
-            a30_low_ms = 0U;
-            a30_released = 1U;
+            start_tick = status.tick_count;
+            stopwatch_running = 1U;
         }
 
         if(stopwatch_running != 0U)
@@ -466,6 +569,15 @@ void test_line_follow_task_5_run(void)
             continue;
         }
         last_control_tick = status.tick_count;
+        if((status.mode == CONTROL_MODE_LINE_FOLLOW)
+            && (status.tick_count != last_profile_tick))
+        {
+            task_5_update_line_profile(
+                &status,
+                &curve_profile,
+                &straight_exit_samples);
+            last_profile_tick = status.tick_count;
+        }
         task_5_update_stop_state(
             &status,
             &stop_state,
@@ -482,13 +594,30 @@ void test_line_follow_task_5_run(void)
                 accel_baseline_sum = 0.0F;
                 accel_baseline_samples = 0U;
                 filtered_valid = 0U;
+                curve_profile = 0U;
+                straight_exit_samples = 0U;
+                (void)task_5_apply_line_profile(0U);
             }
             previous_mode = status.mode;
             accel_deadband_active = 0U;
+            if(lift_center_commanded == 0U)
+            {
+                if(gimbal_stepper_set_axis_absolute_target_steps(
+                        GIMBAL_STEPPER_AXIS_YAW,
+                        0) == 0U)
+                {
+                    stepper_reject_count++;
+                }
+                else
+                {
+                    lift_center_commanded = 1U;
+                }
+            }
             if((accel_baseline_ready == 0U)
                 && (status.imu_ready != 0U)
                 && (status.imu_fresh != 0U)
-                && (task_5_wheels_stopped(&status) != 0U))
+                && (task_5_wheels_stopped(&status) != 0U)
+                && (task_5_lift_is_centered() != 0U))
             {
                 accel_baseline_sum += status.imu_accel_x_g;
                 accel_baseline_samples++;
@@ -509,6 +638,7 @@ void test_line_follow_task_5_run(void)
         else
         {
             previous_mode = status.mode;
+            lift_center_commanded = 0U;
             if((accel_baseline_ready != 0U)
                 && (status.imu_ready != 0U)
                 && (status.imu_fresh != 0U))
