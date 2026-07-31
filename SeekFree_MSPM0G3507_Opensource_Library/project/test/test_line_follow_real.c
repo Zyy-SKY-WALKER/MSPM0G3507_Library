@@ -25,7 +25,9 @@
 #endif
 
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
+#include <string.h>
 #include "ml_oled.h"
+#include "vofa.h"
 #endif
 
 #define LINE_FOLLOW_REAL_VOFA_PERIOD_TICKS  (2U)
@@ -419,7 +421,14 @@ void test_line_follow_ball_accel_open_loop_run(void)
 #define TASK_2_FINISH_MASK                    (0x78U)
 #define TASK_2_START_CLEAR_SAMPLES            (3U)
 #define TASK_2_STOP_CONFIRM_SAMPLES           (3U)
+#define TASK_2_VOFA_CHANNEL_COUNT             (4U)
+#define TASK_2_VOFA_PERIOD_TICKS              (2U)
+#define TASK_2_VOFA_TAIL_SIZE                 (4U)
+#define TASK_2_VOFA_FRAME_SIZE                \
+    ((TASK_2_VOFA_CHANNEL_COUNT * sizeof(float)) \
+        + TASK_2_VOFA_TAIL_SIZE)
 #define TASK_2_TIME_TEXT_LENGTH               (13U)
+#define TASK_2_DEVIATION_TEXT_LENGTH          (9U)
 #define TASK_2_MASK_TEXT_LENGTH               (14U)
 #define TASK_2_START_TEXT_LENGTH              (8U)
 
@@ -453,6 +462,35 @@ static const line_tracker_config_struct task_2_line_config =
     .default_search_direction = LINE_TRACKER_DIRECTION_RIGHT,
     .track_all_active_as_center = 1U,
 };
+
+/**
+ * @brief Send Task 2 wheel targets and feedback speeds through VOFA.
+ * @param status Coherent scheduler status snapshot.
+ * @note Sends only from the foreground loop, never from the 10 ms control
+ *       callback. Channel order is left target, left speed, right target,
+ *       and right speed.
+ */
+static void task_2_send_vofa(
+    const control_scheduler_status_struct *status)
+{
+    static const uint8 tail[TASK_2_VOFA_TAIL_SIZE] =
+        {0x00U, 0x00U, 0x80U, 0x7FU};
+    float channels[TASK_2_VOFA_CHANNEL_COUNT];
+    uint8 frame[TASK_2_VOFA_FRAME_SIZE];
+
+    if(status == NULL)
+    {
+        return;
+    }
+
+    channels[0] = status->speed.left_target_mm_s;
+    channels[1] = status->speed.left_speed_mm_s;
+    channels[2] = status->speed.right_target_mm_s;
+    channels[3] = status->speed.right_speed_mm_s;
+    memcpy(frame, channels, sizeof(channels));
+    memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
+    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+}
 
 /**
  * @brief Build the fixed-width OLED first-line time text.
@@ -518,6 +556,63 @@ static void task_2_render_time(
 }
 
 /**
+ * @brief Build fixed-width OLED line-two analog deviation text.
+ */
+static void task_2_build_deviation_text(
+    char text[TASK_2_DEVIATION_TEXT_LENGTH],
+    float deviation)
+{
+    int32 deviation_x100;
+    int32 magnitude;
+
+    if(deviation > 3.50F)
+    {
+        deviation = 3.50F;
+    }
+    else if(deviation < -3.50F)
+    {
+        deviation = -3.50F;
+    }
+    deviation_x100 = deviation >= 0.0F
+        ? (int32)(deviation * 100.0F + 0.5F)
+        : (int32)(deviation * 100.0F - 0.5F);
+    magnitude = deviation_x100 < 0 ? -deviation_x100 : deviation_x100;
+
+    text[0] = 'D';
+    text[1] = 'E';
+    text[2] = 'V';
+    text[3] = ':';
+    text[4] = deviation_x100 < 0 ? '-' : '+';
+    text[5] = (char)('0' + ((magnitude / 100) % 10));
+    text[6] = '.';
+    text[7] = (char)('0' + ((magnitude / 10) % 10));
+    text[8] = (char)('0' + (magnitude % 10));
+}
+
+/**
+ * @brief Dirty-refresh only changed characters in OLED line two.
+ */
+static void task_2_render_deviation(
+    float deviation,
+    char cache[TASK_2_DEVIATION_TEXT_LENGTH],
+    uint8 *cache_valid)
+{
+    char text[TASK_2_DEVIATION_TEXT_LENGTH];
+    uint8 index;
+
+    task_2_build_deviation_text(text, deviation);
+    for(index = 0U; index < TASK_2_DEVIATION_TEXT_LENGTH; index++)
+    {
+        if((*cache_valid == 0U) || (text[index] != cache[index]))
+        {
+            (void)ml_oled_show_char(2U, (uint8)(index + 1U), text[index]);
+            cache[index] = text[index];
+        }
+    }
+    *cache_valid = 1U;
+}
+
+/**
  * @brief Build the OLED third-line D1-D8 binary gray-sensor status text.
  */
 static void task_2_build_mask_text(
@@ -567,7 +662,7 @@ static void task_2_render_mask(
  *
  * 00 running or finished, 01 waiting for A30 arm, 11 gray mask/status,
  * 12 wheel motion, 13 IMU source, 14 fault latch, 15 disarmed unexpectedly,
- * and 16 means all gates are ready and a start request is being retried.
+ * 16 means all gates are ready and a start request is being retried.
  */
 static uint8 task_2_get_start_code(
     task_2_state_enum state,
@@ -664,12 +759,15 @@ void test_line_follow_task_2_run(void)
     control_scheduler_status_struct status;
     task_2_state_enum state = TASK_2_WAIT_ARM;
     char display_cache[TASK_2_TIME_TEXT_LENGTH] = {0};
+    char deviation_display_cache[TASK_2_DEVIATION_TEXT_LENGTH] = {0};
     char mask_display_cache[TASK_2_MASK_TEXT_LENGTH] = {0};
     char start_display_cache[TASK_2_START_TEXT_LENGTH] = {0};
     uint32 start_tick = 0U;
     uint32 first_stopped_tick = 0U;
     uint32 final_elapsed_tenths = 0U;
+    uint32 last_vofa_tick = 0U;
     uint8 display_cache_valid = 0U;
+    uint8 deviation_display_cache_valid = 0U;
     uint8 mask_display_cache_valid = 0U;
     uint8 start_display_cache_valid = 0U;
     uint8 start_marker_cleared = 0U;
@@ -679,6 +777,7 @@ void test_line_follow_task_2_run(void)
     control_scheduler_set_imu_bypass(1U);
     control_scheduler_set_imu_acceleration_only(0U);
     if((ml_oled_init() == false)
+        || (vofa_init_tx_only() == ZF_FALSE)
         || (control_scheduler_init() == ZF_FALSE)
         || (line_tracker_set_config(&task_2_line_config) == ZF_FALSE)
         || (control_scheduler_start() == ZF_FALSE))
@@ -695,6 +794,16 @@ void test_line_follow_task_2_run(void)
 
         control_scheduler_process_foreground();
         control_scheduler_get_status(&status);
+        if((uint32)(status.tick_count - last_vofa_tick)
+            >= TASK_2_VOFA_PERIOD_TICKS)
+        {
+            task_2_send_vofa(&status);
+            last_vofa_tick = status.tick_count;
+        }
+        task_2_render_deviation(
+            status.gray.deviation,
+            deviation_display_cache,
+            &deviation_display_cache_valid);
         task_2_render_mask(
             status.gray.active_mask,
             mask_display_cache,

@@ -37,9 +37,7 @@ static uint8 gray_sensor_adc_config_is_valid(void)
     }
 
     if ((GRAY_SENSOR_ADC_MIN_VALUE >= GRAY_SENSOR_ADC_MAX_VALUE)
-        || (GRAY_SENSOR_ADC_COMPARE_RAW > GRAY_SENSOR_ADC_MAX_VALUE)
-        || (GRAY_SENSOR_ADC_MIN_DIFF
-            > (GRAY_SENSOR_ADC_MAX_VALUE - GRAY_SENSOR_ADC_MIN_VALUE)))
+        || (GRAY_SENSOR_ADC_COMPARE_RAW > GRAY_SENSOR_ADC_MAX_VALUE))
     {
         return ZF_FALSE;
     }
@@ -198,6 +196,8 @@ void gray_sensor_calculate_analog(
 
     for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
     {
+        weight = adc_raw[index];
+
         result->analog_raw[index] = adc_raw[index];
 
         if (adc_raw[index] >= GRAY_SENSOR_ADC_COMPARE_RAW)
@@ -206,22 +206,6 @@ void gray_sensor_calculate_analog(
             result->active_count++;
             result->weighted_sum =
                 (uint8)(result->weighted_sum + index);
-        }
-
-        /* High ADC voltage is the active-line polarity selected by the user. */
-        if (adc_raw[index] <= GRAY_SENSOR_ADC_MIN_VALUE)
-        {
-            weight = 0U;
-        }
-        else if (adc_raw[index] >= GRAY_SENSOR_ADC_MAX_VALUE)
-        {
-            weight = (uint16)(GRAY_SENSOR_ADC_MAX_VALUE
-                - GRAY_SENSOR_ADC_MIN_VALUE);
-        }
-        else
-        {
-            weight = (uint16)(adc_raw[index]
-                - GRAY_SENSOR_ADC_MIN_VALUE);
         }
 
         if (weight > result->analog_max_weight)
@@ -244,8 +228,7 @@ void gray_sensor_calculate_analog(
         return;
     }
 
-    if ((weight_sum == 0U)
-        || (result->analog_max_weight < GRAY_SENSOR_ADC_MIN_DIFF))
+    if ((result->active_count == 0U) || (weight_sum == 0U))
     {
         return;
     }

@@ -414,9 +414,9 @@ static float line_tracker_clamp_target(float target, uint8 allow_reverse)
 }
 
 /**
- * @brief Validate one result calculated from analog channel weights.
+ * @brief Validate an analog result against its threshold-derived mask.
  * @param sensor Analog grayscale result.
- * @return ZF_TRUE when the analog result is internally consistent.
+ * @return ZF_TRUE when the analog result and active mask are consistent.
  */
 static uint8 line_tracker_analog_sensor_is_valid(
     const gray_sensor_result_struct *sensor)

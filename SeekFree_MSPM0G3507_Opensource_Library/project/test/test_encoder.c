@@ -7,15 +7,22 @@
 
 #if (TEST_MODE == TEST_MODE_ENCODER)
 
+#include <string.h>
+
 #include "test_encoder.h"
 
 #include "drive_geometry.h"
 #include "my_lib_encoder.h"
 #include "my_lib_ili9341.h"
+#include "vofa.h"
 #include "zf_driver_delay.h"
 #include "zf_driver_gpio.h"
 
 #define ENCODER_TEST_REFRESH_DELAY_MS    (100U)
+#define ENCODER_TEST_VOFA_CHANNEL_COUNT  (2U)
+#define ENCODER_TEST_VOFA_FRAME_SIZE     (12U)
+
+/* VOFA JustFloat channel order: 0 left total, 1 right total. */
 
 /**
  * @brief Display one GPIO phase level as H or L.
@@ -59,6 +66,24 @@ static void test_encoder_show_count(
 }
 
 /**
+ * @brief Send cumulative left and right encoder counts through VOFA.
+ * @param left_total Cumulative signed left encoder count.
+ * @param right_total Cumulative signed right encoder count.
+ */
+static void test_encoder_send_vofa(int32 left_total, int32 right_total)
+{
+    static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
+    float channels[ENCODER_TEST_VOFA_CHANNEL_COUNT];
+    uint8 frame[ENCODER_TEST_VOFA_FRAME_SIZE];
+
+    channels[0] = (float)left_total;
+    channels[1] = (float)right_total;
+    memcpy(frame, channels, sizeof(channels));
+    memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
+    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+}
+
+/**
  * @brief Initialize the display and show live dual encoder counts.
  * @note Rotate each raised wheel by hand. Record count signs when the vehicle
  *       moves forward before integrating PID or odometry code.
@@ -77,6 +102,13 @@ void test_encoder_run(void)
 
     ili9341_init();
     my_encoder_init();
+
+    if (vofa_init_tx_only() == ZF_FALSE)
+    {
+        while (true)
+        {
+        }
+    }
 
     ili9341_full(ILI9341_COLOR_BLACK);
     ili9341_set_font(ILI9341_FONT_8X16);
@@ -103,6 +135,7 @@ void test_encoder_run(void)
         my_encoder_get_delta(&left_delta, &right_delta);
         left_total += left_delta;
         right_total += right_delta;
+        test_encoder_send_vofa(left_total, right_total);
         left_phase_a = my_encoder_get_left_phase_a();
         left_phase_b = my_encoder_get_left_phase_b();
         right_phase_a = my_encoder_get_right_phase_a();
