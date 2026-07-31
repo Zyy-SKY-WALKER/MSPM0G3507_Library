@@ -1,6 +1,6 @@
 /**
  * @file    test_vision_uart.c
- * @brief   UART1 DMA ASCII ball-position receiver TFT test.
+ * @brief   UART1 DMA ASCII vision and ball-position tests.
  */
 
 #include "test_config.h"
@@ -11,15 +11,16 @@
 
 #include "test_vision_uart.h"
 
-#include "my_lib_ili9341.h"
 #include "vision_uart.h"
 
 #if (TEST_MODE == TEST_MODE_VISION_UART)
+#include "my_lib_ili9341.h"
 #include "zf_driver_pit.h"
 #endif
 
 #if (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION)
 #include "gimbal_stepper.h"
+#include "ml_oled.h"
 #include "zf_driver_delay.h"
 #include "zf_driver_gpio.h"
 #endif
@@ -276,7 +277,7 @@ void test_vision_uart_run(void)
 #define BALL_VISION_MAX_LIFT_MM                (49.5F)
 #define BALL_VISION_LIFT_MM_PER_REVOLUTION    (2.06F)
 #define BALL_VISION_TEXT_LENGTH               (13U)
-#define BALL_VISION_STATUS_TEXT_LENGTH        (20U)
+#define BALL_VISION_STATUS_TEXT_LENGTH        (16U)
 
 typedef enum
 {
@@ -357,12 +358,12 @@ static void ball_vision_build_position_text(
 }
 
 /**
- * @brief Redraw only changed characters in the first display row.
+ * @brief Redraw only changed characters in one OLED text row.
  */
 static void ball_vision_render_characters(
     const char text[],
     uint8 length,
-    uint16 y,
+    uint8 line,
     char cache[],
     uint8 *initialized)
 {
@@ -372,7 +373,10 @@ static void ball_vision_render_characters(
     {
         if((*initialized == 0U) || (text[index] != cache[index]))
         {
-            ili9341_show_char((uint16)index * 8U, y, text[index]);
+            (void)ml_oled_show_char(
+                line,
+                (uint8)(index + 1U),
+                text[index]);
             cache[index] = text[index];
         }
     }
@@ -380,7 +384,7 @@ static void ball_vision_render_characters(
 }
 
 /**
- * @brief Dirty-refresh the first row containing the latest ball position.
+ * @brief Dirty-refresh OLED line one with the latest ball position.
  */
 static void ball_vision_render_position(
     const vision_uart_data_struct *data,
@@ -395,13 +399,13 @@ static void ball_vision_render_position(
     ball_vision_render_characters(
         text,
         BALL_VISION_TEXT_LENGTH,
-        0U,
+        1U,
         cache->position_characters,
         &cache->position_initialized);
 }
 
 /**
- * @brief Dirty-refresh the second row with a space-padded task state.
+ * @brief Dirty-refresh OLED line two with a space-padded task state.
  */
 static void ball_vision_render_status(
     const char status[],
@@ -430,7 +434,7 @@ static void ball_vision_render_status(
     ball_vision_render_characters(
         text,
         BALL_VISION_STATUS_TEXT_LENGTH,
-        16U,
+        2U,
         cache->status_characters,
         &cache->status_initialized);
 }
@@ -494,7 +498,7 @@ static int32 ball_vision_lift_to_steps(float lift_mm)
 }
 
 /**
- * @brief Select the concise status displayed in the second TFT row.
+ * @brief Select the concise status displayed in the second OLED row.
  */
 static const char *ball_vision_get_status_text(
     ball_vision_state_enum state,
@@ -517,7 +521,7 @@ static const char *ball_vision_get_status_text(
     }
     if(vision_available == 0U)
     {
-        return "STATE:VISION LOST";
+        return "STATE:V LOST";
     }
     return target_centi_cm > 0
         ? "STATE:RUN TO +5" : "STATE:RUN TO -5";
@@ -544,9 +548,12 @@ void test_ball_vision_oscillation_run(void)
     uint8 previous_position_valid = 0U;
     uint8 rezero_required = 0U;
 
-    ili9341_init();
-    ili9341_set_font(ILI9341_FONT_8X16);
-    ili9341_set_color(ILI9341_COLOR_BLACK, ILI9341_COLOR_WHITE);
+    if(ml_oled_init() == false)
+    {
+        while(true)
+        {
+        }
+    }
     vision_data.position_centi_cm = 0;
     vision_data.recognition_valid = 0U;
     ball_vision_render_position(&vision_data, &display_cache);

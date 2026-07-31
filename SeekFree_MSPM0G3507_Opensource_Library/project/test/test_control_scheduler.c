@@ -21,8 +21,8 @@
 /** @brief Balanced profile for stable straights and decisive left corners. */
 static const line_tracker_config_struct control_test_line_config =
 {
-    .base_speed_mm_s = {220.0F, 200.0F, 175.0F, 145.0F, 120.0F},
-    .pid_kp = {30.0F, 38.0F, 43.0F, 55.0F, 63.0F},
+    .base_speed_mm_s = 220.0F,
+    .pid_kp = 43.0F,
     .pid_ki = 0.0F,
     .pid_kd = 0.30F,
     .pid_integral_limit_mm_s = 50.0F,

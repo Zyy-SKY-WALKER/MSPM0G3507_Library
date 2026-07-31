@@ -15,7 +15,7 @@
 #define MOTOR_DUTY_MAX               (PWM_DUTY_MAX)
 
 #define MOTOR_LEFT_PWM_PIN           (PWM_TIM_G7_CH1_A27)
-#define MOTOR_LEFT_IN1_PIN           (A26)
+#define MOTOR_LEFT_IN1_PIN           (B14)
 #define MOTOR_LEFT_IN2_PIN           (B10)
 
 #define MOTOR_RIGHT_PWM_PIN          (PWM_TIM_G0_CH1_B11)

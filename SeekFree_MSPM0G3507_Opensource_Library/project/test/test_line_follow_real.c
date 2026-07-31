@@ -416,10 +416,12 @@ void test_line_follow_ball_accel_open_loop_run(void)
 
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
 
-#define TASK_2_FINISH_MASK                    (0x7EU)
+#define TASK_2_FINISH_MASK                    (0x78U)
 #define TASK_2_START_CLEAR_SAMPLES            (3U)
 #define TASK_2_STOP_CONFIRM_SAMPLES           (3U)
 #define TASK_2_TIME_TEXT_LENGTH               (13U)
+#define TASK_2_MASK_TEXT_LENGTH               (14U)
+#define TASK_2_START_TEXT_LENGTH              (8U)
 
 typedef enum
 {
@@ -432,8 +434,8 @@ typedef enum
 
 static const line_tracker_config_struct task_2_line_config =
 {
-    .base_speed_mm_s = {340.0F, 310.0F, 280.0F, 250.0F, 220.0F},
-    .pid_kp = {16.0F, 19.0F, 25.0F, 32.0F, 36.0F},
+    .base_speed_mm_s = 360.0F,
+    .pid_kp = 29.0F,
     .pid_ki = 0.3F,
     .pid_kd = 0.0F,
     .pid_integral_limit_mm_s = 91.40F,
@@ -516,6 +518,145 @@ static void task_2_render_time(
 }
 
 /**
+ * @brief Build the OLED third-line D1-D8 binary gray-sensor status text.
+ */
+static void task_2_build_mask_text(
+    char text[TASK_2_MASK_TEXT_LENGTH],
+    uint8 active_mask)
+{
+    uint8 index;
+
+    text[0] = 'D';
+    text[1] = '1';
+    text[2] = '-';
+    text[3] = 'D';
+    text[4] = '8';
+    text[5] = ':';
+    for(index = 0U; index < 8U; index++)
+    {
+        text[6U + index] = (active_mask & (uint8)(1U << index)) != 0U
+            ? '1' : '0';
+    }
+}
+
+/**
+ * @brief Dirty-refresh only changed characters in OLED line three.
+ */
+static void task_2_render_mask(
+    uint8 active_mask,
+    char cache[TASK_2_MASK_TEXT_LENGTH],
+    uint8 *cache_valid)
+{
+    char text[TASK_2_MASK_TEXT_LENGTH];
+    uint8 index;
+
+    task_2_build_mask_text(text, active_mask);
+    for(index = 0U; index < TASK_2_MASK_TEXT_LENGTH; index++)
+    {
+        if((*cache_valid == 0U) || (text[index] != cache[index]))
+        {
+            (void)ml_oled_show_char(3U, (uint8)(index + 1U), text[index]);
+            cache[index] = text[index];
+        }
+    }
+    *cache_valid = 1U;
+}
+
+/**
+ * @brief Return the startup gate diagnostic code for the current task state.
+ *
+ * 00 running or finished, 01 waiting for A30 arm, 11 gray mask/status,
+ * 12 wheel motion, 13 IMU source, 14 fault latch, 15 disarmed unexpectedly,
+ * and 16 means all gates are ready and a start request is being retried.
+ */
+static uint8 task_2_get_start_code(
+    task_2_state_enum state,
+    const control_scheduler_status_struct *status)
+{
+    if((state == TASK_2_RUNNING)
+        || (state == TASK_2_WAIT_STOP)
+        || (state == TASK_2_FINISHED))
+    {
+        return 0U;
+    }
+    if(status->mode == CONTROL_MODE_FAULT_LATCHED)
+    {
+        return 14U;
+    }
+    if(state == TASK_2_WAIT_ARM)
+    {
+        return status->mode == CONTROL_MODE_MANUAL_ARMED ? 16U : 1U;
+    }
+    if(status->mode != CONTROL_MODE_MANUAL_ARMED)
+    {
+        return 15U;
+    }
+    if((status->gray.status != GRAY_SENSOR_STATUS_VALID)
+        && !((status->gray.status == GRAY_SENSOR_STATUS_ALL_ACTIVE)
+            && (line_tracker_tracks_all_active_as_center() != 0U)))
+    {
+        return 11U;
+    }
+    if(line_follow_real_wheels_stopped(status) == 0U)
+    {
+        return 12U;
+    }
+    if((status->imu_ready == 0U) || (status->imu_fresh == 0U))
+    {
+        return 13U;
+    }
+    return 16U;
+}
+
+/**
+ * @brief Dirty-refresh the startup diagnostic code on OLED line four.
+ */
+static void task_2_render_start_code(
+    uint8 code,
+    uint32 fault_flags,
+    uint8 fault_latched,
+    char cache[TASK_2_START_TEXT_LENGTH],
+    uint8 *cache_valid)
+{
+    char text[TASK_2_START_TEXT_LENGTH];
+    uint8 index;
+
+    if(fault_latched != 0U)
+    {
+        static const char hex_digits[] = "0123456789ABCDEF";
+
+        text[0] = 'F';
+        text[1] = 'L';
+        text[2] = 'T';
+        text[3] = ':';
+        text[4] = '0';
+        text[5] = 'x';
+        text[6] = hex_digits[(fault_flags >> 4U) & 0x0FU];
+        text[7] = hex_digits[fault_flags & 0x0FU];
+    }
+    else
+    {
+        text[0] = 'S';
+        text[1] = 'T';
+        text[2] = 'A';
+        text[3] = 'R';
+        text[4] = 'T';
+        text[5] = ':';
+        text[6] = (char)('0' + ((code / 10U) % 10U));
+        text[7] = (char)('0' + (code % 10U));
+    }
+    for(index = 0U; index < TASK_2_START_TEXT_LENGTH; index++)
+    {
+        if((*cache_valid == 0U) || (text[index] != cache[index]))
+        {
+            (void)ml_oled_show_char(4U, (uint8)(index + 1U), text[index]);
+            cache[index] = text[index];
+        }
+    }
+    *cache_valid = 1U;
+}
+
+/**
  * @brief Run one clockwise 6141 mm line-follow lap from A back to A.
  */
 void test_line_follow_task_2_run(void)
@@ -523,10 +664,14 @@ void test_line_follow_task_2_run(void)
     control_scheduler_status_struct status;
     task_2_state_enum state = TASK_2_WAIT_ARM;
     char display_cache[TASK_2_TIME_TEXT_LENGTH] = {0};
+    char mask_display_cache[TASK_2_MASK_TEXT_LENGTH] = {0};
+    char start_display_cache[TASK_2_START_TEXT_LENGTH] = {0};
     uint32 start_tick = 0U;
     uint32 first_stopped_tick = 0U;
     uint32 final_elapsed_tenths = 0U;
     uint8 display_cache_valid = 0U;
+    uint8 mask_display_cache_valid = 0U;
+    uint8 start_display_cache_valid = 0U;
     uint8 start_marker_cleared = 0U;
     uint8 start_clear_samples = 0U;
     uint8 stopped_samples = 0U;
@@ -550,6 +695,16 @@ void test_line_follow_task_2_run(void)
 
         control_scheduler_process_foreground();
         control_scheduler_get_status(&status);
+        task_2_render_mask(
+            status.gray.active_mask,
+            mask_display_cache,
+            &mask_display_cache_valid);
+        task_2_render_start_code(
+            task_2_get_start_code(state, &status),
+            status.fault_flags,
+            (uint8)(status.mode == CONTROL_MODE_FAULT_LATCHED),
+            start_display_cache,
+            &start_display_cache_valid);
 
         if(state == TASK_2_WAIT_ARM)
         {
@@ -567,6 +722,17 @@ void test_line_follow_task_2_run(void)
                 start_marker_cleared = 0U;
                 start_clear_samples = 0U;
                 state = TASK_2_RUNNING;
+            }
+            else
+            {
+                if(task_2_get_start_code(state, &status) == 16U)
+                {
+                    control_scheduler_request_line_start();
+                }
+                else if(status.mode == CONTROL_MODE_DISARMED)
+                {
+                    state = TASK_2_WAIT_ARM;
+                }
             }
         }
         else if(state == TASK_2_RUNNING)

@@ -9,7 +9,6 @@
 #include "gray_sensor.h"
 #include "zf_common_typedef.h"
 
-#define LINE_TRACKER_SPEED_BAND_COUNT    (5U)
 #define LINE_TRACKER_UPDATE_PERIOD_MS    (10U)
 
 /** @brief Line tracker operating states. */
@@ -41,18 +40,18 @@ typedef enum
 /** @brief Runtime parameters for tracking PID and lost-line behavior. */
 typedef struct
 {
-    /** Forward speed for each absolute-error band, in mm/s. */
-    float base_speed_mm_s[LINE_TRACKER_SPEED_BAND_COUNT];
-    /** Proportional correction gain in mm/s per normalized error. */
-    float pid_kp[LINE_TRACKER_SPEED_BAND_COUNT];
+    /** Constant forward speed for continuous tracking, in mm/s. */
+    float base_speed_mm_s;
+    /** Proportional gain in mm/s per channel-index error. */
+    float pid_kp;
     /**
      * Integral-output gain applied with the 10 ms update period.
-     * Units are mm/s per normalized-error second; must be nonnegative.
+     * Units are mm/s per channel-index-error second; must be nonnegative.
      */
     float pid_ki;
     /**
-     * Derivative-output gain applied to normalized error per second.
-     * Units are millimeters per normalized error; must be nonnegative.
+     * Derivative-output gain applied to channel-index error per second.
+     * Units are millimeters per channel-index error; must be nonnegative.
      */
     float pid_kd;
     /** Nonnegative absolute integral-output limit in mm/s. */
@@ -108,15 +107,15 @@ typedef struct
     line_tracker_direction_enum search_direction;
     /** Latest sensor deviation from -3.5 through 3.5 channel indexes. */
     float deviation;
-    /** Deviation scaled to the controller range -5 through 5. */
-    float normalized_deviation;
+    /** Signed line offset used directly as the PID error. */
+    float pid_error;
     /** Most recent valid sensor deviation in channel-index units. */
     float last_valid_deviation;
     /** Applied signed differential correction before wheel clamping. */
     float correction_mm_s;
     /** Current bounded integral contribution in mm/s. */
     float pid_integral_mm_s;
-    /** Current filtered normalized-error derivative per second. */
+    /** Current filtered channel-index-error derivative per second. */
     float pid_filtered_derivative;
     /** Current signed left target in millimeters per second. */
     float left_target_mm_s;
@@ -130,8 +129,6 @@ typedef struct
     uint16 all_active_samples;
     /** Elapsed search samples, bounded by the configured timeout. */
     uint16 search_samples;
-    /** Selected base-speed and gain band from 0 through 4. */
-    uint8 speed_band;
     /** Nonzero when PID correction or a wheel target is clamped. */
     uint8 output_limited;
 } line_tracker_status_struct;

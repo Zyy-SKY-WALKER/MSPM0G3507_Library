@@ -9,7 +9,6 @@
 
 #include "zf_common_interrupt.h"
 
-#define LINE_TRACKER_NORMALIZE_SCALE    (5.0F / 3.5F)
 #define LINE_TRACKER_DEVIATION_LIMIT    (3.5F)
 #define LINE_TRACKER_DIRECTION_EPSILON  (0.05F)
 #define LINE_TRACKER_FLOAT_EPSILON      (0.001F)
@@ -20,8 +19,8 @@
 
 static const line_tracker_config_struct line_tracker_default_config =
 {
-    .base_speed_mm_s = {210.0F, 190.0F, 170.0F, 150.0F, 126.0F},
-    .pid_kp = {17.0F, 22.0F, 26.0F, 28.0F, 31.0F},
+    .base_speed_mm_s = 210.0F,
+    .pid_kp = 17.0F,
     .pid_ki = 0.0F,
     .pid_kd = 0.0F,
     .pid_integral_limit_mm_s = 50.0F,
@@ -49,9 +48,9 @@ typedef struct
 {
     /** Bounded integral contribution, already scaled to mm/s. */
     float integral_mm_s;
-    /** Previous normalized error used by the discrete derivative. */
+    /** Previous signed line-offset error used by the discrete derivative. */
     float previous_error;
-    /** Low-pass-filtered normalized-error derivative per second. */
+    /** Low-pass-filtered line-offset derivative per second. */
     float filtered_derivative;
     /** Nonzero after the first valid tracking sample. */
     uint8 initialized;
@@ -100,8 +99,6 @@ static uint8 line_tracker_float_is_nonnegative(float value)
 static uint8 line_tracker_config_is_valid(
     const line_tracker_config_struct *config)
 {
-    uint8 index;
-
     if (config == NULL)
     {
         return ZF_FALSE;
@@ -151,17 +148,11 @@ static uint8 line_tracker_config_is_valid(
         return ZF_FALSE;
     }
 
-    for (index = 0U; index < LINE_TRACKER_SPEED_BAND_COUNT; index++)
+    if ((line_tracker_float_is_nonnegative(config->base_speed_mm_s) == 0U)
+        || (line_tracker_float_is_nonnegative(config->pid_kp) == 0U)
+        || (config->base_speed_mm_s > config->max_target_mm_s))
     {
-        if ((line_tracker_float_is_nonnegative(
-                config->base_speed_mm_s[index]) == 0U)
-            || (line_tracker_float_is_nonnegative(
-                config->pid_kp[index]) == 0U)
-            || (config->base_speed_mm_s[index]
-                > config->max_target_mm_s))
-        {
-            return ZF_FALSE;
-        }
+        return ZF_FALSE;
     }
 
     return ZF_TRUE;
@@ -183,7 +174,7 @@ static void line_tracker_pid_reset(void)
 
 /**
  * @brief Calculate the usable correction before either wheel clips.
- * @param base_speed Base wheel speed for the selected band.
+ * @param base_speed Constant forward wheel speed.
  * @return Symmetric effective correction limit in mm/s.
  */
 static float line_tracker_pid_get_effective_limit(float base_speed)
@@ -206,11 +197,10 @@ static float line_tracker_pid_get_effective_limit(float base_speed)
 
 /**
  * @brief Calculate one filtered PID correction with anti-windup.
- * @param error Normalized lateral error.
- * @param band Active base-speed and proportional-gain band.
+ * @param error Signed continuous line-offset error.
  * @return Signed differential speed correction in millimeters per second.
  */
-static float line_tracker_pid_update(float error, uint8 band)
+static float line_tracker_pid_update(float error)
 {
     float proportional;
     float derivative;
@@ -240,7 +230,7 @@ static float line_tracker_pid_update(float error, uint8 band)
                 - line_tracker_pid_state.filtered_derivative);
     }
 
-    proportional = line_tracker_config.pid_kp[band] * error;
+    proportional = line_tracker_config.pid_kp * error;
     derivative = line_tracker_config.pid_kd
         * line_tracker_pid_state.filtered_derivative;
 
@@ -269,7 +259,7 @@ static float line_tracker_pid_update(float error, uint8 band)
 
     /* Wheel limits can be tighter than the configured correction limit. */
     effective_limit = line_tracker_pid_get_effective_limit(
-        line_tracker_config.base_speed_mm_s[band]);
+        line_tracker_config.base_speed_mm_s);
     drives_further_into_saturation = (uint8)(
         ((correction_candidate
                 > (effective_limit + LINE_TRACKER_PID_LIMIT_EPSILON))
@@ -424,6 +414,75 @@ static float line_tracker_clamp_target(float target, uint8 allow_reverse)
 }
 
 /**
+ * @brief Validate one result calculated from analog channel weights.
+ * @param sensor Analog grayscale result.
+ * @return ZF_TRUE when the analog result is internally consistent.
+ */
+static uint8 line_tracker_analog_sensor_is_valid(
+    const gray_sensor_result_struct *sensor)
+{
+    uint8 index;
+    uint8 active_count = 0U;
+
+    if ((sensor == NULL)
+        || (sensor->calculation_mode != GRAY_SENSOR_RESULT_MODE_ANALOG))
+    {
+        return ZF_FALSE;
+    }
+
+    for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
+    {
+        if ((sensor->active_mask & (uint8)(1U << index)) != 0U)
+        {
+            active_count++;
+        }
+        if (sensor->analog_raw[index] > GRAY_SENSOR_ADC_MAX_VALUE)
+        {
+            return ZF_FALSE;
+        }
+    }
+
+    if ((sensor->raw_mask != sensor->active_mask)
+        || (active_count != sensor->active_count)
+        || (sensor->position != sensor->position)
+        || (sensor->deviation != sensor->deviation)
+        || (sensor->position < 0.0F)
+        || (sensor->position
+            > (float)(GRAY_SENSOR_CHANNEL_COUNT - 1U))
+        || (sensor->deviation < -LINE_TRACKER_DEVIATION_LIMIT)
+        || (sensor->deviation > LINE_TRACKER_DEVIATION_LIMIT))
+    {
+        return ZF_FALSE;
+    }
+
+    switch (sensor->status)
+    {
+        case GRAY_SENSOR_STATUS_LOST:
+        {
+            return (uint8)(active_count == 0U);
+        }
+
+        case GRAY_SENSOR_STATUS_ALL_ACTIVE:
+        {
+            return (uint8)((active_count == GRAY_SENSOR_CHANNEL_COUNT)
+                && (sensor->position == 3.5F)
+                && (sensor->deviation == 0.0F));
+        }
+
+        case GRAY_SENSOR_STATUS_VALID:
+        {
+            return (uint8)((sensor->active_count > 0U)
+                && (sensor->active_count < GRAY_SENSOR_CHANNEL_COUNT));
+        }
+
+        default:
+        {
+            return ZF_FALSE;
+        }
+    }
+}
+
+/**
  * @brief Validate consistency of one grayscale result.
  * @param sensor Sensor result to validate.
  * @return ZF_TRUE when internally consistent.
@@ -436,6 +495,15 @@ static uint8 line_tracker_sensor_is_valid(
     float deviation_error;
 
     if (sensor == NULL)
+    {
+        return ZF_FALSE;
+    }
+
+    if (sensor->calculation_mode == GRAY_SENSOR_RESULT_MODE_ANALOG)
+    {
+        return line_tracker_analog_sensor_is_valid(sensor);
+    }
+    if (sensor->calculation_mode != GRAY_SENSOR_RESULT_MODE_DIGITAL)
     {
         return ZF_FALSE;
     }
@@ -488,39 +556,6 @@ static uint8 line_tracker_sensor_is_valid(
 }
 
 /**
- * @brief Select the low-speed tracking band.
- * @param absolute_deviation Absolute normalized deviation.
- * @return Band index from zero through four.
- */
-static uint8 line_tracker_get_speed_band(float absolute_deviation)
-{
-    uint8 band;
-
-    if (absolute_deviation <= 1.0F)
-    {
-        band = 0U;
-    }
-    else if (absolute_deviation <= 2.0F)
-    {
-        band = 1U;
-    }
-    else if (absolute_deviation <= 3.0F)
-    {
-        band = 2U;
-    }
-    else if (absolute_deviation <= 4.0F)
-    {
-        band = 3U;
-    }
-    else
-    {
-        band = 4U;
-    }
-
-    return band;
-}
-
-/**
  * @brief Generate normal forward tracking targets.
  * @param sensor Valid grayscale result.
  * @param output Destination output.
@@ -529,15 +564,12 @@ static void line_tracker_update_tracking(
     const gray_sensor_result_struct *sensor,
     line_tracker_output_struct *output)
 {
-    float normalized = sensor->deviation * LINE_TRACKER_NORMALIZE_SCALE;
-    float absolute = normalized >= 0.0F ? normalized : -normalized;
     float correction;
     float left_target;
     float right_target;
-    uint8 band = line_tracker_get_speed_band(absolute);
 
     line_tracker_status.output_limited = 0U;
-    correction = line_tracker_pid_update(normalized, band);
+    correction = line_tracker_pid_update(sensor->deviation);
     if (correction > line_tracker_config.max_correction_mm_s)
     {
         correction = line_tracker_config.max_correction_mm_s;
@@ -549,13 +581,12 @@ static void line_tracker_update_tracking(
         line_tracker_status.output_limited = 1U;
     }
 
-    left_target = line_tracker_config.base_speed_mm_s[band] + correction;
-    right_target = line_tracker_config.base_speed_mm_s[band] - correction;
+    left_target = line_tracker_config.base_speed_mm_s + correction;
+    right_target = line_tracker_config.base_speed_mm_s - correction;
     left_target = line_tracker_clamp_target(left_target, 0U);
     right_target = line_tracker_clamp_target(right_target, 0U);
 
-    line_tracker_status.speed_band = band;
-    line_tracker_status.normalized_deviation = normalized;
+    line_tracker_status.pid_error = sensor->deviation;
     line_tracker_status.correction_mm_s = correction;
     line_tracker_set_tracking_output(output, left_target, right_target);
 }
@@ -676,7 +707,7 @@ void line_tracker_reset(void)
     line_tracker_status.search_direction =
         line_tracker_config.default_search_direction;
     line_tracker_status.deviation = 0.0F;
-    line_tracker_status.normalized_deviation = 0.0F;
+    line_tracker_status.pid_error = 0.0F;
     line_tracker_status.last_valid_deviation = 0.0F;
     line_tracker_pid_reset();
     line_tracker_target_slew_state.left_target_mm_s = 0.0F;
@@ -687,7 +718,6 @@ void line_tracker_reset(void)
     line_tracker_status.valid_samples = 0U;
     line_tracker_status.all_active_samples = 0U;
     line_tracker_status.search_samples = 0U;
-    line_tracker_status.speed_band = 0U;
     line_tracker_status.output_limited = 0U;
 
     interrupt_global_enable(primask);
@@ -787,7 +817,7 @@ uint8 line_tracker_update(
         line_tracker_status.valid_samples = 0U;
         line_tracker_status.lost_samples = 0U;
         line_tracker_status.search_samples = 0U;
-        line_tracker_status.normalized_deviation = 0.0F;
+        line_tracker_status.pid_error = 0.0F;
         line_tracker_status.output_limited = 0U;
         line_tracker_set_output(output, 0.0F, 0.0F);
         return ZF_TRUE;
@@ -803,7 +833,7 @@ uint8 line_tracker_update(
         {
             line_tracker_status.lost_samples++;
         }
-        line_tracker_status.normalized_deviation = 0.0F;
+        line_tracker_status.pid_error = 0.0F;
 
         if (line_tracker_status.lost_samples
             < line_tracker_config.lost_debounce_samples)

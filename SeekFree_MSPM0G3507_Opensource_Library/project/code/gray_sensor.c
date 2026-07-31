@@ -1,47 +1,45 @@
 /**
  * @file    gray_sensor.c
- * @brief   Eight-channel digital grayscale sensor acquisition.
+ * @brief   Eight-channel analog grayscale sensor acquisition.
  */
 
 #include "gray_sensor.h"
 
-static const gpio_pin_enum gray_sensor_pins[GRAY_SENSOR_CHANNEL_COUNT] =
+static const adc_pin_enum gray_sensor_adc_pins[
+    GRAY_SENSOR_CHANNEL_COUNT] =
 {
-    GRAY_SENSOR_D1_PIN,
-    GRAY_SENSOR_D2_PIN,
-    GRAY_SENSOR_D3_PIN,
-    GRAY_SENSOR_D4_PIN,
-    GRAY_SENSOR_D5_PIN,
-    GRAY_SENSOR_D6_PIN,
-    GRAY_SENSOR_D7_PIN,
-    GRAY_SENSOR_D8_PIN,
+    GRAY_SENSOR_D1_ADC_PIN,
+    GRAY_SENSOR_D2_ADC_PIN,
+    GRAY_SENSOR_D3_ADC_PIN,
+    GRAY_SENSOR_D4_ADC_PIN,
+    GRAY_SENSOR_D5_ADC_PIN,
+    GRAY_SENSOR_D6_ADC_PIN,
+    GRAY_SENSOR_D7_ADC_PIN,
+    GRAY_SENSOR_D8_ADC_PIN,
 };
 
 static uint8 gray_sensor_initialized;
 
 /**
- * @brief Validate all configured sensor pins.
- * @return ZF_TRUE when every pin is valid and unique.
+ * @brief Validate all configured ADC pins and analog parameters.
+ * @return ZF_TRUE when every pin and parameter is valid.
  */
-static uint8 gray_sensor_pins_are_valid(void)
+static uint8 gray_sensor_adc_config_is_valid(void)
 {
     uint8 left_index;
     uint8 right_index;
+    gpio_pin_enum left_gpio_pin;
+    gpio_pin_enum right_gpio_pin;
 
-    if (GRAY_SENSOR_PINS_CONFIGURED == 0U)
+    if (GRAY_SENSOR_ADC_PINS_CONFIGURED == 0U)
     {
         return ZF_FALSE;
     }
 
-    if ((GRAY_SENSOR_ACTIVE_LEVEL != GPIO_LOW)
-        && (GRAY_SENSOR_ACTIVE_LEVEL != GPIO_HIGH))
-    {
-        return ZF_FALSE;
-    }
-
-    if ((GRAY_SENSOR_INPUT_MODE != GPI_FLOATING_IN)
-        && (GRAY_SENSOR_INPUT_MODE != GPI_PULL_DOWN)
-        && (GRAY_SENSOR_INPUT_MODE != GPI_PULL_UP))
+    if ((GRAY_SENSOR_ADC_MIN_VALUE >= GRAY_SENSOR_ADC_MAX_VALUE)
+        || (GRAY_SENSOR_ADC_COMPARE_RAW > GRAY_SENSOR_ADC_MAX_VALUE)
+        || (GRAY_SENSOR_ADC_MIN_DIFF
+            > (GRAY_SENSOR_ADC_MAX_VALUE - GRAY_SENSOR_ADC_MIN_VALUE)))
     {
         return ZF_FALSE;
     }
@@ -50,8 +48,9 @@ static uint8 gray_sensor_pins_are_valid(void)
         left_index < GRAY_SENSOR_CHANNEL_COUNT;
         left_index++)
     {
-        if ((gray_sensor_pins[left_index] < A0)
-            || (gray_sensor_pins[left_index] >= GPIO_MAX))
+        left_gpio_pin = (gpio_pin_enum)(gray_sensor_adc_pins[left_index]
+            & ADC_PIN_INDEX_MASK);
+        if ((left_gpio_pin < A0) || (left_gpio_pin >= GPIO_MAX))
         {
             return ZF_FALSE;
         }
@@ -60,8 +59,9 @@ static uint8 gray_sensor_pins_are_valid(void)
             right_index < GRAY_SENSOR_CHANNEL_COUNT;
             right_index++)
         {
-            if (gray_sensor_pins[left_index]
-                == gray_sensor_pins[right_index])
+            right_gpio_pin = (gpio_pin_enum)(gray_sensor_adc_pins[right_index]
+                & ADC_PIN_INDEX_MASK);
+            if (left_gpio_pin == right_gpio_pin)
             {
                 return ZF_FALSE;
             }
@@ -72,30 +72,54 @@ static uint8 gray_sensor_pins_are_valid(void)
 }
 
 /**
- * @brief Initialize all configured digital grayscale inputs.
- * @return ZF_TRUE when the pin configuration is valid.
+ * @brief Initialize all configured analog grayscale inputs.
+ * @return ZF_TRUE when the ADC pin configuration is valid.
  */
 uint8 gray_sensor_init(void)
 {
     uint8 index;
 
     gray_sensor_initialized = 0U;
-    if (gray_sensor_pins_are_valid() == ZF_FALSE)
+    if (gray_sensor_adc_config_is_valid() == ZF_FALSE)
     {
         return ZF_FALSE;
     }
 
     for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
     {
-        gpio_init(
-            gray_sensor_pins[index],
-            GPI,
-            GPIO_LOW,
-            GRAY_SENSOR_INPUT_MODE);
+        adc_init(gray_sensor_adc_pins[index], ADC_12BIT);
     }
 
     gray_sensor_initialized = 1U;
     return ZF_TRUE;
+}
+
+/**
+ * @brief Clear one result before calculating a new sample.
+ * @param result Result to clear.
+ * @param mode Calculation mode for the new result.
+ */
+static void gray_sensor_result_reset(
+    gray_sensor_result_struct *result,
+    gray_sensor_result_mode_enum mode)
+{
+    uint8 index;
+
+    result->raw_mask = 0U;
+    result->active_mask = 0U;
+    result->active_count = 0U;
+    result->weighted_sum = 0U;
+    result->position = 0.0F;
+    result->deviation = 0.0F;
+    result->status = GRAY_SENSOR_STATUS_LOST;
+    result->calculation_mode = mode;
+    result->analog_weight_sum = 0U;
+    result->analog_weighted_sum = 0U;
+    result->analog_max_weight = 0U;
+    for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
+    {
+        result->analog_raw[index] = 0U;
+    }
 }
 
 /**
@@ -114,14 +138,13 @@ void gray_sensor_calculate(
         return;
     }
 
+    gray_sensor_result_reset(
+        result,
+        GRAY_SENSOR_RESULT_MODE_DIGITAL);
     result->active_mask = active_mask;
     result->raw_mask = active_mask;
-    result->active_count = 0U;
-    result->weighted_sum = 0U;
-    result->position = 0.0F;
-    result->deviation = 0.0F;
 
-    /* The mean active channel index is the line-detection centroid. */
+    /* The mean active channel index is the binary line centroid. */
     for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
     {
         if ((active_mask & (uint8)(1U << index)) != 0U)
@@ -134,7 +157,6 @@ void gray_sensor_calculate(
 
     if (result->active_count == 0U)
     {
-        result->status = GRAY_SENSOR_STATUS_LOST;
         return;
     }
 
@@ -152,14 +174,96 @@ void gray_sensor_calculate(
 }
 
 /**
- * @brief Sample all eight inputs and calculate normalized line position.
+ * @brief Calculate position and deviation from eight ADC samples.
+ * @param adc_raw Eight 12-bit ADC samples in D1-D8 order.
+ * @param result Destination result structure.
+ */
+void gray_sensor_calculate_analog(
+    const uint16 adc_raw[GRAY_SENSOR_CHANNEL_COUNT],
+    gray_sensor_result_struct *result)
+{
+    uint8 index;
+    uint16 weight;
+    uint32 weight_sum = 0U;
+    uint32 weighted_position_sum = 0U;
+
+    if ((adc_raw == NULL) || (result == NULL))
+    {
+        return;
+    }
+
+    gray_sensor_result_reset(
+        result,
+        GRAY_SENSOR_RESULT_MODE_ANALOG);
+
+    for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
+    {
+        result->analog_raw[index] = adc_raw[index];
+
+        if (adc_raw[index] >= GRAY_SENSOR_ADC_COMPARE_RAW)
+        {
+            result->active_mask |= (uint8)(1U << index);
+            result->active_count++;
+            result->weighted_sum =
+                (uint8)(result->weighted_sum + index);
+        }
+
+        /* High ADC voltage is the active-line polarity selected by the user. */
+        if (adc_raw[index] <= GRAY_SENSOR_ADC_MIN_VALUE)
+        {
+            weight = 0U;
+        }
+        else if (adc_raw[index] >= GRAY_SENSOR_ADC_MAX_VALUE)
+        {
+            weight = (uint16)(GRAY_SENSOR_ADC_MAX_VALUE
+                - GRAY_SENSOR_ADC_MIN_VALUE);
+        }
+        else
+        {
+            weight = (uint16)(adc_raw[index]
+                - GRAY_SENSOR_ADC_MIN_VALUE);
+        }
+
+        if (weight > result->analog_max_weight)
+        {
+            result->analog_max_weight = weight;
+        }
+        weight_sum += weight;
+        weighted_position_sum += (uint32)weight * (uint32)index;
+    }
+
+    result->raw_mask = result->active_mask;
+    result->analog_weight_sum = weight_sum;
+    result->analog_weighted_sum = weighted_position_sum;
+
+    if (result->active_count == GRAY_SENSOR_CHANNEL_COUNT)
+    {
+        result->position = 3.5F;
+        result->deviation = 0.0F;
+        result->status = GRAY_SENSOR_STATUS_ALL_ACTIVE;
+        return;
+    }
+
+    if ((weight_sum == 0U)
+        || (result->analog_max_weight < GRAY_SENSOR_ADC_MIN_DIFF))
+    {
+        return;
+    }
+
+    result->position =
+        (float)weighted_position_sum / (float)weight_sum;
+    result->deviation = result->position - 3.5F;
+    result->status = GRAY_SENSOR_STATUS_VALID;
+}
+
+/**
+ * @brief Sample all eight ADC inputs and calculate analog line position.
  * @param result Destination result structure.
  * @return ZF_TRUE when acquisition is initialized.
  */
 uint8 gray_sensor_sample(gray_sensor_result_struct *result)
 {
-    uint8 raw_mask = 0U;
-    uint8 active_mask;
+    uint16 adc_raw[GRAY_SENSOR_CHANNEL_COUNT];
     uint8 index;
 
     if ((result == NULL) || (gray_sensor_initialized == 0U))
@@ -169,25 +273,9 @@ uint8 gray_sensor_sample(gray_sensor_result_struct *result)
 
     for (index = 0U; index < GRAY_SENSOR_CHANNEL_COUNT; index++)
     {
-        if (gpio_get_level(gray_sensor_pins[index]) != GPIO_LOW)
-        {
-            raw_mask |= (uint8)(1U << index);
-        }
+        adc_raw[index] = adc_convert(gray_sensor_adc_pins[index]);
     }
 
-    /* Normalize polarity so set bits always represent active sensors. */
-    if (GRAY_SENSOR_ACTIVE_LEVEL == GPIO_HIGH)
-    {
-        active_mask = raw_mask;
-    }
-    else
-    {
-        active_mask = (uint8)(~raw_mask);
-    }
-    active_mask &= GRAY_SENSOR_ALL_ACTIVE_MASK;
-
-    gray_sensor_calculate(active_mask, result);
-    result->raw_mask = raw_mask;
-
+    gray_sensor_calculate_analog(adc_raw, result);
     return ZF_TRUE;
 }
