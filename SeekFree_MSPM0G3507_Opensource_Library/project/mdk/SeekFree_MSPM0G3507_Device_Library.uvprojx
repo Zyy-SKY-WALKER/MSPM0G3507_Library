@@ -1460,6 +1460,16 @@
               <FilePath>..\test\test_line_follow_real.h</FilePath>
             </File>
             <File>
+              <FileName>test_line_follow_task_5.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\test_line_follow_task_5.c</FilePath>
+            </File>
+            <File>
+              <FileName>test_line_follow_task_5.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\test_line_follow_task_5.h</FilePath>
+            </File>
+            <File>
               <FileName>test_stepper.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\test\test_stepper.c</FilePath>

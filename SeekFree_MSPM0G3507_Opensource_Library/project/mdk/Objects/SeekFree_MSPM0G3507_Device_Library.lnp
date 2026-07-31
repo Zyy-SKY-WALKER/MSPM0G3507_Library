@@ -115,6 +115,7 @@
 ".\objects\test_servo.o"
 ".\objects\test_chassis_motion.o"
 ".\objects\test_line_follow_real.o"
+".\objects\test_line_follow_task_5.o"
 ".\objects\test_stepper.o"
 ".\objects\test_xpt2046.o"
 ".\objects\test_ili9341_dissolve.o"

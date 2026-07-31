@@ -40,8 +40,9 @@
 #define TEST_MODE_BALL_VISION_OSCILLATION (31)
 #define TEST_MODE_OLED_TASK_1       (32)
 #define TEST_MODE_LINE_FOLLOW_TASK_2 (33)
+#define TEST_MODE_LINE_FOLLOW_TASK_5 (34)
 
-#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_TASK_2
+#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_TASK_5
 
 
 #endif

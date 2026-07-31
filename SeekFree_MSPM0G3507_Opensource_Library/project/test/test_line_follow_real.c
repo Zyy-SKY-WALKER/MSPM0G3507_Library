@@ -21,6 +21,9 @@
 #endif
 
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
+#include <string.h>
+#include "ml_oled.h"
+#include "vofa.h"
 #include "zf_driver_delay.h"
 #endif
 
@@ -246,17 +249,24 @@ void test_line_follow_real_run(void)
 #define BALL_GROOVE_BASELINE_SAMPLES         (50U)
 #define BALL_GROOVE_ACCEL_DEADBAND_ENTER_G   (0.006F)
 #define BALL_GROOVE_ACCEL_DEADBAND_EXIT_G    (0.003F)
-#define BALL_GROOVE_LENGTH_MM                (250.0F)
+#define BALL_GROOVE_ACCEL_TO_LIFT_GAIN_MM_PER_G (250.0F)
+#define BALL_GROOVE_ACCEL_FILTER_ALPHA       (0.3F)
+#define BALL_GROOVE_VOFA_PERIOD_TICKS        (10U)
 #define BALL_GROOVE_TRAVEL_LIMIT_MM          (40.0F)
 #define BALL_GROOVE_STEPS_PER_REVOLUTION     (6400.0F)
 #define BALL_GROOVE_LIFT_MM_PER_REVOLUTION   (2.06F)
+
+#define BALL_GROOVE_ERR_GIMBAL_CFG           (1U)
+#define BALL_GROOVE_ERR_SCHED_INIT           (2U)
+#define BALL_GROOVE_ERR_SCHED_START          (3U)
+#define BALL_GROOVE_ERR_VOFA_INIT            (4U)
 
 /**
  * @brief Limit one acceleration-derived linear lift command to the mechanism.
  */
 static int32 line_follow_ball_accel_target_steps(float acceleration_g)
 {
-    float lift_mm = acceleration_g * BALL_GROOVE_LENGTH_MM;
+    float lift_mm = acceleration_g * BALL_GROOVE_ACCEL_TO_LIFT_GAIN_MM_PER_G;
     float steps;
 
     if(lift_mm > BALL_GROOVE_TRAVEL_LIMIT_MM)
@@ -302,6 +312,53 @@ static float line_follow_ball_accel_apply_deadband(
 }
 
 /**
+ * @brief Report an initialization error on the OLED and halt.
+ * @param error_code One of the BALL_GROOVE_ERR_* identifiers.
+ * @note This function never returns.
+ */
+static void ball_groove_report_error(uint8 error_code)
+{
+    (void)ml_oled_init();
+    (void)ml_oled_show_string(1U, 1U, "BALL ERR");
+    (void)ml_oled_show_uint(2U, 1U, error_code, 2U);
+    while(true)
+    {
+    }
+}
+
+/**
+ * @brief Send the ball-groove feedforward channels through VOFA JustFloat.
+ * @param command_accel_g Command after the hysteresis deadband, in g.
+ * @param filtered_accel_g Low-pass filtered command in g.
+ * @param raw_accel_g Raw measured longitudinal acceleration in g.
+ * @param baseline_g Current captured stationary baseline in g.
+ * @param target_steps Latest signed stepper target in steps.
+ * @param reject_count Number of stepper target writes rejected.
+ */
+static void ball_groove_send_vofa(
+    float command_accel_g,
+    float filtered_accel_g,
+    float raw_accel_g,
+    float baseline_g,
+    float target_steps,
+    float reject_count)
+{
+    static const uint8 tail[4] = {0x00U, 0x00U, 0x80U, 0x7FU};
+    float channels[6];
+    uint8 frame[28];
+
+    channels[0] = command_accel_g;
+    channels[1] = filtered_accel_g;
+    channels[2] = raw_accel_g;
+    channels[3] = baseline_g;
+    channels[4] = target_steps;
+    channels[5] = reject_count;
+    memcpy(frame, channels, sizeof(channels));
+    memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
+    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+}
+
+/**
  * @brief Run real MPU line following with acceleration-only groove feedforward.
  */
 void test_line_follow_ball_accel_open_loop_run(void)
@@ -313,11 +370,16 @@ void test_line_follow_ball_accel_open_loop_run(void)
     uint32 stop_hold_start_tick = 0U;
     uint32 last_resume_request_tick = 0U;
     uint32 last_control_tick = 0xFFFFFFFFU;
+    uint32 stepper_reject_count = 0U;
+    uint32 last_vofa_tick = 0U;
     float accel_baseline_sum = 0.0F;
     float accel_baseline_g = 0.0F;
+    float filtered_accel_g = 0.0F;
     uint16 accel_baseline_samples = 0U;
     uint8 accel_baseline_ready = 0U;
     uint8 accel_deadband_active = 0U;
+    uint8 filtered_valid = 0U;
+    control_mode_enum previous_mode = CONTROL_MODE_BOOT;
 
     gimbal_stepper_init();
     if(gimbal_stepper_configure_single_axis(
@@ -326,9 +388,7 @@ void test_line_follow_ball_accel_open_loop_run(void)
             BALL_GROOVE_TRAVEL_LIMIT_STEPS,
             BALL_GROOVE_JOG_RATE_STEPS_S) == 0U)
     {
-        while(true)
-        {
-        }
+        ball_groove_report_error(BALL_GROOVE_ERR_GIMBAL_CFG);
     }
 
     /* A30 captures the manually levelled ball-center position before driving. */
@@ -341,17 +401,23 @@ void test_line_follow_ball_accel_open_loop_run(void)
 
     control_scheduler_set_imu_bypass(0U);
     control_scheduler_set_imu_acceleration_only(1U);
-    if((control_scheduler_init() == ZF_FALSE)
-        || (control_scheduler_start() == ZF_FALSE))
+    if(control_scheduler_init() == ZF_FALSE)
     {
-        while(true)
-        {
-        }
+        ball_groove_report_error(BALL_GROOVE_ERR_SCHED_INIT);
+    }
+    if(control_scheduler_start() == ZF_FALSE)
+    {
+        ball_groove_report_error(BALL_GROOVE_ERR_SCHED_START);
+    }
+    if(vofa_init_tx_only() == ZF_FALSE)
+    {
+        ball_groove_report_error(BALL_GROOVE_ERR_VOFA_INIT);
     }
 
     while(true)
     {
-        float command_accel_g;
+        float command_accel_g = 0.0F;
+        float target_steps = 0.0F;
 
         control_scheduler_process_foreground();
         (void)gimbal_stepper_service();
@@ -371,6 +437,15 @@ void test_line_follow_ball_accel_open_loop_run(void)
 
         if(status.mode != CONTROL_MODE_LINE_FOLLOW)
         {
+            if(previous_mode == CONTROL_MODE_LINE_FOLLOW)
+            {
+                accel_baseline_ready = 0U;
+                accel_baseline_g = 0.0F;
+                accel_baseline_sum = 0.0F;
+                accel_baseline_samples = 0U;
+                filtered_valid = 0U;
+            }
+            previous_mode = status.mode;
             accel_deadband_active = 0U;
             if((accel_baseline_ready == 0U)
                 && (status.imu_ready != 0U)
@@ -391,22 +466,54 @@ void test_line_follow_ball_accel_open_loop_run(void)
                 accel_baseline_sum = 0.0F;
                 accel_baseline_samples = 0U;
             }
-            system_delay_ms(BALL_GROOVE_LOOP_PERIOD_MS);
-            continue;
+            filtered_accel_g = 0.0F;
+        }
+        else
+        {
+            previous_mode = status.mode;
+            if((accel_baseline_ready != 0U)
+                && (status.imu_ready != 0U)
+                && (status.imu_fresh != 0U))
+            {
+                /* +X acceleration commands positive steps: B1 raises the rear. */
+                command_accel_g = status.imu_accel_x_g - accel_baseline_g;
+                command_accel_g = line_follow_ball_accel_apply_deadband(
+                    command_accel_g,
+                    &accel_deadband_active);
+                if(filtered_valid == 0U)
+                {
+                    filtered_accel_g = command_accel_g;
+                    filtered_valid = 1U;
+                }
+                else
+                {
+                    filtered_accel_g = BALL_GROOVE_ACCEL_FILTER_ALPHA
+                            * command_accel_g
+                        + (1.0F - BALL_GROOVE_ACCEL_FILTER_ALPHA)
+                            * filtered_accel_g;
+                }
+                target_steps = line_follow_ball_accel_target_steps(
+                    filtered_accel_g);
+                if(gimbal_stepper_set_axis_absolute_target_steps(
+                        GIMBAL_STEPPER_AXIS_YAW,
+                        target_steps) == 0U)
+                {
+                    stepper_reject_count++;
+                }
+            }
         }
 
-        if((accel_baseline_ready != 0U)
-            && (status.imu_ready != 0U)
-            && (status.imu_fresh != 0U))
+        if((uint32)(status.tick_count - last_vofa_tick)
+            >= BALL_GROOVE_VOFA_PERIOD_TICKS)
         {
-            /* +X acceleration commands positive steps: B1 raises the rear. */
-            command_accel_g = status.imu_accel_x_g - accel_baseline_g;
-            command_accel_g = line_follow_ball_accel_apply_deadband(
+            ball_groove_send_vofa(
                 command_accel_g,
-                &accel_deadband_active);
-            (void)gimbal_stepper_set_axis_absolute_target_steps(
-                GIMBAL_STEPPER_AXIS_YAW,
-                line_follow_ball_accel_target_steps(command_accel_g));
+                filtered_accel_g,
+                status.imu_accel_x_g,
+                accel_baseline_g,
+                target_steps,
+                (float)stepper_reject_count);
+            last_vofa_tick = status.tick_count;
         }
         system_delay_ms(BALL_GROOVE_LOOP_PERIOD_MS);
     }
@@ -417,6 +524,8 @@ void test_line_follow_ball_accel_open_loop_run(void)
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
 
 #define TASK_2_FINISH_MASK                    (0x78U)
+#define TASK_2_FINISH_DELAY_TICKS             \
+    (270U / CONTROL_SCHEDULER_PERIOD_MS)
 #define TASK_2_START_CLEAR_SAMPLES            (3U)
 #define TASK_2_STOP_CONFIRM_SAMPLES           (3U)
 #define TASK_2_TIME_TEXT_LENGTH               (13U)
@@ -432,6 +541,7 @@ typedef enum
     TASK_2_WAIT_ARM = 0,
     TASK_2_WAIT_LINE_START,
     TASK_2_RUNNING,
+    TASK_2_FINISH_DELAY,
     TASK_2_WAIT_STOP,
     TASK_2_FINISHED,
 } task_2_state_enum;
@@ -467,7 +577,7 @@ static uint8 task_2_apply_pid_profile(uint8 curve_profile)
 
     if(curve_profile != 0U)
     {
-        config.pid_kp = 46.0F;
+        config.pid_kp = 48.0F;
         config.max_correction_mm_s = 180.0F;
     }
     return line_tracker_set_config(&config);
@@ -697,6 +807,7 @@ static uint8 task_2_get_start_code(
     const control_scheduler_status_struct *status)
 {
     if((state == TASK_2_RUNNING)
+        || (state == TASK_2_FINISH_DELAY)
         || (state == TASK_2_WAIT_STOP)
         || (state == TASK_2_FINISHED))
     {
@@ -791,6 +902,7 @@ void test_line_follow_task_2_run(void)
     char mask_display_cache[TASK_2_MASK_TEXT_LENGTH] = {0};
     char start_display_cache[TASK_2_START_TEXT_LENGTH] = {0};
     uint32 start_tick = 0U;
+    uint32 finish_detect_tick = 0U;
     uint32 first_stopped_tick = 0U;
     uint32 final_elapsed_tenths = 0U;
     uint32 last_profile_tick = 0xFFFFFFFFU;
@@ -823,7 +935,8 @@ void test_line_follow_task_2_run(void)
 
         control_scheduler_process_foreground();
         control_scheduler_get_status(&status);
-        if((state == TASK_2_RUNNING)
+        if(((state == TASK_2_RUNNING)
+                || (state == TASK_2_FINISH_DELAY))
             && (status.tick_count != last_profile_tick))
         {
             task_2_update_pid_profile(
@@ -902,6 +1015,16 @@ void test_line_follow_task_2_run(void)
             }
             else if(finish_active != 0U)
             {
+                finish_detect_tick = status.tick_count;
+                state = TASK_2_FINISH_DELAY;
+            }
+        }
+        else if(state == TASK_2_FINISH_DELAY)
+        {
+            elapsed_tenths = (status.tick_count - start_tick) / 10U;
+            if((uint32)(status.tick_count - finish_detect_tick)
+                >= TASK_2_FINISH_DELAY_TICKS)
+            {
                 control_scheduler_request_line_stop();
                 stopped_samples = 0U;
                 state = TASK_2_WAIT_STOP;
@@ -934,7 +1057,9 @@ void test_line_follow_task_2_run(void)
             }
         }
 
-        if((state == TASK_2_RUNNING) || (state == TASK_2_WAIT_STOP))
+        if((state == TASK_2_RUNNING)
+            || (state == TASK_2_FINISH_DELAY)
+            || (state == TASK_2_WAIT_STOP))
         {
             task_2_render_time(
                 1U,
