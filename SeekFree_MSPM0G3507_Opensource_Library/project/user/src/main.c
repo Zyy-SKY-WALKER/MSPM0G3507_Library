@@ -80,6 +80,8 @@
 #include "test_line_follow_real.h"
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
 #include "test_line_follow_real.h"
+#elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
+#include "test_line_follow_real.h"
 #elif (TEST_MODE == TEST_MODE_STEPPER)
 #include "test_stepper.h"
 #elif (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO)
@@ -160,6 +162,8 @@ int main(void)
     test_line_follow_real_run();
 #elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
     test_line_follow_ball_accel_open_loop_run();
+#elif (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
+    test_line_follow_task_2_run();
 #elif (TEST_MODE == TEST_MODE_STEPPER)
     test_stepper_run();
 #elif (TEST_MODE == TEST_MODE_BALL_GROOVE_ZERO)

@@ -39,8 +39,9 @@
 #define TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP (30)
 #define TEST_MODE_BALL_VISION_OSCILLATION (31)
 #define TEST_MODE_OLED_TASK_1       (32)
+#define TEST_MODE_LINE_FOLLOW_TASK_2 (33)
 
-#define TEST_MODE                    TEST_MODE_OLED_TASK_1
+#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_TASK_2
 
 
 #endif

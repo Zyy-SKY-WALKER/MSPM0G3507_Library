@@ -823,7 +823,10 @@ static void control_apply_requests(
     if ((requests->flags & CONTROL_REQUEST_LINE_START) != 0U)
     {
         if ((control_status.mode == CONTROL_MODE_MANUAL_ARMED)
-            && (control_status.gray.status == GRAY_SENSOR_STATUS_VALID)
+            && ((control_status.gray.status == GRAY_SENSOR_STATUS_VALID)
+                || ((control_status.gray.status
+                        == GRAY_SENSOR_STATUS_ALL_ACTIVE)
+                    && (line_tracker_tracks_all_active_as_center() != 0U)))
             && (control_status.imu_ready != 0U)
             && (control_status.imu_fresh != 0U)
             && (control_wheels_are_stopped() != 0U))

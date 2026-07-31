@@ -9,7 +9,8 @@
 #include "test_config.h"
 
 #if ((TEST_MODE == TEST_MODE_LINE_FOLLOW_REAL) \
-    || (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP))
+    || (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP) \
+    || (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2))
 
 #include "control_scheduler.h"
 #include "test_line_follow_real.h"
@@ -21,6 +22,10 @@
 
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_BALL_ACCEL_OPEN_LOOP)
 #include "zf_driver_delay.h"
+#endif
+
+#if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
+#include "ml_oled.h"
 #endif
 
 #define LINE_FOLLOW_REAL_VOFA_PERIOD_TICKS  (2U)
@@ -404,6 +409,244 @@ void test_line_follow_ball_accel_open_loop_run(void)
                 line_follow_ball_accel_target_steps(command_accel_g));
         }
         system_delay_ms(BALL_GROOVE_LOOP_PERIOD_MS);
+    }
+}
+
+#endif
+
+#if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
+
+#define TASK_2_FINISH_MASK                    (0x7EU)
+#define TASK_2_START_CLEAR_SAMPLES            (3U)
+#define TASK_2_STOP_CONFIRM_SAMPLES           (3U)
+#define TASK_2_TIME_TEXT_LENGTH               (13U)
+
+typedef enum
+{
+    TASK_2_WAIT_ARM = 0,
+    TASK_2_WAIT_LINE_START,
+    TASK_2_RUNNING,
+    TASK_2_WAIT_STOP,
+    TASK_2_FINISHED,
+} task_2_state_enum;
+
+static const line_tracker_config_struct task_2_line_config =
+{
+    .base_speed_mm_s = {383.85F, 347.29F, 310.74F, 274.18F, 230.31F},
+    .pid_kp = {31.07F, 40.21F, 47.52F, 51.18F, 56.66F},
+    .pid_ki = 0.0F,
+    .pid_kd = 0.0F,
+    .pid_integral_limit_mm_s = 91.40F,
+    .pid_derivative_filter_alpha = 0.2F,
+    .max_target_mm_s = 800.0F,
+    .max_correction_mm_s = 146.23F,
+    .max_target_accel_mm_s2 = 3655.71F,
+    .arc_outer_speed_mm_s = 548.36F,
+    .arc_inner_speed_mm_s = 109.67F,
+    .pivot_speed_mm_s = 548.36F,
+    .lost_debounce_samples = 3U,
+    .reacquire_samples = 3U,
+    .arc_duration_samples = 100U,
+    .search_timeout_samples = 500U,
+    .default_search_direction = LINE_TRACKER_DIRECTION_RIGHT,
+    .track_all_active_as_center = 1U,
+};
+
+/**
+ * @brief Build the fixed-width OLED first-line time text.
+ */
+static void task_2_build_time_text(
+    char text[TASK_2_TIME_TEXT_LENGTH],
+    uint8 started,
+    uint32 elapsed_tenths)
+{
+    uint32 seconds = elapsed_tenths / 10U;
+
+    text[0] = 'T';
+    text[1] = 'I';
+    text[2] = 'M';
+    text[3] = 'E';
+    text[4] = ':';
+    if(started == 0U)
+    {
+        text[5] = 'W';
+        text[6] = 'A';
+        text[7] = 'I';
+        text[8] = 'T';
+        text[9] = ' ';
+        text[10] = ' ';
+        text[11] = ' ';
+        text[12] = ' ';
+        return;
+    }
+
+    seconds %= 100000U;
+    text[5] = (char)('0' + ((seconds / 10000U) % 10U));
+    text[6] = (char)('0' + ((seconds / 1000U) % 10U));
+    text[7] = (char)('0' + ((seconds / 100U) % 10U));
+    text[8] = (char)('0' + ((seconds / 10U) % 10U));
+    text[9] = (char)('0' + (seconds % 10U));
+    text[10] = '.';
+    text[11] = (char)('0' + (elapsed_tenths % 10U));
+    text[12] = 's';
+}
+
+/**
+ * @brief Dirty-refresh only changed characters in OLED line one.
+ */
+static void task_2_render_time(
+    uint8 started,
+    uint32 elapsed_tenths,
+    char cache[TASK_2_TIME_TEXT_LENGTH],
+    uint8 *cache_valid)
+{
+    char text[TASK_2_TIME_TEXT_LENGTH];
+    uint8 index;
+
+    task_2_build_time_text(text, started, elapsed_tenths);
+    for(index = 0U; index < TASK_2_TIME_TEXT_LENGTH; index++)
+    {
+        if((*cache_valid == 0U) || (text[index] != cache[index]))
+        {
+            (void)ml_oled_show_char(1U, (uint8)(index + 1U), text[index]);
+            cache[index] = text[index];
+        }
+    }
+    *cache_valid = 1U;
+}
+
+/**
+ * @brief Run one clockwise 6141 mm line-follow lap from A back to A.
+ */
+void test_line_follow_task_2_run(void)
+{
+    control_scheduler_status_struct status;
+    task_2_state_enum state = TASK_2_WAIT_ARM;
+    char display_cache[TASK_2_TIME_TEXT_LENGTH] = {0};
+    uint32 start_tick = 0U;
+    uint32 first_stopped_tick = 0U;
+    uint32 final_elapsed_tenths = 0U;
+    uint8 display_cache_valid = 0U;
+    uint8 start_marker_cleared = 0U;
+    uint8 start_clear_samples = 0U;
+    uint8 stopped_samples = 0U;
+
+    control_scheduler_set_imu_bypass(1U);
+    control_scheduler_set_imu_acceleration_only(0U);
+    if((ml_oled_init() == false)
+        || (control_scheduler_init() == ZF_FALSE)
+        || (line_tracker_set_config(&task_2_line_config) == ZF_FALSE)
+        || (control_scheduler_start() == ZF_FALSE))
+    {
+        while(true)
+        {
+        }
+    }
+    task_2_render_time(0U, 0U, display_cache, &display_cache_valid);
+
+    while(true)
+    {
+        uint32 elapsed_tenths = final_elapsed_tenths;
+
+        control_scheduler_process_foreground();
+        control_scheduler_get_status(&status);
+
+        if(state == TASK_2_WAIT_ARM)
+        {
+            if(status.mode == CONTROL_MODE_MANUAL_ARMED)
+            {
+                control_scheduler_request_line_start();
+                state = TASK_2_WAIT_LINE_START;
+            }
+        }
+        else if(state == TASK_2_WAIT_LINE_START)
+        {
+            if(status.mode == CONTROL_MODE_LINE_FOLLOW)
+            {
+                start_tick = status.tick_count;
+                start_marker_cleared = 0U;
+                start_clear_samples = 0U;
+                state = TASK_2_RUNNING;
+            }
+        }
+        else if(state == TASK_2_RUNNING)
+        {
+            uint8 finish_active = (uint8)((status.gray.active_mask
+                & TASK_2_FINISH_MASK) == TASK_2_FINISH_MASK);
+
+            elapsed_tenths = (status.tick_count - start_tick) / 10U;
+            if(start_marker_cleared == 0U)
+            {
+                if(finish_active == 0U)
+                {
+                    if(start_clear_samples < TASK_2_START_CLEAR_SAMPLES)
+                    {
+                        start_clear_samples++;
+                    }
+                    if(start_clear_samples >= TASK_2_START_CLEAR_SAMPLES)
+                    {
+                        start_marker_cleared = 1U;
+                    }
+                }
+                else
+                {
+                    start_clear_samples = 0U;
+                }
+            }
+            else if(finish_active != 0U)
+            {
+                control_scheduler_request_line_stop();
+                stopped_samples = 0U;
+                state = TASK_2_WAIT_STOP;
+            }
+        }
+        else if(state == TASK_2_WAIT_STOP)
+        {
+            elapsed_tenths = (status.tick_count - start_tick) / 10U;
+            if((status.mode == CONTROL_MODE_MANUAL_ARMED)
+                && (line_follow_real_wheels_stopped(&status) != 0U))
+            {
+                if(stopped_samples == 0U)
+                {
+                    first_stopped_tick = status.tick_count;
+                }
+                if(stopped_samples < TASK_2_STOP_CONFIRM_SAMPLES)
+                {
+                    stopped_samples++;
+                }
+                if(stopped_samples >= TASK_2_STOP_CONFIRM_SAMPLES)
+                {
+                    final_elapsed_tenths =
+                        (first_stopped_tick - start_tick) / 10U;
+                    state = TASK_2_FINISHED;
+                }
+            }
+            else
+            {
+                stopped_samples = 0U;
+            }
+        }
+
+        if((state == TASK_2_RUNNING) || (state == TASK_2_WAIT_STOP))
+        {
+            task_2_render_time(
+                1U,
+                elapsed_tenths,
+                display_cache,
+                &display_cache_valid);
+        }
+        else if(state == TASK_2_FINISHED)
+        {
+            task_2_render_time(
+                1U,
+                final_elapsed_tenths,
+                display_cache,
+                &display_cache_valid);
+        }
+        else
+        {
+            task_2_render_time(0U, 0U, display_cache, &display_cache_valid);
+        }
     }
 }
 

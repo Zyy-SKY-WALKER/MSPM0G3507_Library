@@ -29,6 +29,7 @@ static const line_tracker_config_struct line_tracker_default_config =
     .max_target_mm_s = 600.0F,
     .max_correction_mm_s = 80.0F,
     .max_target_accel_mm_s2 = 2000.0F,
+    .track_all_active_as_center = 0U,
     .arc_outer_speed_mm_s = 300.0F,
     .arc_inner_speed_mm_s = 60.0F,
     .pivot_speed_mm_s = 300.0F,
@@ -112,6 +113,7 @@ static uint8 line_tracker_config_is_valid(
                 config->max_correction_mm_s) == 0U)
         || (line_tracker_float_is_nonnegative(
                 config->max_target_accel_mm_s2) == 0U)
+        || (config->track_all_active_as_center > 1U)
         || (line_tracker_float_is_nonnegative(config->pid_ki) == 0U)
         || (line_tracker_float_is_nonnegative(config->pid_kd) == 0U)
         || (line_tracker_float_is_nonnegative(
@@ -715,6 +717,15 @@ uint8 line_tracker_set_config(
 }
 
 /**
+ * @brief Return whether all-active input continues centered tracking.
+ */
+uint8 line_tracker_tracks_all_active_as_center(void)
+{
+    return (uint8)((line_tracker_initialized != 0U)
+        && (line_tracker_config.track_all_active_as_center != 0U));
+}
+
+/**
  * @brief Convert one grayscale result into bounded wheel targets.
  * @param sensor Coherent grayscale result.
  * @param output Destination wheel targets.
@@ -741,13 +752,31 @@ uint8 line_tracker_update(
     line_tracker_status.deviation = sensor->deviation;
 
     /* Nontracking sensor states discard PID history before state handling. */
-    if (sensor->status != GRAY_SENSOR_STATUS_VALID)
+    if ((sensor->status != GRAY_SENSOR_STATUS_VALID)
+        && !((sensor->status == GRAY_SENSOR_STATUS_ALL_ACTIVE)
+            && (line_tracker_config.track_all_active_as_center != 0U)))
     {
         line_tracker_pid_reset();
     }
 
     if (sensor->status == GRAY_SENSOR_STATUS_ALL_ACTIVE)
     {
+        if(line_tracker_config.track_all_active_as_center != 0U)
+        {
+            line_tracker_status.state = LINE_TRACKER_STATE_TRACKING;
+            if(line_tracker_status.all_active_samples
+                < LINE_TRACKER_COUNTER_MAX)
+            {
+                line_tracker_status.all_active_samples++;
+            }
+            line_tracker_status.valid_samples =
+                line_tracker_config.reacquire_samples;
+            line_tracker_status.lost_samples = 0U;
+            line_tracker_status.search_samples = 0U;
+            line_tracker_status.last_valid_deviation = 0.0F;
+            line_tracker_update_tracking(sensor, output);
+            return ZF_TRUE;
+        }
         /* All-active is a stopped state until valid samples reacquire line. */
         line_tracker_status.state = LINE_TRACKER_STATE_ALL_ACTIVE;
         if (line_tracker_status.all_active_samples

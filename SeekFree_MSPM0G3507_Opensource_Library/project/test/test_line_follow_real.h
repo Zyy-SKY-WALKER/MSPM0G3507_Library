@@ -11,5 +11,6 @@
 
 void test_line_follow_real_run(void);
 void test_line_follow_ball_accel_open_loop_run(void);
+void test_line_follow_task_2_run(void);
 
 #endif
