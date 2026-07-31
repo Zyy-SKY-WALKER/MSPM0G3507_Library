@@ -25,9 +25,7 @@
 #endif
 
 #if (TEST_MODE == TEST_MODE_LINE_FOLLOW_TASK_2)
-#include <string.h>
 #include "ml_oled.h"
-#include "vofa.h"
 #endif
 
 #define LINE_FOLLOW_REAL_VOFA_PERIOD_TICKS  (2U)
@@ -421,16 +419,13 @@ void test_line_follow_ball_accel_open_loop_run(void)
 #define TASK_2_FINISH_MASK                    (0x78U)
 #define TASK_2_START_CLEAR_SAMPLES            (3U)
 #define TASK_2_STOP_CONFIRM_SAMPLES           (3U)
-#define TASK_2_VOFA_CHANNEL_COUNT             (4U)
-#define TASK_2_VOFA_PERIOD_TICKS              (2U)
-#define TASK_2_VOFA_TAIL_SIZE                 (4U)
-#define TASK_2_VOFA_FRAME_SIZE                \
-    ((TASK_2_VOFA_CHANNEL_COUNT * sizeof(float)) \
-        + TASK_2_VOFA_TAIL_SIZE)
 #define TASK_2_TIME_TEXT_LENGTH               (13U)
 #define TASK_2_DEVIATION_TEXT_LENGTH          (9U)
 #define TASK_2_MASK_TEXT_LENGTH               (14U)
 #define TASK_2_START_TEXT_LENGTH              (8U)
+#define TASK_2_CURVE_ENTER_DEVIATION          (0.70F)
+#define TASK_2_STRAIGHT_EXIT_DEVIATION        (0.25F)
+#define TASK_2_STRAIGHT_EXIT_SAMPLES          (15U)
 
 typedef enum
 {
@@ -441,16 +436,16 @@ typedef enum
     TASK_2_FINISHED,
 } task_2_state_enum;
 
-static const line_tracker_config_struct task_2_line_config =
+static const line_tracker_config_struct task_2_straight_line_config =
 {
-    .base_speed_mm_s = 360.0F,
-    .pid_kp = 29.0F,
-    .pid_ki = 0.3F,
+    .base_speed_mm_s = 340.0F,
+    .pid_kp = 22.0F,
+    .pid_ki = 0.0F,
     .pid_kd = 0.0F,
     .pid_integral_limit_mm_s = 91.40F,
     .pid_derivative_filter_alpha = 0.2F,
     .max_target_mm_s = 800.0F,
-    .max_correction_mm_s = 146.23F,
+    .max_correction_mm_s = 90.0F,
     .max_target_accel_mm_s2 = 3655.71F,
     .arc_outer_speed_mm_s = 548.36F,
     .arc_inner_speed_mm_s = 109.67F,
@@ -464,32 +459,65 @@ static const line_tracker_config_struct task_2_line_config =
 };
 
 /**
- * @brief Send Task 2 wheel targets and feedback speeds through VOFA.
- * @param status Coherent scheduler status snapshot.
- * @note Sends only from the foreground loop, never from the 10 ms control
- *       callback. Channel order is left target, left speed, right target,
- *       and right speed.
+ * @brief Apply one of Task 2's straight/curve PID profiles.
  */
-static void task_2_send_vofa(
-    const control_scheduler_status_struct *status)
+static uint8 task_2_apply_pid_profile(uint8 curve_profile)
 {
-    static const uint8 tail[TASK_2_VOFA_TAIL_SIZE] =
-        {0x00U, 0x00U, 0x80U, 0x7FU};
-    float channels[TASK_2_VOFA_CHANNEL_COUNT];
-    uint8 frame[TASK_2_VOFA_FRAME_SIZE];
+    line_tracker_config_struct config = task_2_straight_line_config;
 
-    if(status == NULL)
+    if(curve_profile != 0U)
     {
-        return;
+        config.pid_kp = 46.0F;
+        config.max_correction_mm_s = 180.0F;
+    }
+    return line_tracker_set_config(&config);
+}
+
+/**
+ * @brief Select the PID profile using deviation hysteresis.
+ */
+static void task_2_update_pid_profile(
+    const control_scheduler_status_struct *status,
+    uint8 *curve_profile,
+    uint8 *straight_exit_samples)
+{
+    float absolute_deviation = status->gray.deviation;
+
+    if(absolute_deviation < 0.0F)
+    {
+        absolute_deviation = -absolute_deviation;
     }
 
-    channels[0] = status->speed.left_target_mm_s;
-    channels[1] = status->speed.left_speed_mm_s;
-    channels[2] = status->speed.right_target_mm_s;
-    channels[3] = status->speed.right_speed_mm_s;
-    memcpy(frame, channels, sizeof(channels));
-    memcpy(&frame[sizeof(channels)], tail, sizeof(tail));
-    uart_write_buffer(VOFA_UART_INDEX, frame, sizeof(frame));
+    if(*curve_profile == 0U)
+    {
+        *straight_exit_samples = 0U;
+        if(absolute_deviation >= TASK_2_CURVE_ENTER_DEVIATION)
+        {
+            if(task_2_apply_pid_profile(1U) != ZF_FALSE)
+            {
+                *curve_profile = 1U;
+            }
+        }
+    }
+    else if(absolute_deviation <= TASK_2_STRAIGHT_EXIT_DEVIATION)
+    {
+        if(*straight_exit_samples < TASK_2_STRAIGHT_EXIT_SAMPLES)
+        {
+            (*straight_exit_samples)++;
+        }
+        if(*straight_exit_samples >= TASK_2_STRAIGHT_EXIT_SAMPLES)
+        {
+            if(task_2_apply_pid_profile(0U) != ZF_FALSE)
+            {
+                *curve_profile = 0U;
+                *straight_exit_samples = 0U;
+            }
+        }
+    }
+    else
+    {
+        *straight_exit_samples = 0U;
+    }
 }
 
 /**
@@ -765,7 +793,7 @@ void test_line_follow_task_2_run(void)
     uint32 start_tick = 0U;
     uint32 first_stopped_tick = 0U;
     uint32 final_elapsed_tenths = 0U;
-    uint32 last_vofa_tick = 0U;
+    uint32 last_profile_tick = 0xFFFFFFFFU;
     uint8 display_cache_valid = 0U;
     uint8 deviation_display_cache_valid = 0U;
     uint8 mask_display_cache_valid = 0U;
@@ -773,13 +801,14 @@ void test_line_follow_task_2_run(void)
     uint8 start_marker_cleared = 0U;
     uint8 start_clear_samples = 0U;
     uint8 stopped_samples = 0U;
+    uint8 curve_profile = 0U;
+    uint8 straight_exit_samples = 0U;
 
     control_scheduler_set_imu_bypass(1U);
     control_scheduler_set_imu_acceleration_only(0U);
     if((ml_oled_init() == false)
-        || (vofa_init_tx_only() == ZF_FALSE)
         || (control_scheduler_init() == ZF_FALSE)
-        || (line_tracker_set_config(&task_2_line_config) == ZF_FALSE)
+        || (task_2_apply_pid_profile(0U) == ZF_FALSE)
         || (control_scheduler_start() == ZF_FALSE))
     {
         while(true)
@@ -794,11 +823,14 @@ void test_line_follow_task_2_run(void)
 
         control_scheduler_process_foreground();
         control_scheduler_get_status(&status);
-        if((uint32)(status.tick_count - last_vofa_tick)
-            >= TASK_2_VOFA_PERIOD_TICKS)
+        if((state == TASK_2_RUNNING)
+            && (status.tick_count != last_profile_tick))
         {
-            task_2_send_vofa(&status);
-            last_vofa_tick = status.tick_count;
+            task_2_update_pid_profile(
+                &status,
+                &curve_profile,
+                &straight_exit_samples);
+            last_profile_tick = status.tick_count;
         }
         task_2_render_deviation(
             status.gray.deviation,

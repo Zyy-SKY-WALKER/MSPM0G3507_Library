@@ -20,7 +20,7 @@
 
 #define MOTOR_RIGHT_PWM_PIN          (PWM_TIM_G0_CH1_B11)
 #define MOTOR_RIGHT_IN1_PIN          (B25)
-#define MOTOR_RIGHT_IN2_PIN          (B24)
+#define MOTOR_RIGHT_IN2_PIN          (B19)
 
 /**
  * @brief Initialize both motor PWM channels and direction GPIO outputs.
