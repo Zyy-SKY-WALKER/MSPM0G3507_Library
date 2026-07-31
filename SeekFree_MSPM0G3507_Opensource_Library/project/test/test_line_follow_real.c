@@ -432,9 +432,9 @@ typedef enum
 
 static const line_tracker_config_struct task_2_line_config =
 {
-    .base_speed_mm_s = {383.85F, 347.29F, 310.74F, 274.18F, 230.31F},
-    .pid_kp = {31.07F, 40.21F, 47.52F, 51.18F, 56.66F},
-    .pid_ki = 0.0F,
+    .base_speed_mm_s = {340.0F, 310.0F, 280.0F, 250.0F, 220.0F},
+    .pid_kp = {16.0F, 19.0F, 25.0F, 32.0F, 36.0F},
+    .pid_ki = 0.3F,
     .pid_kd = 0.0F,
     .pid_integral_limit_mm_s = 91.40F,
     .pid_derivative_filter_alpha = 0.2F,
