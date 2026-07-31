@@ -17,10 +17,8 @@
 #include "zf_driver_pwm.h"
 #include "zf_driver_timer.h"
 
-#define GIMBAL_YAW_STEP_PIN                     (B4)
-#define GIMBAL_PITCH_STEP_PIN                   (B5)
-#define GIMBAL_YAW_DIR_PIN                      (B8)
-#define GIMBAL_PITCH_DIR_PIN                    (B9)
+#define GIMBAL_LIFT_STEP_PIN                    (B4)
+#define GIMBAL_LIFT_DIR_PIN                     (B5)
 #define GIMBAL_LASER_PIN                        (B13)
 #define GIMBAL_YAW_HARDWARE_PWM_PIN             (PWM_TIM_A1_CH0_B4)
 
@@ -1367,7 +1365,10 @@ static void gimbal_emergency_stop_tick(void)
     {
         gpio_low(yaw->step_pin);
     }
-    gpio_low(pitch->step_pin);
+    if(pitch->enabled != 0U)
+    {
+        gpio_low(pitch->step_pin);
+    }
     gimbal_laser_force_off();
     gimbal_laser_settle_ms = 0U;
     gimbal_sync_targets_to_positions();
@@ -1728,10 +1729,6 @@ static void gimbal_update_rates_tick(void)
         if(axis->enabled == 0U)
         {
             gimbal_clear_axis_command(axis);
-            if(axis->pulse_high != 0U)
-            {
-                gpio_low(axis->step_pin);
-            }
             axis->pulse_high = 0U;
             continue;
         }
@@ -1775,10 +1772,6 @@ static void gimbal_axis_tick(gimbal_axis_struct *axis)
 
     if(axis->enabled == 0U)
     {
-        if(axis->pulse_high != 0U)
-        {
-            gpio_low(axis->step_pin);
-        }
         axis->pulse_high = 0U;
         gimbal_clear_axis_command(axis);
         return;
@@ -1989,6 +1982,38 @@ static void gimbal_initialize_axis(
 }
 
 /**
+ * @brief Initialize an unused compatibility axis without reserving GPIOs.
+ */
+static void gimbal_initialize_disabled_axis(gimbal_axis_struct *axis)
+{
+    axis->step_pin = B0;
+    axis->dir_pin = B0;
+    axis->min_position_steps = 0;
+    axis->max_position_steps = 0;
+    axis->calibrate_travel_steps = 0;
+    axis->jog_rate_milli_steps_s = 0;
+    axis->positive_dir_level = GPIO_LOW;
+    axis->enabled = 0U;
+    axis->hardware_pwm_enabled = 0U;
+    axis->target_position_steps = 0;
+    axis->target_rate_milli_steps_s = 0;
+    axis->current_rate_milli_steps_s = 0;
+    axis->command_rate_milli_steps_s = 0;
+    axis->position_steps = 0;
+    axis->phase_accumulator = 0U;
+    axis->phase_increment = 0U;
+    axis->direction_positive = 0U;
+    axis->direction_settle_ticks = 0U;
+    axis->pulse_pending = 0U;
+    axis->pulse_high = 0U;
+    axis->zero_valid = 0U;
+    axis->zero_capture_count = 0U;
+    axis->hardware_active_rate_milli_steps_s = 0;
+    axis->hardware_pulse_remainder = 0U;
+    axis->hardware_direction_settle_ms = 0U;
+}
+
+/**
  * @brief Initialize the complete dual-axis gimbal controller.
  */
 void gimbal_stepper_init(void)
@@ -1996,22 +2021,15 @@ void gimbal_stepper_init(void)
     gimbal_initialized = 0U;
     gimbal_initialize_axis(
         &gimbal_axes[GIMBAL_STEPPER_AXIS_YAW],
-        GIMBAL_YAW_STEP_PIN,
-        GIMBAL_YAW_DIR_PIN,
+        GIMBAL_LIFT_STEP_PIN,
+        GIMBAL_LIFT_DIR_PIN,
         GIMBAL_STEPPER_YAW_MIN_STEPS,
         GIMBAL_STEPPER_YAW_MAX_STEPS,
         GIMBAL_YAW_CALIBRATE_TRAVEL_STEPS,
         GIMBAL_YAW_JOG_RATE_MILLI_STEPS_S,
         GIMBAL_YAW_POSITIVE_DIR_LEVEL);
-    gimbal_initialize_axis(
-        &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH],
-        GIMBAL_PITCH_STEP_PIN,
-        GIMBAL_PITCH_DIR_PIN,
-        GIMBAL_STEPPER_PITCH_MIN_STEPS,
-        GIMBAL_STEPPER_PITCH_MAX_STEPS,
-        GIMBAL_PITCH_CALIBRATE_TRAVEL_STEPS,
-        GIMBAL_PITCH_JOG_RATE_MILLI_STEPS_S,
-        GIMBAL_PITCH_POSITIVE_DIR_LEVEL);
+    gimbal_initialize_disabled_axis(
+        &gimbal_axes[GIMBAL_STEPPER_AXIS_PITCH]);
 
     gpio_init(
         GIMBAL_SELECT_KEY_PIN,
@@ -2060,8 +2078,6 @@ void gimbal_stepper_init(void)
     gimbal_feedforward_solution.residual_deg = 0.0F;
     gimbal_feedforward_solution.valid = 0U;
     gimbal_feedforward_solution.singular = 0U;
-    gimbal_stepper_laser_init();
-
     interrupt_set_priority(GIMBAL_PIT_IRQ, GIMBAL_PIT_IRQ_PRIORITY);
     pit_us_init(
         GIMBAL_PIT,
@@ -2082,16 +2098,19 @@ uint8 gimbal_stepper_configure_single_axis(
 {
     gimbal_axis_struct *selected_axis;
     uint32 primask;
+    uint32 maximum_jog_rate_steps_s;
     uint8 index;
 
-    if((axis >= GIMBAL_STEPPER_AXIS_COUNT)
+    maximum_jog_rate_steps_s = axis == GIMBAL_STEPPER_AXIS_YAW
+        ? ((uint32)GIMBAL_HARDWARE_PWM_MAX_RATE_MILLI_STEPS_S
+            / GIMBAL_RATE_SCALE)
+        : ((uint32)GIMBAL_MAX_RATE_MILLI_STEPS_S / GIMBAL_RATE_SCALE);
+    if((axis != GIMBAL_STEPPER_AXIS_YAW)
         || (minimum_steps >= maximum_steps)
         || (minimum_steps > 0)
         || (maximum_steps < 0)
         || (jog_rate_steps_s == 0U)
-        || ((uint32)jog_rate_steps_s
-            > ((uint32)GIMBAL_MAX_RATE_MILLI_STEPS_S
-                / GIMBAL_RATE_SCALE)))
+        || ((uint32)jog_rate_steps_s > maximum_jog_rate_steps_s))
     {
         return 0U;
     }
@@ -2112,7 +2131,10 @@ uint8 gimbal_stepper_configure_single_axis(
         gimbal_axis_struct *current_axis = &gimbal_axes[index];
 
         gimbal_clear_axis_command(current_axis);
-        gpio_low(current_axis->step_pin);
+        if(current_axis->enabled != 0U)
+        {
+            gpio_low(current_axis->step_pin);
+        }
         current_axis->pulse_high = 0U;
         current_axis->position_steps = 0;
         current_axis->target_position_steps = 0;

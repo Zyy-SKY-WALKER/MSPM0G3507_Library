@@ -8,5 +8,6 @@
 
 void test_vision_uart_run(void);
 void test_ball_vision_oscillation_run(void);
+void test_oled_task_1_run(void);
 
 #endif

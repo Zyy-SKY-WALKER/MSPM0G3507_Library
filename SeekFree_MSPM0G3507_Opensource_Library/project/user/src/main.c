@@ -88,6 +88,8 @@
 #include "test_vision_uart.h"
 #elif (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION)
 #include "test_vision_uart.h"
+#elif (TEST_MODE == TEST_MODE_OLED_TASK_1)
+#include "test_vision_uart.h"
 #elif (TEST_MODE == TEST_MODE_MPU6500)
 #include "test_mpu6500.h"
 #elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
@@ -166,6 +168,8 @@ int main(void)
     test_vision_uart_run();
 #elif (TEST_MODE == TEST_MODE_BALL_VISION_OSCILLATION)
     test_ball_vision_oscillation_run();
+#elif (TEST_MODE == TEST_MODE_OLED_TASK_1)
+    test_oled_task_1_run();
 #elif (TEST_MODE == TEST_MODE_MPU6500)
     test_mpu6500_run();
 #elif (TEST_MODE == TEST_MODE_MPU6500_YAW_TURN)
