@@ -42,7 +42,7 @@
 #define TEST_MODE_LINE_FOLLOW_TASK_2 (33)
 #define TEST_MODE_LINE_FOLLOW_TASK_5 (34)
 
-#define TEST_MODE                    TEST_MODE_LINE_FOLLOW_TASK_5
+#define TEST_MODE                    TEST_MODE_MPU6500
 
 
 #endif
